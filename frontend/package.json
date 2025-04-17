@@ -1,0 +1,20 @@
+{
+  "name": "jspulse-frontend",
+  "version": "0.1.0",
+  "description": "Frontend для JS Пульс - агрегатора вакансий по фронтенду",
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm run vite dev",
+    "build": "pnpm run vite build",
+    "preview": "pnpm run vite preview"
+  },
+  "devDependencies": {
+    "@sveltejs/adapter-auto": "^1.0.3",
+    "@sveltejs/kit": "^1.20.5",
+    "svelte": "^3.59.2",
+    "vite": "^4.4.2"
+  },
+  "dependencies": {
+    "axios": "^1.6.2"
+  }
+}
