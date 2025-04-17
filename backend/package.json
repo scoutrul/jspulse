@@ -1,0 +1,20 @@
+{
+  "name": "jspulse-backend",
+  "version": "0.1.0",
+  "description": "Backend для JS Пульс - агрегатора вакансий по фронтенду",
+  "main": "index.js",
+  "scripts": {
+    "start": "pnpm run index.js",
+    "dev": "pnpm run nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "mongoose": "^8.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
