@@ -67,6 +67,7 @@ JS Пульс собирает свежие вакансии по фронтен
 | Frontend      | SvelteKit                    |
 | База данных   | MongoDB                      |
 | Контейнеризация | Docker + Docker Compose     |
+| Пакетный менеджер | pnpm                     |
 | Обработка     | OpenAI GPT API               |
 | Бот           | Telegraf.js или node-telegram-bot-api |
 
@@ -74,13 +75,25 @@ JS Пульс собирает свежие вакансии по фронтен
 
 ```
 /
-├── backend/       # API и логика парсера
-│   └── Dockerfile
-├── frontend/      # SvelteKit интерфейс
-│   └── Dockerfile
-├── mongo/         # MongoDB контейнер
-├── .env
+├── backend/          # API и логика парсера
+│   ├── Dockerfile
+│   ├── index.js      # Express сервер
+│   └── package.json
+├── frontend/         # SvelteKit интерфейс
+│   ├── Dockerfile
+│   ├── package.json
+│   ├── src/
+│   │   ├── app.html
+│   │   └── routes/
+│   │       └── +page.svelte
+│   ├── static/
+│   │   └── jspulse.png
+│   ├── svelte.config.js
+│   └── vite.config.js
+├── data/
+│   └── mongo/        # том для хранения базы Mongo (в .gitignore)
 ├── .gitignore
+├── .env.example
 ├── docker-compose.yml
 └── README.md
 ```
@@ -90,8 +103,8 @@ JS Пульс собирает свежие вакансии по фронтен
 1. Убедитесь, что установлен Docker и Docker Compose
 2. Клонируйте репозиторий:
    ```bash
-   git clone https://github.com/your-username/js-puls.git
-   cd js-puls
+   git clone https://github.com/scoutrul/jspulse.git
+   cd jspulse
    ```
 3. Создайте `.env` файл (см. `.env.example`)
 4. Запустите контейнеры:
@@ -101,7 +114,7 @@ JS Пульс собирает свежие вакансии по фронтен
 
 📍 После запуска:
 
-- Бэкенд: [http://localhost:4000](http://localhost:4000)
+- Бэкенд: [http://localhost:3001](http://localhost:3001)
 - Фронтенд: [http://localhost:3000](http://localhost:3000)
 - MongoDB доступна на `localhost:27017`
 
@@ -113,13 +126,15 @@ JS Пульс собирает свежие вакансии по фронтен
   node_modules/
   .env
   dist/
+  build/
+  .svelte-kit/
   *.log
-  mongo/data/
+  data/mongo/
   ```
 
 ---
 
-## 📌 В будущем (post-MVP)
+## 📌 План развития (post-MVP)
 
 - Email-рассылка / RSS
 - Telegram-админка
@@ -133,7 +148,6 @@ JS Пульс собирает свежие вакансии по фронтен
 ## ✍️ Автор
 
 Разработка: **@antonGolova**  
-Для связи: [Telegram](https://t.me/antonGolova)
-LinkedIn: [Anton Golova](https://www.linkedin.com/in/antongolova)
+Для связи: [Telegram](https://t.me/antonGolova)  
+LinkedIn: [Anton Golova](https://www.linkedin.com/in/antongolova)  
 Репозиторий: [GitHub](https://github.com/scoutrul/jspulse)
-# jspulse
