@@ -4,8 +4,9 @@
   "description": "Backend для JS Пульс - агрегатора вакансий по фронтенду",
   "main": "index.js",
   "scripts": {
-    "start": "pnpm run index.js",
-    "dev": "pnpm run nodemon index.js",
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "seed": "node data/seedDatabase.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
