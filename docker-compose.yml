@@ -19,7 +19,7 @@ services:
     volumes:
       - ./backend:/app
     environment:
-      - MONGO_URL=mongodb://mongo:27017/jsjobs
+      - MONGO_URL=mongodb://mongo:27017/jspulse
       - PORT=3001
 
   frontend:
