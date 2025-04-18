@@ -25,6 +25,7 @@ data/mongo/
 Thumbs.db
 
 # IDE
+.cursor/
 .idea/
 .vscode/
 *.sublime-project
