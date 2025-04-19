@@ -8,7 +8,7 @@ const vacancyRoutes = require('./routes/vacancyRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
-const MONGO_URL = process.env.MONGO_URL || 'mongodb://localhost:27017/jspulse';
+const MONGO_URL = process.env.MONGO_URL;
 
 console.log('Используемый URL MongoDB:', MONGO_URL);
 
