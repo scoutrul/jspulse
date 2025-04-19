@@ -1,5 +1,6 @@
 <script>
 	import { onMount } from 'svelte';
+	import { apiClient } from '@jspulse/shared';
 	
 	let vacancies = [];
 	let loading = true;
@@ -13,15 +14,9 @@
 		error = null;
 		
 		try {
-			let url = 'http://localhost:3001/api/vacancies';
-			
-			// Если выбраны теги для фильтрации
-			if (tagFilter && tagFilter.length > 0) {
-				url = `http://localhost:3001/api/vacancies/filter/tags?tags=${tagFilter.join(',')}`;
-			}
-			
-			const response = await fetch(url);
-			const data = await response.json();
+			const data = tagFilter && tagFilter.length > 0
+				? await apiClient.get(`/api/vacancies/filter/tags?tags=${tagFilter.join(',')}`)
+				: await apiClient.get('/api/vacancies');
 			
 			if (data.status === 'OK') {
 				vacancies = data.data || [];
