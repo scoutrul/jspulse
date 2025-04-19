@@ -1,33 +1,45 @@
 version: '3.8'
 
 services:
-  mongo:
-    image: mongo:7
-    container_name: jspulse_mongo
+  frontend:
+    build: 
+      context: .
+      dockerfile: frontend/Dockerfile
     ports:
-      - "27017:27017"
+      - "3000:3000"
     volumes:
-      - ./data/mongo:/data/db
+      - ./frontend:/app/frontend
+      - ./shared:/app/shared
+      - /app/frontend/node_modules
+      - /app/shared/node_modules
+    environment:
+      - VITE_BACKEND_URL=http://localhost:3001
+    depends_on:
+      - backend
 
   backend:
-    build: ./backend
-    container_name: jspulse_backend
+    build: 
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "3001:3001"
-    depends_on:
-      - mongo
     volumes:
-      - ./backend:/app
+      - ./backend:/app/backend
+      - ./shared:/app/shared
+      - /app/backend/node_modules
+      - /app/shared/node_modules
     environment:
       - MONGO_URL=mongodb://mongo:27017/jspulse
       - PORT=3001
-
-  frontend:
-    build: ./frontend
-    container_name: jspulse_frontend
-    ports:
-      - "3000:3000"
     depends_on:
-      - backend
+      - mongo
+
+  mongo:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
     volumes:
-      - ./frontend:/app
+      - mongodb_data:/data/db
+
+volumes:
+  mongodb_data:

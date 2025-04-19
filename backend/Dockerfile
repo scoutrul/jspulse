@@ -2,12 +2,23 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+# Установка pnpm
+RUN npm install -g pnpm
 
-RUN npm install
+# Копирование файлов package.json
+COPY package.json pnpm-workspace.yaml ./
+COPY backend/package.json ./backend/
+COPY shared/package.json ./shared/
 
+# Установка зависимостей
+RUN pnpm install
+
+# Копирование исходного кода
 COPY . .
 
-EXPOSE 3001
+# Сборка shared пакета
+RUN cd shared && pnpm run build
 
-CMD ["npm", "run", "dev"]
+# Запуск бэкенда
+WORKDIR /app/backend
+CMD ["pnpm", "run", "dev"]
