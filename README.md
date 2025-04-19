@@ -6,11 +6,21 @@
 
 JS Пульс собирает свежие вакансии по фронтенду (Vue, React, JS и др.) с различных источников. На текущем этапе реализован базовый функционал: отображение списка вакансий из базы данных с возможностью фильтрации по тегам.
 
-*   **Backend:** API на Node.js (Express) для управления вакансиями.
-*   **Frontend:** Веб-интерфейс на SvelteKit для отображения и фильтрации вакансий.
-*   **Database:** MongoDB для хранения данных о вакансиях.
-*   **Seeding:** Скрипт для заполнения базы тестовыми данными.
-*   **Containerization:** Docker и Docker Compose для легкого запуска всего стека.
+### 🌟 Основные возможности
+
+- Агрегация вакансий из разных источников
+- Фильтрация по тегам и технологиям
+- Удобный веб-интерфейс на SvelteKit
+- REST API для работы с вакансиями
+- Интеграция с Telegram (в разработке)
+
+### 🏗 Компоненты системы
+
+*   **Backend:** API на Node.js (Express) для управления вакансиями
+*   **Frontend:** Веб-интерфейс на SvelteKit для отображения и фильтрации вакансий
+*   **Database:** MongoDB для хранения данных о вакансиях
+*   **Seeding:** Скрипт для заполнения базы тестовыми данными
+*   **Containerization:** Docker и Docker Compose для легкого запуска всего стека
 
 ---
 
@@ -18,49 +28,83 @@ JS Пульс собирает свежие вакансии по фронтен
 
 ### 🧰 Используемые технологии
 
-| Компонент        | Стек                         |
-|------------------|------------------------------|
-| Backend          | Node.js (Express), Mongoose, dotenv |
-| Frontend         | SvelteKit, Vite              |
-| База данных      | MongoDB                      |
-| Контейнеризация  | Docker + Docker Compose      |
-| Пакетный менеджер| pnpm                         |
+| Компонент        | Стек                         | Версия |
+|------------------|------------------------------|---------|
+| Backend          | Node.js (Express), Mongoose  | 18.x    |
+| Frontend         | SvelteKit, Vite             | 4.x     |
+| База данных      | MongoDB                     | 7.x     |
+| Контейнеризация  | Docker + Docker Compose     | 3.x     |
+| Пакетный менеджер| pnpm                        | 8.x     |
 
 ### 📁 Структура проекта
 
 ```
 /
-├── backend/          # API и логика бэкенда
-│   ├── data/         # Скрипты и данные для БД (seed, mocks)
+├── backend/                # API и логика бэкенда
+│   ├── data/              # Скрипты и данные для БД
 │   │   ├── mockVacancies.js
 │   │   └── seedDatabase.js
-│   ├── models/       # Модели Mongoose
+│   ├── models/            # Модели Mongoose
 │   │   └── Vacancy.js
-│   ├── routes/       # Маршруты Express API
+│   ├── routes/            # Маршруты Express API
 │   │   └── vacancyRoutes.js
+│   ├── middleware/        # Middleware Express
+│   │   ├── errorHandler.js
+│   │   └── auth.js
+│   ├── services/          # Бизнес-логика
+│   │   └── vacancy.service.js
+│   ├── config/           # Конфигурация
+│   │   └── database.js
 │   ├── .dockerignore
 │   ├── Dockerfile
-│   ├── index.js      # Express сервер
+│   ├── index.js          # Express сервер
 │   └── package.json
-├── frontend/         # SvelteKit интерфейс
+├── frontend/             # SvelteKit интерфейс
+│   ├── src/             # Исходный код
+│   │   ├── lib/         # Общие компоненты и утилиты
+│   │   │   ├── components/
+│   │   │   │   ├── Header.svelte
+│   │   │   │   └── VacancyCard.svelte
+│   │   │   └── utils/
+│   │   │       └── date.ts
+│   │   ├── services/    # Сервисный слой
+│   │   │   └── vacancy.service.ts
+│   │   ├── types/      # TypeScript типы
+│   │   │   └── vacancy.types.ts
+│   │   ├── routes/     # Страницы приложения
+│   │   │   ├── +page.svelte
+│   │   │   └── +layout.svelte
+│   │   └── app.html
+│   ├── static/          # Статические файлы
+│   │   ├── favicon.ico
+│   │   └── jspulse.png
+│   ├── tests/          # Тесты
+│   │   └── vacancy.test.ts
 │   ├── .dockerignore
 │   ├── Dockerfile
 │   ├── package.json
-│   ├── pnpm-workspace.yaml
-│   ├── src/          # Исходный код SvelteKit
-│   │   ├── app.html
-│   │   └── routes/
-│   │       └── +page.svelte
-│   ├── static/       # Статические файлы (логотип)
-│   │   └── jspulse.png
 │   ├── svelte.config.js
-│   └── vite.config.js
-├── data/             # Директория для данных Docker Volumes (пустая)
+│   └── vite.config.ts
+├── shared/             # Общий код для frontend и backend
+│   ├── constants/
+│   │   └── tags.ts
+│   └── types/
+│       └── index.ts
+├── scripts/           # Скрипты для деплоя и утилит
+│   ├── deploy.sh
+│   └── setup.sh
+├── data/              # Данные Docker volumes
 │   └── mongo/
-├── .cursor/          # Настройки редактора Cursor (в .gitignore)
-├── .env.example      # Пример файла переменных окружения
+├── docs/             # Документация
+│   ├── api.md
+│   └── development.md
+├── .github/          # GitHub Actions
+│   └── workflows/
+│       └── ci.yml
+├── .env.example      # Пример переменных окружения
 ├── .gitignore
 ├── docker-compose.yml
+├── package.json
 └── README.md
 ```
 
@@ -177,6 +221,26 @@ Thumbs.db
 # Docker data volumes
 data/mongo/
 ```
+
+---
+
+## 📝 Последние изменения
+
+### Бэкенд
+- Обновлены основные зависимости
+- Оптимизирована конфигурация сервера
+- Улучшена обработка ошибок в API
+
+### Фронтенд
+- Добавлен сервисный слой для работы с API
+- Обновлены зависимости и главная страница
+- Улучшена производительность и UX
+- Обновлена конфигурация Vite для лучшей совместимости
+
+### Общие улучшения
+- Улучшена документация проекта
+- Оптимизирована структура кода
+- Добавлены новые типы для TypeScript
 
 ---
 
