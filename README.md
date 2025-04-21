@@ -90,14 +90,8 @@ JS Пульс собирает свежие вакансии по фронтен
 │   │   └── tags.ts
 │   └── types/
 │       └── index.ts
-├── scripts/           # Скрипты для деплоя и утилит
-│   ├── deploy.sh
-│   └── setup.sh
 ├── data/              # Данные Docker volumes
 │   └── mongo/
-├── docs/             # Документация
-│   ├── api.md
-│   └── development.md
 ├── .github/          # GitHub Actions
 │   └── workflows/
 │       └── ci.yml
