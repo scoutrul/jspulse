@@ -9,6 +9,8 @@ Always:
     - Редактируй файлы только в стандартном редакторе кода.
     - Всегда сверяйся с полным `README.md` для получения наиболее актуальной и подробной информации о проекте, его структуре и процессах.
     - После рефакторинга или перемещения файлов/папок обязательно проверяй все импорты и ссылки на эти файлы во всем проекте и исправляй пути при необходимости.
+    - На фронтенде используй axios для HTTP-запросов, на бэкенде - встроенный fetch.
+    - Используй TypeScript для типизации кода.
 
 # Правила работы с Git.
 Gitflow:
@@ -31,8 +33,8 @@ Styleguide:
 
   - |
     Технологический стек:
-      - Backend: Node.js (v18.x), Express, Mongoose
-      - Frontend: SvelteKit, Vite (v5.x)
+      - Backend: Node.js (v18.x), Express, Mongoose, TypeScript
+      - Frontend: SvelteKit, Vite (v5.x), TypeScript
       - Database: MongoDB (v7.x)
       - Containerization: Docker, Docker Compose (v3.x)
       - Package Manager: pnpm (v8.x)
@@ -42,6 +44,10 @@ Styleguide:
       - `/backend`: API на Node.js/Express, модели Mongoose, роуты, сервисы.
       - `/frontend`: Интерфейс на SvelteKit, компоненты, страницы, сервисный слой.
       - `/shared`: Общий код (типы, константы) для backend и frontend.
+        - Типы, используемые для обмена данными между frontend и backend (DTO - Data Transfer Objects), помещаются в `shared/types`.
+        - Для имен интерфейсов DTO используется суффикс `DTO` (например, `VacancyDTO`).
+        - Типы, специфичные для backend (например, связанные с Mongoose), остаются в `/backend`.
+        - Типы, специфичные для frontend (например, пропсы компонентов), остаются в `/frontend`.
       - `/data`: Данные для Docker volumes (например, MongoDB).
       - `docker-compose.yml`: Конфигурация Docker.
       - `README.md`: Основная документация (всегда актуальна!).
