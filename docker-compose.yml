@@ -10,6 +10,7 @@ services:
     volumes:
       - ./frontend:/app/frontend
       - ./shared:/app/shared
+      - /app/node_modules
       - /app/frontend/node_modules
       - /app/shared/node_modules
     environment:
