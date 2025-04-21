@@ -5,20 +5,18 @@ WORKDIR /app
 # Установка pnpm
 RUN npm install -g pnpm
 
-# Копирование файлов package.json
-COPY package.json pnpm-workspace.yaml ./
-COPY frontend/package.json ./frontend/
-COPY shared/package.json ./shared/
-
-# Установка зависимостей
-RUN pnpm install
-
-# Копирование исходного кода
+# Копирование исходного кода (включая package.json и т.д.)
 COPY . .
 
-# Сборка shared пакета
-RUN cd shared && pnpm run build
+# Установка зависимостей ПОСЛЕ копирования всего кода
+# Это гарантирует, что pnpm видит всю структуру воркспейса
+RUN pnpm install 
 
-# Запуск фронтенда
+# Сборка shared пакета (если он все еще нужен для чего-то)
+# RUN cd shared && pnpm run build
+
+# Устанавливаем рабочую директорию frontend
 WORKDIR /app/frontend
-CMD ["pnpm", "run", "dev", "--host"]
+
+# Запускаем dev скрипт из package.json с помощью pnpm run
+CMD ["pnpm", "run", "dev", "--", "--host"]
