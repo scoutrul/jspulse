@@ -1,4 +1,4 @@
-import type { HHResponse, HHVacancy } from '../types/hh.types'; // Импортируем типы
+import type { HHResponse, HHVacancy } from '../../shared/src/types/hh.types'; // Импортируем типы
 import { HH_API_BASE_URL } from '../config/api';
 
 async function fetchHHVacancies(): Promise<void> { // Добавил тип возвращаемого значения
