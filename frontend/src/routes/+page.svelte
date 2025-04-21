@@ -1,8 +1,9 @@
-<script>
+<script lang="ts">
 	import { onMount } from 'svelte';
-	import { apiClient } from '@jspulse/shared';
+	import { apiClient } from '../api/http.client';
+	import type { Vacancy, VacanciesResponse } from '../../../shared/src/types/vacancy.types';
 	
-	let vacancies = [];
+	let vacancies: Vacancy[] = [];
 	let loading = true;
 	let error = null;
 	let selectedTags = [];
@@ -14,26 +15,42 @@
 		error = null;
 		
 		try {
-			const data = tagFilter && tagFilter.length > 0
-				? await apiClient.get(`/api/vacancies/filter/tags?tags=${tagFilter.join(',')}`)
-				: await apiClient.get('/api/vacancies');
+			const responseData: unknown = tagFilter && tagFilter.length > 0
+				? await apiClient.get(
+					`/api/vacancies/filter/tags?tags=${tagFilter.join(',')}`
+				)
+				: await apiClient.get(
+					'/api/vacancies'
+				);
 			
-			if (data.status === 'OK') {
-				vacancies = data.data || [];
-				
-				// Собираем все уникальные теги
-				if (!tagFilter) {
-					const tagsSet = new Set();
-					vacancies.forEach(vacancy => {
-						vacancy.tags.forEach(tag => tagsSet.add(tag));
-					});
-					availableTags = Array.from(tagsSet).sort();
+			// Ручная проверка структуры ответа
+			if (responseData && typeof responseData === 'object' && 'status' in responseData) {
+				if (responseData.status === 'OK' && 'data' in responseData && Array.isArray(responseData.data)) {
+					vacancies = responseData.data as Vacancy[]; // Утверждаем тип после проверки
+					
+					// Собираем все уникальные теги
+					if (!tagFilter) {
+						const tagsSet = new Set();
+						vacancies.forEach(vacancy => {
+							vacancy.tags.forEach(tag => tagsSet.add(tag));
+						});
+						availableTags = Array.from(tagsSet).sort();
+					}
+				} else if ('message' in responseData) {
+					error = String(responseData.message) || 'Произошла ошибка при загрузке данных';
+				} else {
+					error = 'Некорректный ответ от сервера';
 				}
 			} else {
-				error = data.message || 'Произошла ошибка при загрузке данных';
+				error = 'Неожиданный формат ответа от сервера';
 			}
 		} catch (err) {
-			error = 'Ошибка загрузки вакансий: ' + (err.message || 'Неизвестная ошибка');
+			// Явная проверка типа ошибки
+			if (err instanceof Error) {
+				error = 'Ошибка загрузки вакансий: ' + err.message;
+			} else {
+				error = 'Произошла неизвестная ошибка при загрузке вакансий.';
+			}
 		} finally {
 			loading = false;
 		}
