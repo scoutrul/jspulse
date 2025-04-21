@@ -1,20 +1,15 @@
 import { apiClient, hhClient } from '../api/http.client';
 import { API_CONFIG } from '../config/api.config';
-import type { 
-  VacanciesResponse, 
-  HHResponse,
-  HHVacancy,
-  Vacancy 
-} from '../../../shared/src/types/vacancy.types';
+import type { Vacancy, HHVacancyType, HHVacancySalary } from '@jspulse/shared';
 
 class VacancyService {
   // Получение вакансий из нашего API
-  async getVacancies(): Promise<VacanciesResponse> {
+  async getVacancies(): Promise<Vacancy[]> {
     return apiClient.get(API_CONFIG.ENDPOINTS.VACANCIES);
   }
 
   // Получение вакансий по тегам
-  async getVacanciesByTags(tags: string[]): Promise<VacanciesResponse> {
+  async getVacanciesByTags(tags: string[]): Promise<Vacancy[]> {
     return apiClient.get(`${API_CONFIG.ENDPOINTS.VACANCIES_FILTER}/tags`, {
       params: { tags: tags.join(',') }
     });
@@ -26,12 +21,12 @@ class VacancyService {
     area?: string;
     page?: number;
     per_page?: number;
-  }): Promise<HHResponse> {
+  }): Promise<Vacancy[]> {
     return hhClient.get(API_CONFIG.HH_API.VACANCIES_ENDPOINT, { params });
   }
 
   // Преобразование вакансии HH в общий формат
-  transformHHVacancy(hhVacancy: HHVacancy): Vacancy {
+  transformHHVacancy(hhVacancy: HHVacancyType): Vacancy {
     return {
       id: hhVacancy.id,
       title: hhVacancy.name,
@@ -49,7 +44,7 @@ class VacancyService {
     };
   }
 
-  private formatSalary(salary: HHVacancy['salary']): string | null {
+  private formatSalary(salary: HHVacancySalary | null): string | null {
     if (!salary) return null;
     
     const { from, to, currency } = salary;

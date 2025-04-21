@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { apiClient } from '../api/http.client';
-	import type { Vacancy, VacanciesResponse } from '../../../shared/src/types/vacancy.types';
+	import type { Vacancy } from '@jspulse/shared';
 	
 	let vacancies: Vacancy[] = [];
 	let loading = true;

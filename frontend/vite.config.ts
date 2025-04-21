@@ -9,7 +9,7 @@ export default defineConfig({
 
   resolve: {
     alias: {
-      '@jspulse/shared': resolve(__dirname, '../shared/src')
+      '@jspulse/shared': resolve(__dirname, '../shared')
     }
   },
 
@@ -29,7 +29,6 @@ export default defineConfig({
       allow: [
         resolve(__dirname, '..'),
         resolve(__dirname, '../shared'),
-        resolve(__dirname, '../shared/src')
       ]
     }
   }
