@@ -12,9 +12,6 @@ COPY . .
 # Это гарантирует, что pnpm видит всю структуру воркспейса
 RUN pnpm install 
 
-# Сборка shared пакета (если он все еще нужен для чего-то)
-# RUN cd shared && pnpm run build
-
 # Устанавливаем рабочую директорию frontend
 WORKDIR /app/frontend
 

@@ -10,9 +10,9 @@ const baseConfig: AxiosRequestConfig = {
 };
 
 // Создаем экземпляр для внутреннего API
-export const apiClient: AxiosInstance = axios.create({
-  ...baseConfig,
-  baseURL: API_CONFIG.BASE_URL // Используем напрямую BASE_URL
+export const apiClient = axios.create({
+  baseURL: API_CONFIG.BASE_URL,
+  headers: { 'Content-Type': 'application/json' }
 });
 
 // Создаем экземпляр для HeadHunter API

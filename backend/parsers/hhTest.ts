@@ -1,18 +1,19 @@
-import type { HHResponse, HHVacancy } from '../../shared/src/types/hh.types'; // Импортируем типы
+import type { HHResponseType, HHVacancyType } from '@jspulse/shared';
 import { HH_API_BASE_URL } from '../config/api';
 
-async function fetchHHVacancies(): Promise<void> { // Добавил тип возвращаемого значения
+async function fetchHHVacancies(): Promise<void> {
   try {
     const url = new URL(HH_API_BASE_URL);
+    const AREA_ID_RUSSIA = '113'; // ID региона "Россия" на HH.ru
     url.searchParams.set('text', 'JavaScript');
-    url.searchParams.set('area', '113'); // Россия
+    url.searchParams.set('area', AREA_ID_RUSSIA);
     url.searchParams.set('per_page', '10');
     url.searchParams.set('page', '0');
     url.searchParams.set('professional_role', '96');
 
     const response = await fetch(url, {
       headers: {
-        'User-Agent': 'JS-Pulse-Test' // Рекомендуется использовать специфичный User-Agent
+        'User-Agent': 'JS-Pulse'
       }
     });
 
@@ -20,18 +21,15 @@ async function fetchHHVacancies(): Promise<void> { // Добавил тип во
       throw new Error(`HTTP error: ${response.status}`);
     }
 
-    // Указываем тип ожидаемого ответа с помощью утверждения типа
-    const data = await response.json() as HHResponse; 
+    const data = await response.json() as HHResponseType; 
 
     console.log('Получено вакансий:', data.items.length);
     if (data.items.length > 0) {
-      // Типизируем первую вакансию для лучшего автодополнения
-      const firstVacancy: HHVacancy = data.items[0]; 
-      console.dir(firstVacancy, { depth: null }); // детальный вывод
+      const firstVacancy: HHVacancyType = data.items[0];
+      console.dir(firstVacancy, { depth: null });
     }
 
   } catch (err) {
-    // Уточняем тип ошибки
     if (err instanceof Error) { 
       console.error('Ошибка при получении данных:', err.message);
     } else {
