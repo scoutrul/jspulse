@@ -1,5 +1,9 @@
-import mongoose, { Schema } from 'mongoose';
-import { IVacancyDocument } from './Vacancy.d';
+import mongoose, { Schema, Document, Model } from 'mongoose';
+import type { IVacancy } from '@jspulse/shared';
+
+export interface IVacancyDocument extends IVacancy, Document {}
+
+export type VacancyModelType = Model<IVacancyDocument>;
 
 const vacancySchema = new Schema<IVacancyDocument>({
   title: {
@@ -73,4 +77,4 @@ const vacancySchema = new Schema<IVacancyDocument>({
 
 vacancySchema.index({ externalId: 1, source: 1 }, { unique: true });
 
-export const Vacancy = mongoose.model<IVacancyDocument>('Vacancy', vacancySchema); 
+export const Vacancy = mongoose.model<IVacancyDocument, VacancyModelType>('Vacancy', vacancySchema); 

@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { Vacancy } from '../models/Vacancy'; // Импортируем TS модель
+import { Vacancy } from '../models/Vacancy.js'; // Импортируем TS модель
 
 const router = express.Router();
 

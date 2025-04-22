@@ -1,6 +1,6 @@
-// shared/types/hh.types.ts
-// Определения типов для ответа от HeadHunter API
-// Основано на https://github.com/hhru/api/blob/master/docs_eng/vacancies.md и реальных ответах
+// shared/types/sources/hh.types.ts
+// Определения типов для СЫРОГО ответа от HeadHunter API
+// ... (комментарии и вспомогательные типы HHAddress, HHDepartment, и т.д. остаются как были) ...
 
 // --- Вспомогательные типы --- 
 
@@ -22,13 +22,14 @@ export interface HHEmployerLogoUrls {
   original?: string;
 }
 
-// Объединенный и дополненный интерфейс работодателя
 export interface HHEmployer {
   id: string;
   name: string;
   url?: string | null;
   alternate_url?: string | null;
   logo_urls?: HHEmployerLogoUrls | null;
+  vacancies_url?: string | null;
+  accredited_it_employer?: boolean | null;
   trusted?: boolean;
 }
 
@@ -55,17 +56,17 @@ export interface HHSkill {
 }
 
 export interface HHSnippet {
-  requirement?: string | null;
-  responsibility?: string | null;
+ requirement?: string | null;
+ responsibility?: string | null;
 }
 
-// --- Основной интерфейс вакансии (из списка и детальный) --- 
+// --- Основной интерфейс СЫРОЙ вакансии HH --- 
 
-// Объединенный и наиболее полный интерфейс вакансии HH
-export interface HHVacancy {
+// Переименовываем в HHVacancyRaw, чтобы подчеркнуть, что это сырые данные
+export interface HHVacancyRaw {
   id: string;
   name: string; // = title
-  description?: string | null; // Полное описание
+  description?: string | null; 
   branded_description?: string | null;
   key_skills?: HHSkill[] | null; 
   schedule?: HHSchedule | null;
@@ -75,13 +76,13 @@ export interface HHVacancy {
   address?: HHAddress | null;
   employer: HHEmployer; 
   area: HHArea; 
-  published_at: string; 
+  published_at: string; // В сыром виде это строка!
   created_at?: string;
-  alternate_url: string; // URL для сайта 
-  url?: string | null; // URL для API
+  alternate_url: string; 
+  url?: string | null; 
   snippet?: HHSnippet;
   department?: HHDepartment | null;
-  // ... прочие поля из HHVacancyResponseItem ...
+  // ... прочие поля ...
   premium?: boolean;
   has_test?: boolean;
   response_letter_required?: boolean;
@@ -105,10 +106,10 @@ export interface HHVacancy {
   is_adv_vacancy?: boolean;
 }
 
-// --- Интерфейс ответа списка вакансий --- 
+// --- Интерфейс СЫРОГО ответа списка вакансий --- 
 
-export interface HHResponse {
-  items: HHVacancy[]; // Используем обновленный HHVacancy
+export interface HHResponseRaw {
+  items: HHVacancyRaw[]; // Используем сырой тип
   found: number;
   pages: number;
   page: number;

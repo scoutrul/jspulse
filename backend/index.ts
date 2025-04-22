@@ -3,8 +3,8 @@ import express, { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 
-// Импортируем маршруты из TS файла
-import vacancyRoutes from './routes/vacancyRoutes';
+// Импортируем маршруты с расширением .js
+import vacancyRoutes from './routes/vacancyRoutes.js';
 
 dotenv.config(); // Вызываем config()
 

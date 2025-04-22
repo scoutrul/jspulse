@@ -1,10 +1,12 @@
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
-import { Vacancy } from '../models/Vacancy'; // Исправляем импорт модели Vacancy
+import { Vacancy } from '../models/Vacancy.js'; // Добавляем .js
 
 // Загружаем переменные окружения из .env файла бэкенда
-// Уточняем путь к .env относительно текущего файла скрипта
+// Используем import.meta.url для ESM
+const __filename = new URL(import.meta.url).pathname;
+const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') }); 
 
 const MONGO_URL = process.env.MONGO_URL;

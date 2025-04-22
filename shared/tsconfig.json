@@ -12,6 +12,6 @@
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["types/**/*.ts", "index.ts"],
+  "include": ["types/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 } 

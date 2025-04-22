@@ -1,13 +1,16 @@
 import mongoose from 'mongoose';
-import 'dotenv/config'; // Для загрузки переменных окружения (например, DB_URL)
-import { Vacancy } from '../models/Vacancy';
-// Импортируем функцию трансформации из локального пути
-import { transformHHVacancy } from '../utils/transformations';
-// Используем типы HH из shared
-import { HHVacancy, HHResponse } from '@jspulse/shared';
+import 'dotenv/config';
+import { Vacancy } from '../models/Vacancy.js';
+import { transformHHVacancyToIVacancy } from '../utils/transformations.js';
+import { HHResponseRaw } from '@jspulse/shared';
+import ky, { HTTPError } from 'ky';
+import { HH_API_BASE_URL } from '../config/api.js';
 
 const HH_API_URL = 'https://api.hh.ru/vacancies';
 const SOURCE_HH = 'hh.ru';
+const MAX_VACANCIES_PER_PAGE = 100; // HH API limit
+const MAX_PAGES_TO_FETCH = 1; // ПОКА ЧТО 1 страница для простоты
+const SEARCH_TEXT = 'JavaScript Developer OR Frontend Developer';
 
 async function fetchAndSaveHHVacancies() {
   const mongoUrl = process.env.MONGO_URL;
@@ -22,75 +25,85 @@ async function fetchAndSaveHHVacancies() {
     connection = await mongoose.connect(mongoUrl);
     console.log('Успешное подключение к MongoDB');
 
-    let receivedCount = 0;
-    let newCount = 0;
-    let existingCount = 0;
+    let totalReceived = 0;
+    let totalNew = 0;
+    let totalExisting = 0;
 
-    // --- Логика получения данных с HH --- 
-    // Пока получаем только одну страницу (100 вакансий)
-    // TODO: Реализовать пагинацию для получения 3-5 страниц
-    const params = new URLSearchParams({
-      text: 'javascript OR typescript OR node.js OR frontend OR backend OR fullstack',
-      area: '113', // Россия
-      per_page: '100',
-      page: '0',
-      professional_role: '96' // Разработчик
-    });
-    
-    console.log(`Запрос вакансий с ${HH_API_URL}?${params.toString()}`);
-    
-    const response = await fetch(`${HH_API_URL}?${params.toString()}`, {
-      headers: {
-        'User-Agent': 'JSPulse' // Рекомендуется указывать User-Agent
+    for (let page = 0; page < MAX_PAGES_TO_FETCH; page++) {
+      const searchParams = {
+        text: SEARCH_TEXT,
+        area: '1', // Москва
+        per_page: String(MAX_VACANCIES_PER_PAGE),
+        page: String(page),
+        professional_role: '96' // Разработчик
+      };
+
+      console.log(`Запрос страницы ${page + 1}/${MAX_PAGES_TO_FETCH} с ${HH_API_BASE_URL}... Параметры:`, searchParams);
+
+      try {
+        // Используем ky для запроса и парсинга JSON
+        const data = await ky.get(HH_API_BASE_URL, {
+          searchParams: searchParams,
+          headers: {
+            'User-Agent': 'JSPulse/1.0 (nikita@tonsky.me)' // Рекомендуется указывать User-Agent с контактом
+          },
+          timeout: 30000 // Таймаут 30 секунд
+        }).json<HHResponseRaw>();
+
+        const receivedCount = data.items.length;
+        console.log(`Страница ${page + 1}: Получено ${receivedCount} вакансий.`);
+        totalReceived += receivedCount;
+
+        if (receivedCount === 0) {
+          console.log('Больше вакансий не найдено, завершаем.');
+          break;
+        }
+
+        let pageNew = 0;
+        let pageExisting = 0;
+
+        for (const hhVacancy of data.items) {
+          const transformedData = transformHHVacancyToIVacancy(hhVacancy);
+          if (!transformedData) continue;
+
+          const existingVacancy = await Vacancy.findOne({
+            externalId: transformedData.externalId,
+            source: SOURCE_HH
+          });
+
+          if (!existingVacancy) {
+            await Vacancy.create({
+              ...transformedData,
+              source: SOURCE_HH
+            });
+            pageNew++;
+          } else {
+            pageExisting++;
+          }
+        }
+        totalNew += pageNew;
+        totalExisting += pageExisting;
+        console.log(`Страница ${page + 1}: Сохранено ${pageNew}, уже было ${pageExisting}.`);
+
+      } catch (error) {
+        console.error(`Ошибка при запросе страницы ${page + 1}:`, error);
+        if (error instanceof HTTPError) {
+          const errorBody = await error.response.text();
+          console.error(`Ответ сервера при ошибке (${error.response.status}):`, errorBody.slice(0, 500));
+        }
+        // Можно решить, прерывать ли цикл при ошибке или продолжать
       }
-    });
-
-    if (!response.ok) {
-      throw new Error(`Ошибка HTTP при запросе к HH API: ${response.status} ${response.statusText}`);
     }
 
-    // Используем тип HHResponse из shared
-    const data: HHResponse = await response.json();
-    receivedCount = data.items.length;
-    console.log(`Получено ${receivedCount} вакансий с HH.`);
-
-    // --- Логика обработки и сохранения --- 
-    // Используем тип HHVacancy из shared
-    for (const hhVacancy of data.items as HHVacancy[]) {
-      const transformedData = transformHHVacancy(hhVacancy);
-      
-      // Пропускаем вакансию, если трансформация не удалась (вернулся null)
-      if (!transformedData) {
-        continue; 
-      }
-      
-      // Проверяем, существует ли вакансия с таким externalId и source
-      const existingVacancy = await Vacancy.findOne({
-        externalId: transformedData.externalId,
-        source: SOURCE_HH
-      });
-
-      if (!existingVacancy) {
-        // Вакансии нет - создаем
-        await Vacancy.create({
-          ...transformedData,
-          source: SOURCE_HH
-        });
-        newCount++;
-      } else {
-        // Вакансия уже есть
-        existingCount++;
-      }
-    }
-
-    console.log('--- Статистика --- ');
-    console.log(`Всего получено: ${receivedCount}`);
-    console.log(`Новых сохранено: ${newCount}`);
-    console.log(`Уже существовало: ${existingCount}`);
-    console.log('------------------');
+    console.log('--- Итоговая статистика --- ');
+    console.log(`Всего получено: ${totalReceived}`);
+    console.log(`Новых сохранено: ${totalNew}`);
+    console.log(`Уже существовало: ${totalExisting}`);
+    console.log('---------------------------');
 
   } catch (error) {
-    console.error('Произошла ошибка во время выполнения скрипта:', error);
+    // Ошибки подключения к БД или другие общие ошибки
+    console.error('Произошла критическая ошибка во время выполнения скрипта:', error);
   } finally {
     // Закрытие соединения с БД
     if (connection) {
@@ -102,3 +115,5 @@ async function fetchAndSaveHHVacancies() {
 
 // Запуск скрипта
 fetchAndSaveHHVacancies(); 
+
+export default fetchAndSaveHHVacancies; 

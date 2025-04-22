@@ -3,10 +3,14 @@ console.log('Test seeding file compilation');
 import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import path from 'path';
-import { Vacancy } from '../models/Vacancy';
-import mockVacancies from './mockVacancies';
+import { Vacancy } from '../models/Vacancy.js';
+import mockVacancies from './mockVacancies.js';
 
 // Загружаем .env из папки backend
+// В ESM __dirname не доступен по умолчанию
+// Используем import.meta.url для получения пути к текущему файлу
+const __filename = new URL(import.meta.url).pathname;
+const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const MONGO_URL = process.env.MONGO_URL;

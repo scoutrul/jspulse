@@ -1,36 +1,37 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import ky, { Options } from 'ky';
 import { API_CONFIG } from '../config/api.config';
 
-const baseConfig: AxiosRequestConfig = {
-  baseURL: API_CONFIG.BASE_URL,
+// Базовые опции для ky
+const baseOptions: Options = {
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
-  }
+  },
+  // Хуки можно добавить здесь, если нужна глобальная логика
+  // hooks: {
+  //   beforeRequest: [...],
+  //   afterResponse: [...] 
+  // }
 };
 
-// Создаем экземпляр для внутреннего API
-export const apiClient = axios.create({
-  baseURL: API_CONFIG.BASE_URL,
-  headers: { 'Content-Type': 'application/json' }
+// Создаем экземпляр ky для внутреннего API
+// Обратите внимание: префикс URL добавляется к КАЖДОМУ запросу
+export const apiClient = ky.create({
+  prefixUrl: API_CONFIG.BASE_URL, // Используем prefixUrl
+  headers: baseOptions.headers,
+  timeout: baseOptions.timeout
 });
 
-// Создаем экземпляр для HeadHunter API
-export const hhClient: AxiosInstance = axios.create({
-  ...baseConfig,
-  baseURL: API_CONFIG.HH_API.BASE_URL,
+// Создаем экземпляр ky для HeadHunter API
+export const hhClient = ky.create({
+  prefixUrl: API_CONFIG.HH_API.BASE_URL, // Используем prefixUrl
   headers: {
-    ...baseConfig.headers,
-    'User-Agent': 'JS-Pulse-App'
-  }
+    ...baseOptions.headers,
+    'User-Agent': 'JS-Pulse-App/1.0 (nikita@tonsky.me)' // Укажем контакт
+  },
+  timeout: baseOptions.timeout
 });
 
-apiClient.interceptors.response.use(
-  response => response.data,
-  error => Promise.reject(error)
-);
-
-hhClient.interceptors.response.use(
-  response => response.data,
-  error => Promise.reject(error)
-);
+// Интерцепторы axios удалены.
+// Код, использующий apiClient или hhClient, должен будет вызывать
+// методы парсинга ответа, например: apiClient.get('vacancies').json<VacancyDTO[]>()
