@@ -4,10 +4,11 @@
   "description": "Backend для JS Пульс - агрегатора вакансий по фронтенду",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
-    "seed": "node data/seedDatabase.js",
-    "fetch:hh": "node --loader ts-node/esm scripts/fetchAndSaveFromHH.ts",
+    "start": "node dist/index.js",
+    "dev": "nodemon --watch './src/**/*.ts' --watch './*.ts' --ext ts,json --exec 'pnpm run build && node dist/index.js'",
+    "build": "tsc -p tsconfig.json",
+    "seed": "pnpm run build && node dist/data/seedDatabase.js",
+    "fetch:hh": "pnpm run build && node dist/scripts/fetchAndSaveFromHH.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {

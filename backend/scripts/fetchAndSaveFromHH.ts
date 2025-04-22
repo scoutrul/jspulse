@@ -62,6 +62,11 @@ async function fetchAndSaveHHVacancies() {
     for (const hhVacancy of data.items) {
       const transformedData = transformHHVacancy(hhVacancy);
       
+      // Пропускаем вакансию, если трансформация не удалась (вернулся null)
+      if (!transformedData) {
+        continue; 
+      }
+      
       // Проверяем, существует ли вакансия с таким externalId и source
       const existingVacancy = await Vacancy.findOne({
         externalId: transformedData.externalId,
