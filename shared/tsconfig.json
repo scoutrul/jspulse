@@ -4,6 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "declaration": true,
+    "composite": true,
     "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
@@ -11,6 +12,6 @@
     "forceConsistentCasingInFileNames": true,
     "verbatimModuleSyntax": true
   },
-  "include": ["types/**/*.ts"],
+  "include": ["types/**/*.ts", "index.ts"],
   "exclude": ["node_modules", "dist"]
 } 

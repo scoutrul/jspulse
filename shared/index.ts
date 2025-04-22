@@ -1,0 +1,1 @@
+export type { VacancyDTO } from './types/vacancy.dto';
