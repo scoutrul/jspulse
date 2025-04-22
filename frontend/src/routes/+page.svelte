@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte';
 	import { apiClient } from '../api/http.client';
 	import type { VacancyDTO } from '@jspulse/shared';
-	import axios from 'axios';
+	import { HTTPError } from 'ky';
 	
 	let vacancies: VacancyDTO[] = [];
 	let loading = true;
@@ -10,23 +10,31 @@
 	let selectedSkills = [];
 	let availableSkills = [];
 	
+	// Ожидаемая структура ответа API
+	interface ApiResponse {
+		status: string;
+		message: string;
+		data: VacancyDTO[];
+	}
+	
 	// Загрузка вакансий
 	const loadVacancies = async (skillFilter: string[] | null = null) => {
 		loading = true;
 		error = null;
 		
 		try {
-			const endpoint = skillFilter && skillFilter.length > 0
-				? '/api/vacancies'
-				: '/api/vacancies';
-				
-			const response = await apiClient.get<VacancyDTO[]>(endpoint);
-			const responseData = response.data;
+			const endpoint = 'api/vacancies';
+			const searchParams = skillFilter && skillFilter.length > 0 
+				? { skills: skillFilter.join(',') } 
+				: {};
 			
-			if (Array.isArray(responseData)) {
-				vacancies = responseData;
+			// Указываем тип ApiResponse для .json()
+			const responseData = await apiClient.get(endpoint, { searchParams }).json<ApiResponse>();
+			
+			// Проверяем статус и извлекаем данные из data
+			if (responseData && responseData.status === 'OK' && Array.isArray(responseData.data)) {
+				vacancies = responseData.data; // <-- Извлекаем массив из data
 					
-				// Собираем все уникальные навыки (skills)
 				if (!skillFilter) {
 					const skillsSet = new Set<string>();
 					vacancies.forEach(vacancy => {
@@ -37,11 +45,11 @@
 					availableSkills = Array.from(skillsSet).sort();
 				}
 			} else {
-				error = 'Получен неожиданный формат данных от сервера';
+				error = 'Получен неожиданный формат данных или ошибка от сервера';
 			}
 		} catch (err) {
 			console.error("Ошибка API:", err);
-			if (axios.isAxiosError(err)) {
+			if (err instanceof HTTPError) {
 				error = `Ошибка сети или сервера: ${err.message}`;
 			} else if (err instanceof Error) {
 				error = 'Ошибка загрузки вакансий: ' + err.message;
@@ -138,6 +146,22 @@
 										{#if vacancy.salaryTo} до {vacancy.salaryTo}{/if}
 										{#if vacancy.salaryCurrency} {vacancy.salaryCurrency}{/if}
 									</p>
+								{/if}
+							</div>
+
+							<!-- Добавляем отображение доп. полей -->
+							<div class="vacancy-details">
+								{#if vacancy.experience}
+									<p class="experience"><strong>Опыт:</strong> {vacancy.experience}</p>
+								{/if}
+								{#if vacancy.employment}
+									<p class="employment"><strong>Занятость:</strong> {vacancy.employment}</p>
+								{/if}
+								{#if vacancy.schedule}
+									<p class="schedule"><strong>График:</strong> {vacancy.schedule}</p>
+								{/if}
+								{#if vacancy.address}
+									<p class="address"><strong>Адрес:</strong> {vacancy.address}</p>
 								{/if}
 							</div>
 							
@@ -297,6 +321,10 @@
 	.salary {
 		color: #2ecc71;
 		font-weight: bold;
+	}
+	
+	.vacancy-details {
+		margin-bottom: 1.5rem;
 	}
 	
 	.description {
