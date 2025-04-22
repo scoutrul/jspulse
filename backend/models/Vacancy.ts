@@ -54,6 +54,18 @@ const vacancySchema = new Schema<IVacancyDocument>({
     type: String,
     required: true,
     index: true
+  },
+  experience: {
+    type: String
+  },
+  employment: {
+    type: String
+  },
+  address: {
+    type: String
+  },
+  rawData: {
+    type: mongoose.Schema.Types.Mixed
   }
 }, {
   timestamps: true

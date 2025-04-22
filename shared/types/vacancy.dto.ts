@@ -11,4 +11,9 @@ export interface VacancyDTO {
   salaryCurrency?: string;
   url: string;
   publishedAt: string; // Используем строку для DTO, т.к. Date может быть не сериализуемым в JSON напрямую
+
+  // Новые поля для DTO
+  experience?: string; 
+  employment?: string; 
+  address?: string;    
 } 

@@ -1,4 +1,6 @@
 import { IVacancy } from '../models/Vacancy.d';
+// Импортируем типы HH из общего пакета
+import { HHVacancy, HHSkill } from '@jspulse/shared'; // Путь к экспорту может быть другим
 
 // Интерфейсы, описывающие структуру вакансии с HH API
 // Основано на https://github.com/hhru/api/blob/master/docs_eng/vacancies.md
@@ -40,10 +42,6 @@ interface HHSalary {
 
 interface HHSchedule {
   id: string;
-  name: string;
-}
-
-interface HHSkill {
   name: string;
 }
 
@@ -95,27 +93,38 @@ export interface HHVacancyResponseItem {
 
 /**
  * Трансформирует объект вакансии из формата HH API 
- * в формат внутренней модели IVacancy.
+ * в формат внутренней модели IVacancy, включая rawData.
  */
-export function transformHHVacancy(hhVacancy: HHVacancyResponseItem): Omit<IVacancy, 'source'> | null {
+export function transformHHVacancy(hhVacancy: HHVacancy): IVacancy | null {
   // Базовая валидация: проверяем наличие минимально необходимых полей
   if (!hhVacancy.id || !hhVacancy.name || !hhVacancy.employer?.name || !hhVacancy.area?.name || !hhVacancy.alternate_url || !hhVacancy.published_at) {
     console.warn(`Пропуск вакансии из-за отсутствия обязательных полей: ID=${hhVacancy.id}, Name=${hhVacancy.name}`);
     return null; // Возвращаем null, если критичные поля отсутствуют
   }
 
+  const description = hhVacancy.description ?? (hhVacancy.snippet?.responsibility || hhVacancy.snippet?.requirement || 'Описание отсутствует');
+
   return {
     externalId: hhVacancy.id,
     title: hhVacancy.name,
     company: hhVacancy.employer.name,
     location: hhVacancy.area.name,
-    schedule: hhVacancy.schedule?.name, // schedule опционально
-    description: hhVacancy.description ?? (hhVacancy.snippet?.responsibility || hhVacancy.snippet?.requirement || 'Описание отсутствует'), // Пытаемся взять из snippet, если нет основного
-    skills: hhVacancy.key_skills?.map((skill: HHSkill) => skill.name) ?? [], // key_skills опционально
+    schedule: hhVacancy.schedule?.name,
+    description: description,
+    skills: hhVacancy.key_skills?.map((skill: HHSkill) => skill.name) ?? [], // Используем тип HHSkill из shared
     salaryFrom: hhVacancy.salary?.from ?? undefined,
     salaryTo: hhVacancy.salary?.to ?? undefined,
     salaryCurrency: hhVacancy.salary?.currency ?? undefined,
-    url: hhVacancy.alternate_url, // alternate_url обязателен по доке
-    publishedAt: new Date(hhVacancy.published_at) // published_at обязателен по доке
+    url: hhVacancy.alternate_url, 
+    publishedAt: new Date(hhVacancy.published_at),
+    source: 'hh.ru', // Добавляем источник
+
+    // Новые нормализованные поля
+    experience: hhVacancy.experience?.name,
+    employment: hhVacancy.employment?.name,
+    address: hhVacancy.address?.raw,
+
+    // Добавляем оригинальные данные
+    rawData: hhVacancy 
   };
 } 

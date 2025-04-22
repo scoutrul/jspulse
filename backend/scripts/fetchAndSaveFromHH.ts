@@ -1,18 +1,13 @@
 import mongoose from 'mongoose';
 import 'dotenv/config'; // Для загрузки переменных окружения (например, DB_URL)
 import { Vacancy } from '../models/Vacancy';
-import { transformHHVacancy, HHVacancyResponseItem } from '../utils/transformations';
+// Импортируем функцию трансформации из локального пути
+import { transformHHVacancy } from '../utils/transformations';
+// Используем типы HH из shared
+import { HHVacancy, HHResponse } from '@jspulse/shared';
 
 const HH_API_URL = 'https://api.hh.ru/vacancies';
 const SOURCE_HH = 'hh.ru';
-
-interface HHResponse {
-  items: HHVacancyResponseItem[];
-  pages: number;
-  page: number;
-  per_page: number;
-  found: number;
-}
 
 async function fetchAndSaveHHVacancies() {
   const mongoUrl = process.env.MONGO_URL;
@@ -54,12 +49,14 @@ async function fetchAndSaveHHVacancies() {
       throw new Error(`Ошибка HTTP при запросе к HH API: ${response.status} ${response.statusText}`);
     }
 
+    // Используем тип HHResponse из shared
     const data: HHResponse = await response.json();
     receivedCount = data.items.length;
     console.log(`Получено ${receivedCount} вакансий с HH.`);
 
     // --- Логика обработки и сохранения --- 
-    for (const hhVacancy of data.items) {
+    // Используем тип HHVacancy из shared
+    for (const hhVacancy of data.items as HHVacancy[]) {
       const transformedData = transformHHVacancy(hhVacancy);
       
       // Пропускаем вакансию, если трансформация не удалась (вернулся null)
