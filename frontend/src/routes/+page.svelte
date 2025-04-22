@@ -1,52 +1,49 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import { apiClient } from '../api/http.client';
-	import type { Vacancy } from '@jspulse/shared';
+	import type { VacancyDTO } from '@jspulse/shared';
+	import axios from 'axios';
 	
-	let vacancies: Vacancy[] = [];
+	let vacancies: VacancyDTO[] = [];
 	let loading = true;
-	let error = null;
-	let selectedTags = [];
-	let availableTags = [];
+	let error: string | null = null;
+	let selectedSkills = [];
+	let availableSkills = [];
 	
 	// Загрузка вакансий
-	const loadVacancies = async (tagFilter = null) => {
+	const loadVacancies = async (skillFilter: string[] | null = null) => {
 		loading = true;
 		error = null;
 		
 		try {
-			const responseData: unknown = tagFilter && tagFilter.length > 0
-				? await apiClient.get(
-					`/api/vacancies/filter/tags?tags=${tagFilter.join(',')}`
-				)
-				: await apiClient.get(
-					'/api/vacancies'
-				);
+			const endpoint = skillFilter && skillFilter.length > 0
+				? '/api/vacancies'
+				: '/api/vacancies';
+				
+			const response = await apiClient.get<VacancyDTO[]>(endpoint);
+			const responseData = response.data;
 			
-			// Ручная проверка структуры ответа
-			if (responseData && typeof responseData === 'object' && 'status' in responseData) {
-				if (responseData.status === 'OK' && 'data' in responseData && Array.isArray(responseData.data)) {
-					vacancies = responseData.data as Vacancy[]; // Утверждаем тип после проверки
+			if (Array.isArray(responseData)) {
+				vacancies = responseData;
 					
-					// Собираем все уникальные теги
-					if (!tagFilter) {
-						const tagsSet = new Set();
-						vacancies.forEach(vacancy => {
-							vacancy.tags.forEach(tag => tagsSet.add(tag));
-						});
-						availableTags = Array.from(tagsSet).sort();
-					}
-				} else if ('message' in responseData) {
-					error = String(responseData.message) || 'Произошла ошибка при загрузке данных';
-				} else {
-					error = 'Некорректный ответ от сервера';
+				// Собираем все уникальные навыки (skills)
+				if (!skillFilter) {
+					const skillsSet = new Set<string>();
+					vacancies.forEach(vacancy => {
+						if (vacancy.skills && Array.isArray(vacancy.skills)) {
+							vacancy.skills.forEach(skill => skillsSet.add(skill));
+						}
+					});
+					availableSkills = Array.from(skillsSet).sort();
 				}
 			} else {
-				error = 'Неожиданный формат ответа от сервера';
+				error = 'Получен неожиданный формат данных от сервера';
 			}
 		} catch (err) {
-			// Явная проверка типа ошибки
-			if (err instanceof Error) {
+			console.error("Ошибка API:", err);
+			if (axios.isAxiosError(err)) {
+				error = `Ошибка сети или сервера: ${err.message}`;
+			} else if (err instanceof Error) {
 				error = 'Ошибка загрузки вакансий: ' + err.message;
 			} else {
 				error = 'Произошла неизвестная ошибка при загрузке вакансий.';
@@ -56,20 +53,16 @@
 		}
 	};
 	
-	// Обрабатываем выбор/отмену тега
-	const toggleTag = (tag) => {
-		if (selectedTags.includes(tag)) {
-			selectedTags = selectedTags.filter(t => t !== tag);
+	// Обрабатываем выбор/отмену навыка
+	const toggleSkill = (skill: string) => {
+		if (selectedSkills.includes(skill)) {
+			selectedSkills = selectedSkills.filter(s => s !== skill);
 		} else {
-			selectedTags = [...selectedTags, tag];
+			selectedSkills = [...selectedSkills, skill];
 		}
 		
 		// Применяем фильтрацию
-		if (selectedTags.length > 0) {
-			loadVacancies(selectedTags);
-		} else {
-			loadVacancies();
-		}
+		loadVacancies(selectedSkills.length > 0 ? selectedSkills : null);
 	};
 	
 	// Форматируем дату для отображения
@@ -99,22 +92,22 @@
 	
 	<p class="description">Агрегатор вакансий по Frontend/JavaScript</p>
 	
-	<!-- Фильтры по тегам -->
+	<!-- Фильтры по навыкам -->
 	<div class="filters">
 		<h3>Фильтры по навыкам:</h3>
 		<div class="tags-filter">
-			{#each availableTags as tag}
+			{#each availableSkills as skill}
 				<button 
-					class="tag-button {selectedTags.includes(tag) ? 'selected' : ''}" 
-					on:click={() => toggleTag(tag)}
+					class="tag-button {selectedSkills.includes(skill) ? 'selected' : ''}"
+					on:click={() => toggleSkill(skill)}
 				>
-					{tag}
+					{skill}
 				</button>
 			{/each}
 		</div>
-		{#if selectedTags.length > 0}
+		{#if selectedSkills.length > 0}
 			<div class="clear-filter">
-				<button class="clear-button" on:click={() => { selectedTags = []; loadVacancies(); }}>
+				<button class="clear-button" on:click={() => { selectedSkills = []; loadVacancies(); }}>
 					Сбросить фильтры
 				</button>
 			</div>
@@ -127,7 +120,7 @@
 		<p class="error">{error}</p>
 	{:else}
 		<div class="vacancies">
-			<h2>Последние вакансии {selectedTags.length > 0 ? `по тегам: ${selectedTags.join(', ')}` : ''}</h2>
+			<h2>Последние вакансии {selectedSkills.length > 0 ? `по навыкам: ${selectedSkills.join(', ')}` : ''}</h2>
 			
 			{#if vacancies.length === 0}
 				<p class="no-vacancies">Вакансий не найдено</p>
@@ -139,28 +132,31 @@
 							<div class="vacancy-header">
 								<p class="company">{vacancy.company}</p>
 								<p class="location">{vacancy.location}</p>
-								{#if vacancy.salary}
-									<p class="salary">{vacancy.salary}</p>
+								{#if vacancy.salaryFrom || vacancy.salaryTo} 
+									<p class="salary">
+										{#if vacancy.salaryFrom}от {vacancy.salaryFrom}{/if}
+										{#if vacancy.salaryTo} до {vacancy.salaryTo}{/if}
+										{#if vacancy.salaryCurrency} {vacancy.salaryCurrency}{/if}
+									</p>
 								{/if}
 							</div>
 							
 							<div class="description">
-								{vacancy.description}
+								{@html vacancy.description}
 							</div>
 							
 							<div class="vacancy-footer">
 								<div class="tags">
-									{#each vacancy.tags as tag}
+									{#each vacancy.skills as skill}
 										<button 
-											class="tag {selectedTags.includes(tag) ? 'selected' : ''}"
-											on:click={() => toggleTag(tag)}
+											class="tag {selectedSkills.includes(skill) ? 'selected' : ''}"
+											on:click={() => toggleSkill(skill)}
 										>
-											{tag}
+											{skill}
 										</button>
 									{/each}
 								</div>
 								<div class="meta">
-									<span class="source">Источник: {vacancy.source}</span>
 									{#if vacancy.publishedAt}
 										<span class="date">Опубликовано: {formatDate(vacancy.publishedAt)}</span>
 									{/if}
