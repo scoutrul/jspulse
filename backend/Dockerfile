@@ -16,9 +16,8 @@ RUN pnpm install
 # Копирование исходного кода
 COPY . .
 
-# Сборка shared пакета
-RUN cd shared && pnpm run build
-
-# Запуск бэкенда
+# Переход в директорию backend
 WORKDIR /app/backend
+
+# Запуск бэкенда в режиме разработки (используем dev)
 CMD ["pnpm", "run", "dev"]

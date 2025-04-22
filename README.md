@@ -100,11 +100,22 @@ JS Пульс собирает свежие вакансии по фронтен
     git clone https://github.com/ваш-логин/jspulse.git # Замените на ваш URL
     cd jspulse
     ```
-3.  Создайте файл `.env` на основе `.env.example` и заполните необходимые переменные окружения (если они есть).
+3.  Установите все зависимости воркспейса:
+    ```bash
+    pnpm install
+    ```
+4.  **Соберите общие пакеты (особенно `shared`) локально:**
+    ```bash
+    pnpm run build # Запустит pnpm -r run build
+    ```
+5.  Создайте необходимые файлы `.env` на основе `.env.example` и заполните их.
     ```bash
     cp .env.example .env
+    cp backend/.env.example backend/.env
+    cp frontend/.env.example frontend/.env
+    # Заполните переменные в созданных .env файлах
     ```
-4.  Запустите контейнеры:
+6.  Запустите контейнеры:
     ```bash
     docker-compose up --build -d
     ```

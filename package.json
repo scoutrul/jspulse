@@ -2,9 +2,14 @@
   "name": "jspulse",
   "private": true,
   "scripts": {
-    "dev": "pnpm -r run dev",
+    "dev": "concurrently \"pnpm --filter @jspulse/shared run dev\" \"pnpm --filter @jspulse/backend run dev\" \"pnpm --filter @jspulse/frontend run dev\"",
     "build": "pnpm -r run build",
-    "docker:up": "docker-compose up --build",
+    "docker:up": "pnpm run build && docker-compose up --build -d",
     "docker:down": "docker-compose down"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
+    "concurrently": "^9.1.2"
   }
-} 
+}
