@@ -4,12 +4,20 @@
     "module": "CommonJS",
     "moduleResolution": "Node",
     "outDir": "./dist",
-    "rootDirs": [".", "../shared/src"],
     "esModuleInterop": true,
     "forceConsistentCasingInFileNames": true,
     "strict": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowJs": true
   },
-  "include": ["**/*.ts"],
+  "include": [
+    "index.ts",
+    "models/**/*.ts",
+    "routes/**/*.ts",
+    "scripts/**/*.ts",
+    "utils/**/*.ts",
+    "config/**/*.ts",
+    "data/seedDatabase.ts"
+  ],
   "exclude": ["node_modules", "dist"]
 } 

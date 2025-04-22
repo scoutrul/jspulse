@@ -6,9 +6,14 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon --watch './src/**/*.ts' --watch './*.ts' --ext ts,json --exec 'pnpm run build && node dist/index.js'",
-    "build": "tsc -p tsconfig.json",
-    "seed": "pnpm run build && node dist/data/seedDatabase.js",
-    "fetch:hh": "pnpm run build && node dist/scripts/fetchAndSaveFromHH.js",
+    "build": "rm -rf dist && tsc -p tsconfig.json --listEmittedFiles",
+    "seed:run": "node dist/data/seedDatabase.js",
+    "fetch:hh:run": "node dist/scripts/fetchAndSaveFromHH.js",
+    "clear:db:run": "node dist/scripts/clearDatabase.js",
+    "db:refresh": "pnpm run build && pnpm run clear:db:run && pnpm run seed:run && pnpm run fetch:hh:run",
+    "seed": "node dist/data/seedDatabase.js",
+    "fetch:hh": "node dist/scripts/fetchAndSaveFromHH.js",
+    "clear:db": "node dist/scripts/clearDatabase.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
