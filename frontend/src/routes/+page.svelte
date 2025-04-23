@@ -8,6 +8,7 @@
   let vacancies: VacancyDTO[] = [];
   let loading = true;
   let error: string | null = null;
+  let errorDetails: string | null = null;
   let selectedSkills = [];
   let availableSkills = [];
 
@@ -22,6 +23,7 @@
   const loadVacancies = async (skillFilter: string[] | null = null) => {
     loading = true;
     error = null;
+    errorDetails = null;
 
     try {
       const endpoint = "api/vacancies";
@@ -49,13 +51,31 @@
       }
     } catch (err) {
       console.error("Ошибка API:", err);
+      let details = "";
+
       if (err instanceof HTTPError) {
         error = `Ошибка сети или сервера: ${err.message}`;
+        try {
+          // Пытаемся получить тело ответа, там может быть поле 'error' от бэкенда
+          const errorBody = await err.response.json();
+          if (errorBody && typeof errorBody === "object" && "error" in errorBody) {
+            details = `Детали от сервера: ${JSON.stringify(errorBody.error)}`;
+          } else {
+            // Если тело не JSON или нет поля error, пробуем получить текст
+            details = `Ответ сервера (${err.response.status}): ${await err.response.text()}`;
+          }
+        } catch (parseError) {
+          // Если тело ответа не удалось распарсить
+          details = `Не удалось получить детали ошибки от сервера. Status: ${err.response.status}. Stack: ${err.stack || "N/A"}`;
+        }
       } else if (err instanceof Error) {
         error = "Ошибка загрузки вакансий: " + err.message;
+        details = `Stack trace: ${err.stack || "N/A"}`;
       } else {
         error = "Произошла неизвестная ошибка при загрузке вакансий.";
+        details = `Неизвестный тип ошибки: ${JSON.stringify(err)}`;
       }
+      errorDetails = details;
     } finally {
       loading = false;
     }
@@ -131,7 +151,15 @@
   {#if loading}
     <p class="loading">Загрузка вакансий...</p>
   {:else if error}
-    <p class="error">{error}</p>
+    <div class="error-container">
+      <p class="error-message">⚠️ {error}</p>
+      {#if errorDetails}
+        <details class="error-details">
+          <summary>Подробнее</summary>
+          <pre>{errorDetails}</pre>
+        </details>
+      {/if}
+    </div>
   {:else}
     <div class="vacancies">
       <h2>
@@ -411,11 +439,40 @@
     padding: 2rem;
   }
 
-  .error {
+  .error-container {
     color: #e74c3c;
-    text-align: center;
-    padding: 2rem;
+    background-color: #fbeae5;
     border: 1px solid #e74c3c;
     border-radius: 8px;
+    padding: 1rem;
+    margin-top: 2rem;
+  }
+
+  .error-message {
+    margin: 0 0 0.5rem 0;
+    font-weight: bold;
+  }
+
+  .error-details {
+    margin-top: 1rem;
+    font-size: 0.85em;
+    background-color: #fdf6f3;
+    border: 1px dashed #f5c6b8;
+    border-radius: 4px;
+    padding: 0.5rem;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .error-details summary {
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+  }
+
+  .error-details pre {
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    margin: 0;
   }
 </style>
