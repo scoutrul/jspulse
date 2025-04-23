@@ -1,4 +1,5 @@
 import type { BaseVacancy } from "../core/vacancy.base"; // Используем type-only import
+import type { HHVacancyRaw } from "../sources/hh.types"; // <-- Добавляем импорт
 
 /**
  * Интерфейс для документа вакансии в MongoDB.
@@ -17,7 +18,7 @@ export interface IVacancy extends BaseVacancy {
   address?: string;
 
   // Поле для хранения оригинальных данных от API
-  rawData?: any;
+  rawData?: HHVacancyRaw; // <-- Заменяем any на HHVacancyRaw
 
   // Поля Mongoose НЕ указываем здесь, они добавятся в типе IVacancyDocument в backend
   // _id?: any;

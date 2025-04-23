@@ -92,7 +92,7 @@ export interface HHVacancyRaw {
   archived?: boolean;
   apply_alternate_url?: string | null;
   insider_interview?: object | null;
-  relations?: any[];
+  relations?: unknown[];
   contacts?: object | null;
   working_days?: object[] | null;
   working_time_intervals?: object[] | null;

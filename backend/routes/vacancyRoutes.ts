@@ -13,13 +13,14 @@ router.get("/", async (req: Request, res: Response) => {
       message: "Вакансии успешно получены",
       data: vacancies,
     });
-  } catch (error: any) {
-    // Указываем тип для error
+  } catch (error: unknown) {
+    // Используем unknown и проверяем тип
     console.error("Ошибка при получении вакансий:", error);
+    const message = error instanceof Error ? error.message : "Неизвестная ошибка";
     res.status(500).json({
       status: "ERROR",
       message: "Ошибка при получении вакансий",
-      error: error.message,
+      error: message,
     });
   }
 });
@@ -42,12 +43,13 @@ router.get("/:id", async (req: Request, res: Response) => {
       message: "Вакансия успешно получена",
       data: vacancy,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error(`Ошибка при получении вакансии ${req.params.id}:`, error);
+    const message = error instanceof Error ? error.message : "Неизвестная ошибка";
     res.status(500).json({
       status: "ERROR",
       message: "Ошибка при получении вакансии",
-      error: error.message,
+      error: message,
     });
   }
 });
@@ -89,12 +91,13 @@ router.get("/filter/tags", async (req: Request, res: Response) => {
       status: "ERROR",
       message: "Фильтрация по тегам временно не реализована (поле tags удалено из модели)",
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Ошибка при фильтрации вакансий:", error);
+    const message = error instanceof Error ? error.message : "Неизвестная ошибка";
     res.status(500).json({
       status: "ERROR",
       message: "Ошибка при фильтрации вакансий",
-      error: error.message,
+      error: message,
     });
   }
 });
