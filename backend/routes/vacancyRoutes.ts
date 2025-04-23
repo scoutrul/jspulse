@@ -86,19 +86,19 @@ router.get("/filter/tags", async (req: Request, res: Response) => {
     // Логика для фильтрации по нескольким тегам
     // const tagsQuery = tags.map((tag) => ({ skills: tag })); // Массив условий { skills: tag }
     // filter.skills = { $all: tags };
-    const tagsArray = Array.isArray(tags) ? tags : tags.split(','); // Если tags - строка, разбиваем по запятой
+    const tagsArray = Array.isArray(tags) ? tags : tags.split(","); // Если tags - строка, разбиваем по запятой
     const filter = {
-      skills: { $all: tagsArray }
+      skills: { $all: tagsArray },
     };
-    
+
     // Используем созданный фильтр
     const vacancies = await Vacancy.find(filter).sort({ publishedAt: -1 });
 
-    res.json({ 
-      status: 'OK',
-      message: 'Вакансии успешно отфильтрованы по навыкам',
-      data: vacancies
-    }); 
+    res.json({
+      status: "OK",
+      message: "Вакансии успешно отфильтрованы по навыкам",
+      data: vacancies,
+    });
   } catch (error: unknown) {
     console.error("Ошибка при фильтрации вакансий:", error);
     const message = error instanceof Error ? error.message : "Неизвестная ошибка";

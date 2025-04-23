@@ -4,14 +4,14 @@
   import type { VacancyDTO, VacanciesApiResponse } from "@jspulse/shared";
   import { HTTPError } from "ky";
   import DOMPurify from "dompurify";
-  import { formatDate } from '$lib/utils/date.utils';
+  import { formatDate } from "$lib/utils/date.utils";
 
   let vacancies: VacancyDTO[] = [];
   let loading = true;
   let error: string | null = null;
   let errorDetails: string | null = null;
-  let selectedSkills = [];
-  let availableSkills = [];
+  let selectedSkills: string[] = [];
+  let availableSkills: string[] = [];
 
   // Загрузка вакансий
   const loadVacancies = async (skillFilter: string[] | null = null) => {
@@ -21,11 +21,15 @@
 
     try {
       const endpoint = "api/vacancies";
-      const searchParams =
-        skillFilter && skillFilter.length > 0 ? { skills: skillFilter.join(",") } : {};
+      const searchParams: Record<string, string> = {};
+      if (skillFilter && skillFilter.length > 0) {
+        searchParams.skills = skillFilter.join(",");
+      }
 
       // Указываем тип ApiResponse для .json()
-      const responseData = await apiClient.get(endpoint, { searchParams }).json<VacanciesApiResponse>();
+      const responseData = await apiClient
+        .get(endpoint, { searchParams })
+        .json<VacanciesApiResponse>();
 
       // Проверяем статус и извлекаем данные из data
       if (responseData && responseData.status === "OK" && Array.isArray(responseData.data)) {
@@ -97,8 +101,6 @@
 </svelte:head>
 
 <main>
-  <p class="description">Агрегатор вакансий по Frontend/JavaScript</p>
-
   <!-- Фильтры по навыкам -->
   <div class="filters">
     <h3>Фильтры по навыкам:</h3>
@@ -189,7 +191,7 @@
 
               <div class="description">
                 <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html DOMPurify.sanitize(vacancy.description)}
+                {@html DOMPurify.sanitize(vacancy.description || "")}
               </div>
 
               <div class="vacancy-footer">
@@ -205,7 +207,9 @@
                 </div>
                 <div class="meta">
                   {#if vacancy.publishedAt}
-                    <span class="date">Опубликовано: {formatDate(vacancy.publishedAt)}</span>
+                    <span class="date"
+                      >Опубликовано: {formatDate(vacancy.publishedAt.toISOString())}</span
+                    >
                   {/if}
                   <a href="/v/{vacancy._id}" class="apply-button"> Подробнее </a>
                 </div>
@@ -331,12 +335,6 @@
 
   .vacancy-details {
     margin-bottom: 1.5rem;
-  }
-
-  .description {
-    margin-bottom: 1.5rem;
-    white-space: pre-line;
-    line-height: 1.5;
   }
 
   .vacancy-footer {
