@@ -26,6 +26,7 @@
   },
   "type": "module",
   "dependencies": {
+    "@jspulse/shared": "workspace:*",
     "dompurify": "^3.2.5",
     "ky": "^1.8.1",
     "tailwind-merge": "^2.2.1",
