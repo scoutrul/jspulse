@@ -1,6 +1,6 @@
-import { apiClient, hhClient } from '../api/http.client';
-import { API_CONFIG } from '../config/api.config';
-import type { Vacancy, HHVacancyType, HHVacancySalary } from '@jspulse/shared';
+import { apiClient, hhClient } from "../api/http.client";
+import { API_CONFIG } from "../config/api.config";
+import type { Vacancy, HHVacancyType, HHVacancySalary } from "@jspulse/shared";
 
 class VacancyService {
   // Получение вакансий из нашего API
@@ -11,7 +11,7 @@ class VacancyService {
   // Получение вакансий по тегам
   async getVacanciesByTags(tags: string[]): Promise<Vacancy[]> {
     return apiClient.get(`${API_CONFIG.ENDPOINTS.VACANCIES_FILTER}/tags`, {
-      params: { tags: tags.join(',') }
+      params: { tags: tags.join(",") },
     });
   }
 
@@ -32,38 +32,38 @@ class VacancyService {
       title: hhVacancy.name,
       company: hhVacancy.employer.name,
       location: hhVacancy.area.name,
-      description: hhVacancy.description || '',
+      description: hhVacancy.description || "",
       salary: this.formatSalary(hhVacancy.salary),
       tags: [], // Теги нужно будет извлекать из описания/требований
       url: hhVacancy.alternate_url,
-      source: 'hh.ru',
+      source: "hh.ru",
       publishedAt: hhVacancy.published_at,
       area: hhVacancy.area,
       employer: hhVacancy.employer,
-      snippet: hhVacancy.snippet
+      snippet: hhVacancy.snippet,
     };
   }
 
   private formatSalary(salary: HHVacancySalary | null): string | null {
     if (!salary) return null;
-    
+
     const { from, to, currency } = salary;
     if (!from && !to) return null;
-    
+
     if (from && to) {
       return `${from.toLocaleString()} - ${to.toLocaleString()} ${currency}`;
     }
-    
+
     if (from) {
       return `от ${from.toLocaleString()} ${currency}`;
     }
-    
+
     if (to) {
       return `до ${to.toLocaleString()} ${currency}`;
     }
-    
+
     return null;
   }
 }
 
-export const vacancyService = new VacancyService(); 
+export const vacancyService = new VacancyService();

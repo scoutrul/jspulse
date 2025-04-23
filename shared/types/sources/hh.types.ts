@@ -2,9 +2,9 @@
 // Определения типов для СЫРОГО ответа от HeadHunter API
 // ... (комментарии и вспомогательные типы HHAddress, HHDepartment, и т.д. остаются как были) ...
 
-// --- Вспомогательные типы --- 
+// --- Вспомогательные типы ---
 
-export interface HHAddress { 
+export interface HHAddress {
   city?: string;
   street?: string;
   building?: string;
@@ -17,8 +17,8 @@ export interface HHDepartment {
 }
 
 export interface HHEmployerLogoUrls {
-  '90'?: string;
-  '240'?: string;
+  "90"?: string;
+  "240"?: string;
   original?: string;
 }
 
@@ -56,30 +56,30 @@ export interface HHSkill {
 }
 
 export interface HHSnippet {
- requirement?: string | null;
- responsibility?: string | null;
+  requirement?: string | null;
+  responsibility?: string | null;
 }
 
-// --- Основной интерфейс СЫРОЙ вакансии HH --- 
+// --- Основной интерфейс СЫРОЙ вакансии HH ---
 
 // Переименовываем в HHVacancyRaw, чтобы подчеркнуть, что это сырые данные
 export interface HHVacancyRaw {
   id: string;
   name: string; // = title
-  description?: string | null; 
+  description?: string | null;
   branded_description?: string | null;
-  key_skills?: HHSkill[] | null; 
+  key_skills?: HHSkill[] | null;
   schedule?: HHSchedule | null;
   experience?: { id: string; name: string };
   employment?: { id: string; name: string };
   salary?: HHSalary | null;
   address?: HHAddress | null;
-  employer: HHEmployer; 
-  area: HHArea; 
+  employer: HHEmployer;
+  area: HHArea;
   published_at: string; // В сыром виде это строка!
   created_at?: string;
-  alternate_url: string; 
-  url?: string | null; 
+  alternate_url: string;
+  url?: string | null;
   snippet?: HHSnippet;
   department?: HHDepartment | null;
   // ... прочие поля ...
@@ -106,7 +106,7 @@ export interface HHVacancyRaw {
   is_adv_vacancy?: boolean;
 }
 
-// --- Интерфейс СЫРОГО ответа списка вакансий --- 
+// --- Интерфейс СЫРОГО ответа списка вакансий ---
 
 export interface HHResponseRaw {
   items: HHVacancyRaw[]; // Используем сырой тип
@@ -114,4 +114,4 @@ export interface HHResponseRaw {
   pages: number;
   page: number;
   per_page: number;
-} 
+}

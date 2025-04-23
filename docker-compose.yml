@@ -1,8 +1,8 @@
-version: '3.8'
+version: "3.8"
 
 services:
   frontend:
-    build: 
+    build:
       context: .
       dockerfile: frontend/Dockerfile
     ports:
@@ -21,7 +21,7 @@ services:
       - backend
 
   backend:
-    build: 
+    build:
       context: .
       dockerfile: backend/Dockerfile
     ports:

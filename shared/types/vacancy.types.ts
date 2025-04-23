@@ -43,7 +43,7 @@ export interface Vacancy {
 }
 
 export interface VacanciesResponse {
-  status: 'OK' | 'ERROR';
+  status: "OK" | "ERROR";
   data?: Vacancy[];
   message?: string;
 }

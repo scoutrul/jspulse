@@ -1,0 +1,37 @@
+# Файлы из .gitignore
+node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+.pnpm-debug.log
+
+.env
+.env.*
+!.env.example
+
+dist/
+build/
+.svelte-kit/
+
+data/mongo/
+
+.DS_Store
+Thumbs.db
+
+# .cursor/ # Оставим, т.к. там могут быть конфиги
+.idea/
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+logs/
+*.log
+
+# Специфичные для Prettier
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Игнорируем файлы, которые могут конфликтовать или не требуют форматирования
+# *.svg
+# *.html # Может понадобиться, если будет чистый HTML 

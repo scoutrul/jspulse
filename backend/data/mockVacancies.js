@@ -3,10 +3,10 @@
  */
 export default [
   {
-    externalId: 'mock-1',
-    title: 'Frontend-разработчик (React)',
-    company: 'ТехноСтарт',
-    location: 'Москва (Удаленно)',
+    externalId: "mock-1",
+    title: "Frontend-разработчик (React)",
+    company: "ТехноСтарт",
+    location: "Москва (Удаленно)",
     description: `Компания ТехноСтарт ищет опытного Frontend-разработчика для создания современных веб-приложений.
     
 Требования:
@@ -19,18 +19,18 @@ export default [
 - Удаленная работа с гибким графиком
 - Конкурентная зарплата
 - Дружная команда профессионалов`,
-    skills: ['react', 'javascript', 'typescript', 'redux', 'remote'],
+    skills: ["react", "javascript", "typescript", "redux", "remote"],
     salaryFrom: 150000,
     salaryTo: 250000,
-    salaryCurrency: '₽',
-    url: 'https://example.com/job1',
-    source: 'mock'
+    salaryCurrency: "₽",
+    url: "https://example.com/job1",
+    source: "mock",
   },
   {
-    externalId: 'mock-2',
-    title: 'Vue.js Developer (Middle+)',
-    company: 'Digital Solutions',
-    location: 'Санкт-Петербург',
+    externalId: "mock-2",
+    title: "Vue.js Developer (Middle+)",
+    company: "Digital Solutions",
+    location: "Санкт-Петербург",
     description: `Digital Solutions в поиске талантливого Vue.js разработчика уровня Middle+.
     
 Обязанности:
@@ -42,18 +42,18 @@ export default [
 - Опыт работы с Vue.js, Vuex
 - Знание JavaScript, CSS препроцессоров
 - Умение работать с Git`,
-    skills: ['vue', 'vuex', 'javascript', 'css', 'middle'],
+    skills: ["vue", "vuex", "javascript", "css", "middle"],
     salaryFrom: 180000,
     salaryTo: 220000,
-    salaryCurrency: '₽',
-    url: 'https://example.com/job2',
-    source: 'mock'
+    salaryCurrency: "₽",
+    url: "https://example.com/job2",
+    source: "mock",
   },
   {
-    externalId: 'mock-3',
-    title: 'Senior JavaScript Developer',
-    company: 'Global Tech',
-    location: 'Удаленно (весь мир)',
+    externalId: "mock-3",
+    title: "Senior JavaScript Developer",
+    company: "Global Tech",
+    location: "Удаленно (весь мир)",
     description: `Международная компания Global Tech ищет Senior JavaScript разработчика для работы над высоконагруженными проектами.
     
 Требования:
@@ -66,18 +66,18 @@ export default [
 - Конкурентную зарплату в USD/EUR
 - Удаленную работу без привязки к часовому поясу
 - Возможность профессионального роста`,
-    skills: ['javascript', 'senior', 'react', 'angular', 'vue', 'remote'],
+    skills: ["javascript", "senior", "react", "angular", "vue", "remote"],
     salaryFrom: 4000,
     salaryTo: 6000,
-    salaryCurrency: '$',
-    url: 'https://example.com/job3',
-    source: 'mock'
+    salaryCurrency: "$",
+    url: "https://example.com/job3",
+    source: "mock",
   },
   {
-    externalId: 'mock-4',
-    title: 'Junior Frontend Developer',
-    company: 'WebStart',
-    location: 'Москва (Офис)',
+    externalId: "mock-4",
+    title: "Junior Frontend Developer",
+    company: "WebStart",
+    location: "Москва (Офис)",
     description: `Стартап WebStart ищет начинающего Frontend-разработчика для создания пользовательского интерфейса нового продукта.
     
 Требования:
@@ -89,18 +89,18 @@ export default [
 - Оплачиваемое обучение и наставничество
 - Гибкий график работы
 - Возможность быстрого карьерного роста`,
-    skills: ['javascript', 'html', 'css', 'junior'],
+    skills: ["javascript", "html", "css", "junior"],
     salaryFrom: 80000,
     salaryTo: 100000,
-    salaryCurrency: '₽',
-    url: 'https://example.com/job4',
-    source: 'mock'
+    salaryCurrency: "₽",
+    url: "https://example.com/job4",
+    source: "mock",
   },
   {
-    externalId: 'mock-5',
-    title: 'Svelte Developer',
-    company: 'InnovateTech',
-    location: 'Удаленно (Россия)',
+    externalId: "mock-5",
+    title: "Svelte Developer",
+    company: "InnovateTech",
+    location: "Удаленно (Россия)",
     description: `Компания InnovateTech ищет разработчика со знанием Svelte для создания высокопроизводительных веб-приложений.
     
 Требования:
@@ -112,11 +112,11 @@ export default [
 - Полностью удаленная работа
 - Проектная или полная занятость
 - Возможность участия в open-source проектах`,
-    skills: ['svelte', 'sveltekit', 'javascript', 'git', 'remote'],
+    skills: ["svelte", "sveltekit", "javascript", "git", "remote"],
     salaryFrom: 150000,
     salaryTo: 200000,
-    salaryCurrency: '₽',
-    url: 'https://example.com/job5',
-    source: 'mock'
-  }
-]; 
+    salaryCurrency: "₽",
+    url: "https://example.com/job5",
+    source: "mock",
+  },
+];

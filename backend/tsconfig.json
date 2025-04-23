@@ -21,4 +21,4 @@
     "data/seedDatabase.ts"
   ],
   "exclude": ["node_modules", "dist"]
-} 
+}

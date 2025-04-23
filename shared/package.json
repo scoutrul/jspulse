@@ -8,10 +8,9 @@
     "build": "rm -rf dist && tsc",
     "dev": "tsc --watch"
   },
-  "dependencies": {
-  },
+  "dependencies": {},
   "devDependencies": {
     "typescript": "^5.3.3",
     "@types/node": "^20.11.19"
   }
-} 
+}

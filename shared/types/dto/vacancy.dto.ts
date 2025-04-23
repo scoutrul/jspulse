@@ -1,4 +1,4 @@
-import type { BaseVacancy } from '../core/vacancy.base';
+import type { BaseVacancy } from "../core/vacancy.base";
 
 /**
  * Интерфейс объекта передачи данных (DTO) для API.
@@ -12,14 +12,14 @@ export interface VacancyDTO extends BaseVacancy {
   salaryFrom?: number;
   salaryTo?: number;
   salaryCurrency?: string;
-  experience?: string;   
-  employment?: string;   
-  address?: string;    
-  
+  experience?: string;
+  employment?: string;
+  address?: string;
+
   // НЕ включаем rawData в DTO
-  
-  // publishedAt в BaseVacancy имеет тип Date, 
+
+  // publishedAt в BaseVacancy имеет тип Date,
   // но для DTO лучше использовать строку (ISO формат)
   // Переопределяем или трансформируем на бэкенде.
   // Пока оставим Date из BaseVacancy, трансформацию сделаем на бэке.
-} 
+}

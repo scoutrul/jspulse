@@ -1,4 +1,4 @@
-import type { BaseVacancy } from '../core/vacancy.base'; // Используем type-only import
+import type { BaseVacancy } from "../core/vacancy.base"; // Используем type-only import
 
 /**
  * Интерфейс для документа вакансии в MongoDB.
@@ -12,18 +12,18 @@ export interface IVacancy extends BaseVacancy {
   salaryFrom?: number;
   salaryTo?: number;
   salaryCurrency?: string;
-  experience?: string;   
-  employment?: string;   
-  address?: string;      
-  
+  experience?: string;
+  employment?: string;
+  address?: string;
+
   // Поле для хранения оригинальных данных от API
-  rawData?: any; 
-  
+  rawData?: any;
+
   // Поля Mongoose НЕ указываем здесь, они добавятся в типе IVacancyDocument в backend
-  // _id?: any; 
+  // _id?: any;
   // createdAt?: Date;
   // updatedAt?: Date;
 }
 
 // Удаляем IVacancyDocument отсюда
-// export type IVacancyDocument = IVacancy & Document; 
+// export type IVacancyDocument = IVacancy & Document;

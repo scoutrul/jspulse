@@ -1,11 +1,11 @@
-import type { IVacancy } from '@jspulse/shared';
-import type { HHVacancyRaw, HHSkill } from '@jspulse/shared';
+import type { IVacancy } from "@jspulse/shared";
+import type { HHVacancyRaw, HHSkill } from "@jspulse/shared";
 
 // Интерфейсы, описывающие структуру вакансии с HH API
 // Основано на https://github.com/hhru/api/blob/master/docs_eng/vacancies.md
 // и практическом опыте (поля могут отсутствовать или быть null)
 
-const SOURCE_HH = 'hh.ru';
+const SOURCE_HH = "hh.ru";
 
 /**
  * Трансформирует сырые данные вакансии HH.ru в общий формат IVacancy.
@@ -21,7 +21,11 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Partial<I
     company: hhVacancy.employer?.name,
     location: hhVacancy.area?.name,
     schedule: hhVacancy.schedule?.name,
-    description: hhVacancy.description ?? hhVacancy.snippet?.responsibility ?? hhVacancy.snippet?.requirement ?? 'Описание отсутствует',
+    description:
+      hhVacancy.description ??
+      hhVacancy.snippet?.responsibility ??
+      hhVacancy.snippet?.requirement ??
+      "Описание отсутствует",
     skills: skills,
     salaryFrom: hhVacancy.salary?.from ?? undefined,
     salaryTo: hhVacancy.salary?.to ?? undefined,
@@ -32,8 +36,8 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Partial<I
     experience: hhVacancy.experience?.name,
     employment: hhVacancy.employment?.name,
     address: hhVacancy.address?.raw,
-    rawData: hhVacancy
+    rawData: hhVacancy,
   };
 
   return transformed;
-} 
+}
