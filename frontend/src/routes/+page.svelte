@@ -1,9 +1,10 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { apiClient } from "../api/http.client";
-  import type { VacancyDTO } from "@jspulse/shared";
+  import type { VacancyDTO, VacanciesApiResponse } from "@jspulse/shared";
   import { HTTPError } from "ky";
   import DOMPurify from "dompurify";
+  import { formatDate } from '$lib/utils/date.utils';
 
   let vacancies: VacancyDTO[] = [];
   let loading = true;
@@ -11,13 +12,6 @@
   let errorDetails: string | null = null;
   let selectedSkills = [];
   let availableSkills = [];
-
-  // Ожидаемая структура ответа API
-  interface ApiResponse {
-    status: string;
-    message: string;
-    data: VacancyDTO[];
-  }
 
   // Загрузка вакансий
   const loadVacancies = async (skillFilter: string[] | null = null) => {
@@ -31,7 +25,7 @@
         skillFilter && skillFilter.length > 0 ? { skills: skillFilter.join(",") } : {};
 
       // Указываем тип ApiResponse для .json()
-      const responseData = await apiClient.get(endpoint, { searchParams }).json<ApiResponse>();
+      const responseData = await apiClient.get(endpoint, { searchParams }).json<VacanciesApiResponse>();
 
       // Проверяем статус и извлекаем данные из data
       if (responseData && responseData.status === "OK" && Array.isArray(responseData.data)) {
@@ -93,16 +87,6 @@
     loadVacancies(selectedSkills.length > 0 ? selectedSkills : null);
   };
 
-  // Форматируем дату для отображения
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return new Intl.DateTimeFormat("ru-RU", {
-      day: "numeric",
-      month: "long",
-      year: "numeric",
-    }).format(date);
-  };
-
   onMount(() => {
     loadVacancies();
   });
@@ -113,11 +97,6 @@
 </svelte:head>
 
 <main>
-  <header>
-    <img src="/jspulse.png" alt="JS Пульс логотип" class="logo" />
-    <h1>JS Пульс</h1>
-  </header>
-
   <p class="description">Агрегатор вакансий по Frontend/JavaScript</p>
 
   <!-- Фильтры по навыкам -->
@@ -242,28 +221,10 @@
 <style>
   main {
     max-width: 1000px;
-    margin: 0 auto;
-    padding: 20px;
+    padding: 0;
     font-family:
       -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell,
       "Helvetica Neue", sans-serif;
-  }
-
-  header {
-    display: flex;
-    align-items: center;
-    margin-bottom: 1rem;
-  }
-
-  .logo {
-    width: 60px;
-    height: 60px;
-    margin-right: 1rem;
-  }
-
-  h1 {
-    color: #fdc007;
-    margin: 0;
   }
 
   .description {

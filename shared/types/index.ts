@@ -12,6 +12,7 @@ export * from "./db/vacancy.model";
 
 // Экспорт типа DTO для API
 export * from "./dto/vacancy.dto";
+export * from "./dto/api.dto";
 
 // Экспорт типов окружения (если нужен глобально)
 // export * from './env.d';

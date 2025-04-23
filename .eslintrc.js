@@ -1,7 +1,9 @@
 // @ts-check
 
-/** @type {import('eslint').Linter.Config} */
-const config = {
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const path = require("path");
+
+module.exports = {
   root: true, // Указываем ESLint, что это корневая конфигурация
   parser: "@typescript-eslint/parser", // Используем парсер для TypeScript
   plugins: [
@@ -12,8 +14,8 @@ const config = {
   extends: [
     "eslint:recommended", // Базовые рекомендованные правила ESLint
     "plugin:@typescript-eslint/recommended", // Рекомендованные правила для TypeScript
-    // 'plugin:svelte/recommended', // Рекомендованные правила для Svelte - включается в overrides
-    "plugin:prettier/recommended", // Интеграция с Prettier (должен быть последним)
+    "plugin:svelte/recommended",
+    "prettier", // Интеграция с Prettier (должен быть последним)
   ],
   env: {
     browser: true, // Разрешаем глобальные переменные браузера
@@ -37,14 +39,19 @@ const config = {
   ],
   rules: {
     // Здесь можно добавить/переопределить специфичные правила
-    "prettier/prettier": "warn", // Показываем ошибки Prettier как предупреждения ESLint
     "@typescript-eslint/no-unused-vars": [
-      // Неиспользуемые переменные - ошибка
-      "error",
-      { argsIgnorePattern: "^_", varsIgnorePattern: "^_" }, // Разрешаем неиспользуемые с _
+      "warn",
+      { argsIgnorePattern: "^_" }, // Разрешаем неиспользуемые переменные, начинающиеся с _
     ],
     "@typescript-eslint/explicit-module-boundary-types": "off", // Не требуем явно указывать тип возвращаемого значения для экспортируемых функций
     "@typescript-eslint/no-explicit-any": "warn", // Предупреждение при использовании any
+    "svelte/comment-directive": "error", // Требует 설명을 для <!-- svelte-ignore -->
+    "svelte/no-at-html-tags": "warn", // Предупреждать об использовании {@html}
+    "svelte/no-reactive-functions": "warn", // Предупреждать об использовании функций в реактивных объявлениях ($:)
+    "svelte/no-reactive-literals": "warn", // Предупреждать об использовании литералов в реактивных объявлениях ($:)
+    "svelte/no-unused-svelte-ignore": "off", // Временно отключаем
+    "no-console": process.env.NODE_ENV === "production" ? "warn" : "off", // Разрешаем console в разработке
+    "no-debugger": process.env.NODE_ENV === "production" ? "warn" : "off", // Разрешаем debugger в разработке
   },
   overrides: [
     // Настройки для файлов Svelte
@@ -76,6 +83,3 @@ const config = {
     },
   ],
 };
-
-// Используем CommonJS export вместо ES Modules для совместимости с ESLint 8.x
-module.exports = config;

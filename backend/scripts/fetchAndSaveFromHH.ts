@@ -6,7 +6,6 @@ import { HHResponseRaw } from "@jspulse/shared";
 import ky, { HTTPError } from "ky";
 import { HH_API_BASE_URL } from "../config/api.js";
 
-const _HH_API_URL = "https://api.hh.ru/vacancies";
 const SOURCE_HH = "hh.ru";
 const MAX_VACANCIES_PER_PAGE = 100; // HH API limit
 const MAX_PAGES_TO_FETCH = 1; // ПОКА ЧТО 1 страница для простоты

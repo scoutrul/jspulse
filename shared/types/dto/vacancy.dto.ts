@@ -5,7 +5,8 @@ import type { BaseVacancy } from "../core/vacancy.base";
  * Расширяет BaseVacancy и добавляет поля, необходимые фронтенду.
  */
 export interface VacancyDTO extends BaseVacancy {
-  // Дополнительные поля для фронтенда
+  _id: string;
+
   description?: string;
   schedule?: string;
   skills: string[];
