@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { apiClient } from "../api/http.client";
-  import type { VacancyDTO, VacanciesApiResponse } from "@jspulse/shared";
+  import type { VacancyDTO, PaginatedVacanciesResponse } from "@jspulse/shared";
   import { HTTPError } from "ky";
   import DOMPurify from "dompurify";
   import { formatDate } from "$lib/utils/date.utils";
@@ -29,23 +29,42 @@
       // Указываем тип ApiResponse для .json()
       const responseData = await apiClient
         .get(endpoint, { searchParams })
-        .json<VacanciesApiResponse>();
+        .json<PaginatedVacanciesResponse>();
 
-      // Проверяем статус и извлекаем данные из data
-      if (responseData && responseData.status === "OK" && Array.isArray(responseData.data)) {
-        vacancies = responseData.data; // <-- Извлекаем массив из data
+      // Проверяем статус и извлекаем данные из data.vacancies
+      if (
+        responseData &&
+        responseData.status === "OK" &&
+        responseData.data &&
+        Array.isArray(responseData.data.vacancies)
+      ) {
+        // Преобразуем строки дат в объекты Date перед сохранением
+        vacancies = responseData.data.vacancies.map((vacancy: VacancyDTO) => ({
+          ...vacancy,
+          // Превращаем строку publishedAt в объект Date
+          publishedAt: new Date(vacancy.publishedAt),
+          // Добавляем проверку для createdAt и updatedAt, если они используются и тоже строки
+          createdAt: vacancy.createdAt ? new Date(vacancy.createdAt) : undefined,
+          updatedAt: vacancy.updatedAt ? new Date(vacancy.updatedAt) : undefined,
+        }));
 
         if (!skillFilter) {
           const skillsSet = new Set<string>();
           vacancies.forEach((vacancy) => {
             if (vacancy.skills && Array.isArray(vacancy.skills)) {
-              vacancy.skills.forEach((skill) => skillsSet.add(skill));
+              vacancy.skills.forEach((skill: string) => skillsSet.add(skill));
             }
           });
           availableSkills = Array.from(skillsSet).sort();
         }
       } else {
-        error = "Получен неожиданный формат данных или ошибка от сервера";
+        let errorMsg = "Получен неожиданный формат данных от сервера.";
+        if (responseData && responseData.status === "ERROR" && responseData.error) {
+          errorMsg = `Ошибка от сервера: ${responseData.error}`;
+        } else if (responseData) {
+          errorMsg += ` Ожидался { status: 'OK', data: { vacancies: [...] } }, получено: ${JSON.stringify(responseData).substring(0, 200)}...`;
+        }
+        error = errorMsg;
       }
     } catch (err) {
       console.error("Ошибка API:", err);
