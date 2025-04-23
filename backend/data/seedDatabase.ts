@@ -3,7 +3,7 @@ console.log("Test seeding file compilation");
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
-import { Vacancy } from "../models/Vacancy.js";
+import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
 import mockVacancies from "./mockVacancies.js";
 
 // Загружаем .env из папки backend
@@ -32,12 +32,12 @@ async function seedDatabase() {
 
     // TODO: Убедиться, что структура mockVacancies соответствует IVacancy
     console.log("Добавление моковых вакансий...");
-    const result = await Vacancy.insertMany(mockVacancies as any[]);
+    const result = await Vacancy.insertMany(mockVacancies);
     console.log(`Успешно добавлено ${result.length} моковых вакансий`);
 
     console.log("Добавленные вакансии (первые 5):");
-    result.slice(0, 5).forEach((vacancy, index) => {
-      const v = vacancy as InstanceType<typeof Vacancy>;
+    result.slice(0, 5).forEach((vacancy: IVacancyDocument, index: number) => {
+      const v = vacancy as IVacancyDocument;
       console.log(`${index + 1}. ${v.title} - ${v.company}`);
     });
     if (result.length > 5) {

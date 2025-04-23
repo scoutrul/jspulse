@@ -4,7 +4,7 @@ import type {
   VacancyDTO,
   HHVacancyRaw,
   HHSalary,
-  VacanciesApiResponse,
+  PaginatedVacanciesResponse,
   HHResponseRaw,
 } from "@jspulse/shared";
 
@@ -18,31 +18,41 @@ interface FormattedSalary {
 }
 
 class VacancyService {
-  // Получение вакансий из нашего API
-  async getVacancies(): Promise<VacancyDTO[]> {
+  // Получение вакансий из нашего API с пагинацией и фильтрацией
+  async getVacancies(params: {
+    page?: number;
+    limit?: number;
+    skills?: string[];
+  }): Promise<PaginatedVacanciesResponse["data"]> {
+    const searchParams: Record<string, string | number> = {
+      page: params.page || 1,
+      limit: params.limit || 10,
+    };
+
+    if (params.skills && params.skills.length > 0) {
+      searchParams.skills = params.skills.join(",");
+    }
+
     const response = await apiClient
-      .get(API_CONFIG.ENDPOINTS.VACANCIES)
-      .json<VacanciesApiResponse>();
+      .get(API_CONFIG.ENDPOINTS.VACANCIES, { searchParams })
+      .json<PaginatedVacanciesResponse>();
+
     if (response.status === "OK") {
-      return response.data;
+      // Преобразуем строки дат в объекты Date
+      const vacanciesWithDates = response.data.vacancies.map((vacancy: VacancyDTO) => ({
+        ...vacancy,
+        // Преобразуем строку в Date. Полагаемся, что publishedAt всегда строка.
+        publishedAt: new Date(vacancy.publishedAt),
+      }));
+
+      // Возвращаем данные с преобразованными датами
+      return {
+        ...response.data,
+        vacancies: vacanciesWithDates,
+      };
     } else {
       console.error("Failed to fetch vacancies:", response);
       throw new Error(response.message || "Failed to fetch vacancies from API");
-    }
-  }
-
-  // Получение вакансий по тегам
-  async getVacanciesByTags(tags: string[]): Promise<VacancyDTO[]> {
-    const response = await apiClient
-      .get(`${API_CONFIG.ENDPOINTS.VACANCIES_FILTER}/tags`, {
-        searchParams: { tags: tags.join(",") },
-      })
-      .json<VacanciesApiResponse>();
-    if (response.status === "OK") {
-      return response.data;
-    } else {
-      console.error("Failed to fetch vacancies by tags:", response);
-      throw new Error(response.message || "Failed to fetch vacancies by tags from API");
     }
   }
 
@@ -112,7 +122,6 @@ class VacancyService {
     result.salaryCurrency = salary.currency?.toUpperCase() ?? undefined;
 
     if (result.salaryCurrency && result.salaryFrom === undefined && result.salaryTo === undefined) {
-      console.warn("Salary currency present but no 'from' or 'to' value:", salary);
       result.salaryCurrency = undefined;
     }
 

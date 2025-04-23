@@ -1,4 +1,4 @@
-import ky, { Options } from "ky";
+import ky, { type Options } from "ky";
 import { API_CONFIG } from "../config/api.config";
 
 // Базовые опции для ky

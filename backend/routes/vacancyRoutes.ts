@@ -1,35 +1,55 @@
-import express, { Request, Response } from "express";
-import { Vacancy } from "../models/Vacancy.js"; // Импортируем TS модель
+import express, { Request, Response, Router } from "express";
+import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
 import { FilterQuery } from "mongoose";
-import { IVacancyDocument } from "../models/Vacancy.js"; // Implied import for IVacancyDocument
 
-const router = express.Router();
+const router: Router = express.Router();
 
-// Получить все вакансии
+// Получить все вакансии с пагинацией и фильтрацией
 router.get("/", async (req: Request, res: Response) => {
   try {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+    const skip = (page - 1) * limit;
+
     // Базовый объект фильтрации
     const filter: FilterQuery<IVacancyDocument> = {};
 
-    // Обработка query параметров для фильтрации
-    if (Object.keys(req.query).length > 0) {
-      // Тип Vacancy уже известен из Mongoose модели
-      const vacancies = await Vacancy.find(filter).sort({ publishedAt: -1 }); // Сортируем по дате публикации
-      res.json({
-        status: "OK",
-        message: "Вакансии успешно получены",
-        data: vacancies,
-      });
-    } else {
-      const vacancies = await Vacancy.find().sort({ publishedAt: -1 }); // Сортируем по дате публикации
-      res.json({
-        status: "OK",
-        message: "Вакансии успешно получены",
-        data: vacancies,
-      });
+    // Обработка фильтра по навыкам (skills)
+    const skillsQuery = req.query.skills as string;
+    if (skillsQuery) {
+      const skillsArray = skillsQuery
+        .split(",")
+        .map((skill) => skill.trim())
+        .filter((skill) => skill); // Разделяем, убираем пробелы, удаляем пустые строки
+      if (skillsArray.length > 0) {
+        // Используем $all для поиска вакансий, содержащих ВСЕ указанные навыки
+        filter.skills = { $all: skillsArray };
+      }
     }
+
+    // TODO: Добавить обработку других query параметров для фильтрации, если нужно
+
+    // Получаем вакансии для текущей страницы с учетом фильтра
+    const vacancies = await Vacancy.find(filter) // <-- Используем filter
+      .sort({ publishedAt: -1 })
+      .skip(skip)
+      .limit(limit);
+
+    // Получаем общее количество вакансий, соответствующих фильтру
+    const totalVacancies = await Vacancy.countDocuments(filter); // <-- Используем filter
+
+    res.json({
+      status: "OK",
+      message: "Вакансии успешно получены",
+      data: {
+        vacancies: vacancies,
+        total: totalVacancies,
+        page: page,
+        limit: limit,
+        totalPages: Math.ceil(totalVacancies / limit),
+      },
+    });
   } catch (error: unknown) {
-    // Используем unknown и проверяем тип
     console.error("Ошибка при получении вакансий:", error);
     const message = error instanceof Error ? error.message : "Неизвестная ошибка";
     res.status(500).json({
@@ -64,47 +84,6 @@ router.get("/:id", async (req: Request, res: Response) => {
     res.status(500).json({
       status: "ERROR",
       message: "Ошибка при получении вакансии",
-      error: message,
-    });
-  }
-});
-
-// Фильтрация вакансий по тегам (TODO: Поле tags удалено из модели, нужно заменить на skills?)
-router.get("/filter/tags", async (req: Request, res: Response) => {
-  try {
-    const { tags } = req.query;
-
-    if (!tags || typeof tags !== "string") {
-      // Добавлена проверка типа
-      res.status(400).json({
-        status: "ERROR",
-        message: "Не указаны теги для фильтрации (ожидается строка)",
-      });
-      return;
-    }
-
-    // Логика для фильтрации по нескольким тегам
-    // const tagsQuery = tags.map((tag) => ({ skills: tag })); // Массив условий { skills: tag }
-    // filter.skills = { $all: tags };
-    const tagsArray = Array.isArray(tags) ? tags : tags.split(","); // Если tags - строка, разбиваем по запятой
-    const filter = {
-      skills: { $all: tagsArray },
-    };
-
-    // Используем созданный фильтр
-    const vacancies = await Vacancy.find(filter).sort({ publishedAt: -1 });
-
-    res.json({
-      status: "OK",
-      message: "Вакансии успешно отфильтрованы по навыкам",
-      data: vacancies,
-    });
-  } catch (error: unknown) {
-    console.error("Ошибка при фильтрации вакансий:", error);
-    const message = error instanceof Error ? error.message : "Неизвестная ошибка";
-    res.status(500).json({
-      status: "ERROR",
-      message: "Ошибка при фильтрации вакансий",
       error: message,
     });
   }

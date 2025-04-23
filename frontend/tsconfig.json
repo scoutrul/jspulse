@@ -11,6 +11,4 @@
     "strict": true,
     "verbatimModuleSyntax": true
   }
-  // Add any project specific config here
-  // "include": ["src/**/*.d.ts", "src/**/*.js", "src/**/*.ts", "src/**/*.svelte"]
 }
