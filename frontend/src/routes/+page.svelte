@@ -174,7 +174,10 @@
         <ul>
           {#each vacancies as vacancy}
             <li>
-              <h3>{vacancy.title}</h3>
+              <!-- Оборачиваем заголовок в ссылку -->
+              <a href="/v/{vacancy._id}" class="vacancy-title-link">
+                <h3>{vacancy.title}</h3>
+              </a>
               <div class="vacancy-header">
                 <p class="company">{vacancy.company}</p>
                 <p class="location">{vacancy.location}</p>
@@ -225,14 +228,7 @@
                   {#if vacancy.publishedAt}
                     <span class="date">Опубликовано: {formatDate(vacancy.publishedAt)}</span>
                   {/if}
-                  <a
-                    href={vacancy.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="apply-button"
-                  >
-                    Перейти к вакансии
-                  </a>
+                  <a href="/v/{vacancy._id}" class="apply-button"> Подробнее </a>
                 </div>
               </div>
             </li>
@@ -474,5 +470,24 @@
     white-space: pre-wrap;
     word-wrap: break-word;
     margin: 0;
+  }
+
+  /* Стили для ссылки заголовка */
+  li h3 {
+    margin-top: 0; /* Убираем верхний отступ у h3, если ссылка будет блочной */
+    margin-bottom: 0.5rem; /* Добавляем немного отступа снизу */
+    font-size: 1.3rem; /* Можно немного увеличить */
+    color: #333;
+  }
+
+  .vacancy-title-link {
+    text-decoration: none;
+    color: inherit; /* Наследуем цвет текста */
+    display: block; /* Делаем ссылку блочной для удобства клика */
+    transition: color 0.2s;
+    margin-bottom: 0.5rem; /* Добавим отступ после заголовка */
+  }
+  .vacancy-title-link:hover h3 {
+    color: #fdc007; /* Цвет при наведении */
   }
 </style>
