@@ -1,11 +1,16 @@
-import type { BaseVacancy } from "../core/vacancy.base"; // Используем type-only import
-import type { HHVacancyRaw } from "../sources/hh.types"; // <-- Добавляем импорт
+// Убираем импорт mongoose
+// import mongoose from "mongoose"; 
+// Добавляем .js к относительным импортам и исправляем имя типа
+import type { BaseVacancy } from '../core/vacancy.base.js';
+import type { HHVacancyRaw } from '../sources/hh.types.js';
 
 /**
  * Интерфейс для документа вакансии в MongoDB.
  * Расширяет BaseVacancy и добавляет специфичные для БД поля.
  */
 export interface IVacancy extends BaseVacancy {
+  externalId: string; // Добавить это поле
+  source: string; // Добавляем недостающее поле источника
   // Дополнительные нормализованные поля, хранящиеся в БД
   description?: string;
   schedule?: string;

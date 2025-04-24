@@ -1,4 +1,4 @@
-import type { VacancyDTO } from './vacancy.dto';
+import type { VacancyDTO } from './vacancy.dto.js';
 
 /**
  * Стандартная обертка для успешного ответа API со списком данных.

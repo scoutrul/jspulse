@@ -1,23 +1,19 @@
-declare const VITE_BACKEND_URL: string;
-
-// Конфигурация API endpoints и базовых URL
-const getBaseUrl = () => {
-  if (typeof process !== "undefined" && process.env.NODE_ENV === "production") {
-    return process.env.VITE_BACKEND_URL || "http://localhost:3001";
-  }
-  // @ts-ignore - Vite заполнит import.meta.env во время сборки
-  return import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
-};
+// import { INTERNAL_BACKEND_URL } from '$env/dynamic/private'; // Убираем импорт
 
 export const API_CONFIG = {
-  BASE_URL: getBaseUrl(),
+  // Убираем секцию INTERNAL_API или оставляем пустой, т.к. BASE_URL серверный
+  // INTERNAL_API: {
+  //   BASE_URL: INTERNAL_BACKEND_URL,
+  // },
   HH_API: {
     BASE_URL: "https://api.hh.ru",
     VACANCIES_ENDPOINT: "/vacancies",
   },
   ENDPOINTS: {
+    // Оставляем только относительные пути
     VACANCIES: "/api/vacancies",
     VACANCIES_FILTER: "/api/vacancies/filter",
+    SKILLS_COUNTS: "/api/skills/counts" // Добавим эндпоинт для статистики
   },
 } as const;
 

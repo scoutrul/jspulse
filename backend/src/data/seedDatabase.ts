@@ -3,7 +3,7 @@ console.log("Test seeding file compilation");
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
-import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
+import { Vacancy } from "../models/Vacancy.js";
 import mockVacancies from "./mockVacancies.js";
 
 // Загружаем .env из папки backend
@@ -13,17 +13,17 @@ const __filename = new URL(import.meta.url).pathname;
 const __dirname = path.dirname(__filename);
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-const MONGO_URL = process.env.MONGO_URL;
+const MONGO_URI = process.env.MONGO_URI;
 
 async function seedDatabase() {
-  if (!MONGO_URL) {
-    console.error("Ошибка: Переменная окружения MONGO_URL не установлена.");
+  if (!MONGO_URI) {
+    console.error("Ошибка: Переменная окружения MONGO_URI не установлена.");
     process.exit(1);
   }
 
   console.log("Подключение к MongoDB для сидинга...");
   try {
-    await mongoose.connect(MONGO_URL);
+    await mongoose.connect(MONGO_URI);
     console.log("MongoDB подключен для сидинга.");
 
     console.log("Очистка коллекции перед сидингом...");
@@ -36,8 +36,8 @@ async function seedDatabase() {
     console.log(`Успешно добавлено ${result.length} моковых вакансий`);
 
     console.log("Добавленные вакансии (первые 5):");
-    result.slice(0, 5).forEach((vacancy: IVacancyDocument, index: number) => {
-      const v = vacancy as IVacancyDocument;
+    result.slice(0, 5).forEach((vacancy, index) => {
+      const v = vacancy.toObject();
       console.log(`${index + 1}. ${v.title} - ${v.company}`);
     });
     if (result.length > 5) {

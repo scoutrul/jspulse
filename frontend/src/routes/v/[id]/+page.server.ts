@@ -1,22 +1,31 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoadEvent } from "./$types";
 import type { VacancyApiResponse } from "@jspulse/shared";
-import ky, { HTTPError } from "ky";
-import { env } from "$env/dynamic/private";
+// import ky, { HTTPError } from "ky"; // Убрали ky, т.к. используем apiClient
+// import { INTERNAL_BACKEND_URL } from "$env/dynamic/private"; // Убираем этот импорт
+import { apiClient } from "../../../api/http.client"; // Исправлен путь
+import { HTTPError } from "../../../api/http.client"; // Реэкспортируем HTTPError
+// Убираем импорт из $env
+// import { PUBLIC_BACKEND_URL } from "$env/dynamic/public";
 
 export async function load({ params }: PageServerLoadEvent) {
   const { id } = params;
   const endpoint = `api/vacancies/${id}`;
 
-  const apiUrl = env.INTERNAL_API_URL;
+  // Читаем переменную напрямую из process.env
+  const backendUrl = process.env.PUBLIC_BACKEND_URL;
 
-  if (!apiUrl) {
-    console.error("FATAL: INTERNAL_API_URL is not defined in environment variables.");
-    error(500, { message: "Не настроен URL внутреннего API" });
+  if (!backendUrl) {
+    console.error("FATAL: Переменная окружения PUBLIC_BACKEND_URL не найдена в process.env");
+    error(500, { message: "Не настроен PUBLIC_BACKEND_URL в process.env" });
   }
 
+  const fullApiUrl = `${backendUrl}/${endpoint}`;
+  console.log(`[v/${id}/+page.server.ts] Fetching data from: ${fullApiUrl}`);
+
   try {
-    const responseData = await ky.get(`${apiUrl}/${endpoint}`).json<VacancyApiResponse>();
+    // Используем apiClient с полным URL
+    const responseData = await apiClient.get(fullApiUrl).json<VacancyApiResponse>();
 
     if (
       responseData?.status !== "OK" ||

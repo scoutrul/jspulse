@@ -2,8 +2,12 @@
   "name": "@jspulse/shared",
   "version": "1.0.0",
   "private": true,
-  "main": "./dist/types/index.js",
-  "types": "./dist/types/index.d.ts",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "rm -rf dist && tsc",
     "dev": "tsc --watch"

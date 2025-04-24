@@ -1,20 +1,20 @@
 import mongoose from "mongoose";
 import "dotenv/config";
-import { Vacancy } from "../models/Vacancy.js";
-import { transformHHVacancyToIVacancy } from "../utils/transformations.js";
-import { HHResponseRaw } from "@jspulse/shared";
+import { Vacancy } from "../models/Vacancy.js";  // Исправляем на .js
+import { transformHHVacancyToIVacancy } from "../utils/transformations.js"; // Исправляем на .js
+import type { HHResponseRaw } from "@jspulse/shared";
 import ky, { HTTPError } from "ky";
-import { HH_API_BASE_URL } from "../config/api.js";
+import { HH_API_BASE_URL } from "../config/api.js"; // Исправляем на .js
 
 const SOURCE_HH = "hh.ru";
 const MAX_VACANCIES_PER_PAGE = 100; // HH API limit
-const MAX_PAGES_TO_FETCH = 1; // ПОКА ЧТО 1 страница для простоты
+const MAX_PAGES_TO_FETCH = 20; // Увеличиваем количество страниц
 const SEARCH_TEXT = "JavaScript Developer OR Frontend Developer";
 
 async function fetchAndSaveHHVacancies() {
-  const mongoUrl = process.env.MONGO_URL;
+  const mongoUrl = process.env.MONGO_URI;
   if (!mongoUrl) {
-    console.error("Ошибка: Не задана переменная окружения MONGO_URL");
+    console.error("Ошибка: Не задана переменная окружения MONGO_URI");
     process.exit(1);
   }
 

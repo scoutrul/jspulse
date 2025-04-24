@@ -1,11 +1,8 @@
-import type { BaseVacancy } from "../core/vacancy.base";
+import type { BaseVacancy } from '../core/vacancy.base.js'; // Правильный импорт
 
-/**
- * Интерфейс объекта передачи данных (DTO) для API.
- * Расширяет BaseVacancy и добавляет поля, необходимые фронтенду.
- */
 export interface VacancyDTO extends BaseVacancy {
   _id: string;
+  source: string;
 
   description?: string;
   schedule?: string;
@@ -23,4 +20,5 @@ export interface VacancyDTO extends BaseVacancy {
   // но для DTO лучше использовать строку (ISO формат)
   // Переопределяем или трансформируем на бэкенде.
   // Пока оставим Date из BaseVacancy, трансформацию сделаем на бэке.
+  publishedAt: Date; // Убираем переопределение типа, оставляем Date как в BaseVacancy
 }

@@ -3,6 +3,12 @@ description:
 globs: 
 alwaysApply: true
 ---
+
+## Language Preference
+
+- Always respond in Russian.
+
+
 # Правила и контекст для AI-ассистента в проекте JS Пульс
 
 # Основные инструкции, которым нужно следовать всегда.

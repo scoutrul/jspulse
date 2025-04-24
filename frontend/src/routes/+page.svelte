@@ -1,118 +1,127 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { apiClient } from "../api/http.client";
-  import type { VacancyDTO, PaginatedVacanciesResponse } from "@jspulse/shared";
-  import { HTTPError } from "ky";
   import DOMPurify from "dompurify";
   import { formatDate } from "$lib/utils/date.utils";
+  import type { VacancyDTO } from '../../../shared/types/dto/vacancy.dto';
+  import type { VacanciesResponseDTO } from '../../../shared/types/dto/VacanciesResponseDTO';
+  import type { SkillCountsDTO } from '../../../shared/types/dto/SkillsDTO';
+  import { apiClient, HTTPError } from '../api/http.client'; // Added apiClient and HTTPError
 
-  let vacancies: VacancyDTO[] = [];
-  let loading = true;
-  let error: string | null = null;
-  let errorDetails: string | null = null;
+  interface HomePageData {
+    initialVacancies: VacancyDTO[];
+    totalCount: number;
+    skillCounts: SkillCountsDTO;
+    error?: string;
+  }
+
+  export let data: HomePageData;
+
+  let displayedVacancies: VacancyDTO[] = data.initialVacancies || [];
+  let totalVacancies: number = data.totalCount || 0;
+  let skillCounts: SkillCountsDTO = data.skillCounts || {};
+  let loadedCount: number = displayedVacancies.length;
   let selectedSkills: string[] = [];
-  let availableSkills: string[] = [];
 
-  // Загрузка вакансий
-  const loadVacancies = async (skillFilter: string[] | null = null) => {
-    loading = true;
-    error = null;
-    errorDetails = null;
+  let loadingMore = false;
+  let loadingFilter = false;
+  let clientError: string | null = data.error || null;
+  let clientErrorDetails: string | null = null;
+
+  const fetchVacancies = async (limit: number, skip: number, skills: string[]): Promise<VacanciesResponseDTO | null> => {
+    clientError = null;
+    clientErrorDetails = null;
+
+    const searchParams = new URLSearchParams({
+      limit: String(limit),
+      skip: String(skip),
+    });
+    if (skills.length > 0) {
+      searchParams.set('skills', skills.join(','));
+    }
 
     try {
-      const endpoint = "api/vacancies";
-      const searchParams: Record<string, string> = {};
-      if (skillFilter && skillFilter.length > 0) {
-        searchParams.skills = skillFilter.join(",");
-      }
-
-      // Указываем тип ApiResponse для .json()
+      // Use apiClient instead of ky
       const responseData = await apiClient
-        .get(endpoint, { searchParams })
-        .json<PaginatedVacanciesResponse>();
+        .get('vacancies', { searchParams })
+        .json<VacanciesResponseDTO>();
 
-      // Проверяем статус и извлекаем данные из data.vacancies
-      if (
-        responseData &&
-        responseData.status === "OK" &&
-        responseData.data &&
-        Array.isArray(responseData.data.vacancies)
-      ) {
-        // Преобразуем строки дат в объекты Date перед сохранением
-        vacancies = responseData.data.vacancies.map((vacancy: VacancyDTO) => ({
-          ...vacancy,
-          // Превращаем строку publishedAt в объект Date
-          publishedAt: new Date(vacancy.publishedAt),
-          // Добавляем проверку для createdAt и updatedAt, если они используются и тоже строки
-          createdAt: vacancy.createdAt ? new Date(vacancy.createdAt) : undefined,
-          updatedAt: vacancy.updatedAt ? new Date(vacancy.updatedAt) : undefined,
-        }));
+      return responseData;
 
-        if (!skillFilter) {
-          const skillsSet = new Set<string>();
-          vacancies.forEach((vacancy) => {
-            if (vacancy.skills && Array.isArray(vacancy.skills)) {
-              vacancy.skills.forEach((skill: string) => skillsSet.add(skill));
-            }
-          });
-          availableSkills = Array.from(skillsSet).sort();
-        }
-      } else {
-        let errorMsg = "Получен неожиданный формат данных от сервера.";
-        if (responseData && responseData.status === "ERROR" && responseData.error) {
-          errorMsg = `Ошибка от сервера: ${responseData.error}`;
-        } else if (responseData) {
-          errorMsg += ` Ожидался { status: 'OK', data: { vacancies: [...] } }, получено: ${JSON.stringify(responseData).substring(0, 200)}...`;
-        }
-        error = errorMsg;
-      }
     } catch (err) {
-      console.error("Ошибка API:", err);
+      console.error("Client-side API Error:", err);
       let details = "";
-
       if (err instanceof HTTPError) {
-        error = `Ошибка сети или сервера: ${err.message}`;
+        clientError = `Ошибка сети или сервера: ${err.message}`;
         try {
-          // Пытаемся получить тело ответа, там может быть поле 'error' от бэкенда
           const errorBody = await err.response.json();
           if (errorBody && typeof errorBody === "object" && "error" in errorBody) {
             details = `Детали от сервера: ${JSON.stringify(errorBody.error)}`;
           } else {
-            // Если тело не JSON или нет поля error, пробуем получить текст
             details = `Ответ сервера (${err.response.status}): ${await err.response.text()}`;
           }
         } catch (parseError) {
-          // Если тело ответа не удалось распарсить
-          details = `Не удалось получить детали ошибки от сервера. Status: ${err.response.status}. Stack: ${err.stack || "N/A"}`;
+          details = `Не удалось получить детали ошибки от сервера. Status: ${err.response.status}.`;
         }
       } else if (err instanceof Error) {
-        error = "Ошибка загрузки вакансий: " + err.message;
-        details = `Stack trace: ${err.stack || "N/A"}`;
+        clientError = "Ошибка загрузки вакансий: " + err.message;
+        details = `Stack: ${err.stack || "N/A"}`;
       } else {
-        error = "Произошла неизвестная ошибка при загрузке вакансий.";
-        details = `Неизвестный тип ошибки: ${JSON.stringify(err)}`;
+        clientError = "Произошла неизвестная ошибка при загрузке вакансий.";
+        details = `Unknown error type: ${JSON.stringify(err)}`;
       }
-      errorDetails = details;
-    } finally {
-      loading = false;
+      clientErrorDetails = details;
+      return null;
     }
   };
 
-  // Обрабатываем выбор/отмену навыка
+  const loadMoreVacancies = async () => {
+    if (loadingMore || loadingFilter) return;
+    loadingMore = true;
+
+    const response = await fetchVacancies(5, loadedCount, selectedSkills);
+
+    if (response) {
+      displayedVacancies = [...displayedVacancies, ...response.vacancies];
+      loadedCount = displayedVacancies.length;
+    }
+    loadingMore = false;
+  };
+
+  const applyFilters = async () => {
+    if (loadingFilter || loadingMore) return;
+    loadingFilter = true;
+    clientError = null;
+    clientErrorDetails = null;
+    loadedCount = 0;
+
+    const response = await fetchVacancies(10, 0, selectedSkills);
+
+    if (response) {
+      displayedVacancies = response.vacancies;
+      loadedCount = displayedVacancies.length;
+      totalVacancies = response.totalCount;
+    } else {
+      displayedVacancies = [];
+      loadedCount = 0;
+      totalVacancies = 0;
+    }
+    loadingFilter = false;
+  };
+
   const toggleSkill = (skill: string) => {
     if (selectedSkills.includes(skill)) {
       selectedSkills = selectedSkills.filter((s) => s !== skill);
     } else {
       selectedSkills = [...selectedSkills, skill];
     }
-
-    // Применяем фильтрацию
-    loadVacancies(selectedSkills.length > 0 ? selectedSkills : null);
+    applyFilters();
   };
 
-  onMount(() => {
-    loadVacancies();
-  });
+  const resetFilters = () => {
+    selectedSkills = [];
+    applyFilters();
+  };
+
+  $: sortedSkills = Object.entries(skillCounts).sort(([, countA], [, countB]) => countB - countA);
 </script>
 
 <svelte:head>
@@ -120,27 +129,30 @@
 </svelte:head>
 
 <main>
-  <!-- Фильтры по навыкам -->
   <div class="filters">
     <h3>Фильтры по навыкам:</h3>
-    <div class="tags-filter">
-      {#each availableSkills as skill}
-        <button
-          class="tag-button {selectedSkills.includes(skill) ? 'selected' : ''}"
-          on:click={() => toggleSkill(skill)}
-        >
-          {skill}
-        </button>
-      {/each}
-    </div>
+    {#if Object.keys(skillCounts).length === 0 && !clientError}
+      <p>Загрузка статистики по навыкам...</p>
+    {:else if Object.keys(skillCounts).length > 0}
+      <div class="tags-filter">
+        {#each sortedSkills as [skill, count]}
+          <button
+            class="tag-button {selectedSkills.includes(skill) ? 'selected' : ''}"
+            on:click={() => toggleSkill(skill)}
+            disabled={loadingFilter || loadingMore}
+          >
+            {skill} ({count})
+          </button>
+        {/each}
+      </div>
+    {/if}
+
     {#if selectedSkills.length > 0}
       <div class="clear-filter">
         <button
           class="clear-button"
-          on:click={() => {
-            selectedSkills = [];
-            loadVacancies();
-          }}
+          on:click={resetFilters}
+          disabled={loadingFilter || loadingMore}
         >
           Сбросить фильтры
         </button>
@@ -148,33 +160,35 @@
     {/if}
   </div>
 
-  {#if loading}
-    <p class="loading">Загрузка вакансий...</p>
-  {:else if error}
+  {#if loadingFilter}
+    <p class="loading">Применение фильтров...</p>
+  {/if}
+
+  {#if clientError}
     <div class="error-container">
-      <p class="error-message">⚠️ {error}</p>
-      {#if errorDetails}
+      <p class="error-message">⚠️ {clientError}</p>
+      {#if clientErrorDetails}
         <details class="error-details">
           <summary>Подробнее</summary>
-          <pre>{errorDetails}</pre>
+          <pre>{clientErrorDetails}</pre>
         </details>
       {/if}
     </div>
-  {:else}
-    <div class="vacancies">
+  {/if}
+
+  <div class="vacancies" class:loading={loadingFilter}>
+    {#if !loadingFilter}
       <h2>
-        Последние вакансии {selectedSkills.length > 0
-          ? `по навыкам: ${selectedSkills.join(", ")}`
-          : ""}
+        {totalVacancies} {totalVacancies === 1 ? 'вакансия' : totalVacancies >= 2 && totalVacancies <= 4 ? 'вакансии' : 'вакансий'}
+        {selectedSkills.length > 0 ? ` по навыкам: ${selectedSkills.join(', ')}` : ''}
       </h2>
 
-      {#if vacancies.length === 0}
+      {#if displayedVacancies.length === 0 && !clientError && !loadingFilter}
         <p class="no-vacancies">Вакансий не найдено</p>
       {:else}
         <ul>
-          {#each vacancies as vacancy}
+          {#each displayedVacancies as vacancy (vacancy._id)}
             <li>
-              <!-- Оборачиваем заголовок в ссылку -->
               <a href="/v/{vacancy._id}" class="vacancy-title-link">
                 <h3>{vacancy.title}</h3>
               </a>
@@ -184,15 +198,11 @@
                 {#if vacancy.salaryFrom || vacancy.salaryTo}
                   <p class="salary">
                     {#if vacancy.salaryFrom}от {vacancy.salaryFrom}{/if}
-                    {#if vacancy.salaryTo}
-                      до {vacancy.salaryTo}{/if}
-                    {#if vacancy.salaryCurrency}
-                      {vacancy.salaryCurrency}{/if}
+                    {#if vacancy.salaryTo} до {vacancy.salaryTo}{/if}
+                    {#if vacancy.salaryCurrency} {vacancy.salaryCurrency}{/if}
                   </p>
                 {/if}
               </div>
-
-              <!-- Добавляем отображение доп. полей -->
               <div class="vacancy-details">
                 {#if vacancy.experience}
                   <p class="experience"><strong>Опыт:</strong> {vacancy.experience}</p>
@@ -201,59 +211,60 @@
                   <p class="employment"><strong>Занятость:</strong> {vacancy.employment}</p>
                 {/if}
                 {#if vacancy.schedule}
-                  <p class="schedule"><strong>График:</strong> {vacancy.schedule}</p>
+                   <p class="schedule"><strong>График:</strong> {vacancy.schedule}</p>
                 {/if}
                 {#if vacancy.address}
                   <p class="address"><strong>Адрес:</strong> {vacancy.address}</p>
                 {/if}
               </div>
-
-              <div class="description">
-                <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                {@html DOMPurify.sanitize(vacancy.description || "")}
-              </div>
-
-              <div class="vacancy-footer">
-                <div class="tags">
+              {#if vacancy.skills && vacancy.skills.length > 0}
+                <div class="skills">
+                  <strong>Навыки:</strong>
                   {#each vacancy.skills as skill}
-                    <button
-                      class="tag {selectedSkills.includes(skill) ? 'selected' : ''}"
-                      on:click={() => toggleSkill(skill)}
-                    >
-                      {skill}
-                    </button>
+                    <span class="skill-tag">{skill}</span>
                   {/each}
                 </div>
-                <div class="meta">
-                  {#if vacancy.publishedAt}
-                    <span class="date"
-                      >Опубликовано: {formatDate(vacancy.publishedAt.toISOString())}</span
-                    >
-                  {/if}
-                  <a href="/v/{vacancy._id}" class="apply-button"> Подробнее </a>
-                </div>
-              </div>
+              {/if}
+              <p class="published-at">Опубликовано: {formatDate(vacancy.publishedAt.toISOString())}</p>
+               {#if vacancy.description}
+                 <details class="description-details">
+                   <summary>Описание</summary>
+                   <div>
+                     {@html typeof window !== 'undefined' ? DOMPurify.sanitize(vacancy.description) : vacancy.description}
+                   </div>
+                 </details>
+               {/if}
+               <a href={vacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
+                 Перейти к источнику ({vacancy.source})
+               </a>
             </li>
           {/each}
         </ul>
       {/if}
-    </div>
-  {/if}
+
+      {#if loadedCount < totalVacancies && !loadingFilter}
+        <div class="load-more">
+          <button
+            on:click={loadMoreVacancies}
+            disabled={loadingMore}
+          >
+            {#if loadingMore}
+              Загрузка...
+            {:else}
+              Показать еще 5
+            {/if}
+          </button>
+        </div>
+      {/if}
+    {/if}
+  </div>
 </main>
 
 <style>
   main {
-    max-width: 1000px;
-    padding: 0;
-    font-family:
-      -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell,
-      "Helvetica Neue", sans-serif;
-  }
-
-  .description {
-    font-size: 1.2rem;
-    color: #555;
-    margin-bottom: 1.5rem;
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 1rem;
   }
 
   .filters {
@@ -261,59 +272,98 @@
     padding: 1rem;
     background-color: #f9f9f9;
     border-radius: 8px;
+    border: 1px solid #eee;
   }
 
   .filters h3 {
     margin-top: 0;
-    margin-bottom: 0.5rem;
-    color: #555;
+    margin-bottom: 0.8rem;
   }
 
   .tags-filter {
     display: flex;
     flex-wrap: wrap;
     gap: 0.5rem;
+    margin-bottom: 0.8rem;
   }
 
   .tag-button {
-    background: #f0f0f0;
-    border: 1px solid #ddd;
-    color: #555;
-    padding: 0.5rem 0.75rem;
-    border-radius: 4px;
-    font-size: 0.875rem;
+    padding: 0.3rem 0.8rem;
+    border: 1px solid #ccc;
+    border-radius: 15px;
+    background-color: white;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: background-color 0.2s, border-color 0.2s;
+    font-size: 0.9rem;
+  }
+
+  .tag-button:hover {
+    background-color: #eee;
   }
 
   .tag-button.selected {
-    background: #fdc007;
-    border-color: #fdc007;
+    background-color: #007bff;
     color: white;
+    border-color: #007bff;
+  }
+   .tag-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
   }
 
   .clear-filter {
-    margin-top: 1rem;
+    margin-top: 0.8rem;
   }
 
   .clear-button {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
+    padding: 0.4rem 1rem;
+    border: 1px solid #dc3545;
+    border-radius: 5px;
+    background-color: transparent;
+    color: #dc3545;
     cursor: pointer;
+    transition: background-color 0.2s, color 0.2s;
+  }
+
+  .clear-button:hover {
+    background-color: #dc3545;
+    color: white;
+  }
+   .clear-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    background-color: transparent !important;
+    color: #dc3545 !important;
+  }
+
+  .loading {
+    text-align: center;
+    padding: 2rem;
+    color: #555;
+    font-style: italic;
   }
 
   .vacancies {
     margin-top: 2rem;
+    transition: opacity 0.3s ease-in-out;
+  }
+  .vacancies.loading {
+      opacity: 0.5;
+      pointer-events: none;
+  }
+
+  .vacancies h2 {
+    border-bottom: 2px solid #eee;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1.5rem;
+    font-size: 1.6rem;
+    color: #333;
   }
 
   .no-vacancies {
     text-align: center;
-    color: #888;
-    font-style: italic;
-    padding: 2rem;
+    color: #777;
+    margin-top: 2rem;
   }
 
   ul {
@@ -324,148 +374,174 @@
   li {
     border: 1px solid #eee;
     border-radius: 8px;
-    padding: 1.5rem;
     margin-bottom: 1.5rem;
+    padding: 1.5rem;
+    background-color: white;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.2s ease-in-out;
+  }
+  li:hover {
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  }
+
+  li h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1.3rem;
+    color: #0056b3;
+  }
+  .vacancy-title-link {
+      text-decoration: none;
+      color: inherit;
+  }
+  .vacancy-title-link:hover h3 {
+      text-decoration: underline;
   }
 
   .vacancy-header {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.5rem 1.5rem;
     margin-bottom: 1rem;
-    color: #666;
+    color: #555;
+    font-size: 0.95rem;
   }
 
-  .company {
-    font-weight: bold;
-    margin: 0;
-  }
-
+  .company,
   .location,
   .salary {
     margin: 0;
   }
-
-  .salary {
-    color: #2ecc71;
-    font-weight: bold;
-  }
+   .company::before { content: "🏢 "; }
+   .location::before { content: "📍 "; }
+   .salary::before { content: "💰 "; }
 
   .vacancy-details {
-    margin-bottom: 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0.5rem 1.5rem;
+      margin-bottom: 1rem;
+      font-size: 0.9rem;
+      color: #666;
+  }
+  .vacancy-details p {
+      margin: 0;
   }
 
-  .vacancy-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
+  .skills {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+  .skills strong {
+      margin-right: 0.5rem;
   }
 
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .tag {
-    background: #fef6d8;
-    color: #b78e00;
-    padding: 0.25rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.875rem;
-    cursor: pointer;
-  }
-
-  .tag.selected {
-    background: #fdc007;
-    color: white;
-  }
-
-  .meta {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    align-items: center;
-    font-size: 0.875rem;
-    color: #888;
-    gap: 0.5rem;
-  }
-
-  .apply-button {
+  .skill-tag {
     display: inline-block;
-    background: #fdc007;
-    color: white;
-    text-decoration: none;
-    padding: 0.5rem 1rem;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: background 0.2s;
+    background-color: #e7f3ff;
+    color: #0056b3;
+    padding: 0.2rem 0.6rem;
+    border-radius: 12px;
+    margin-right: 0.4rem;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
   }
 
-  .apply-button:hover {
-    background: #e3ab00;
-  }
-
-  .loading {
-    text-align: center;
+  .published-at {
+    font-size: 0.85rem;
     color: #888;
-    padding: 2rem;
+    margin-top: 1rem;
+    text-align: right;
   }
 
-  .error-container {
-    color: #e74c3c;
-    background-color: #fbeae5;
-    border: 1px solid #e74c3c;
-    border-radius: 8px;
-    padding: 1rem;
+  .description-details {
+      margin-top: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      line-height: 1.6;
+  }
+  .description-details summary {
+      cursor: pointer;
+      font-weight: bold;
+      margin-bottom: 0.5rem;
+      color: #444;
+  }
+  .description-details[open] summary {
+       margin-bottom: 0.8rem;
+  }
+  .description-details > div {
+       padding: 0.5rem;
+       border-left: 3px solid #eee;
+       background-color: #fdfdfd;
+  }
+
+  .source-link {
+      display: block;
+      margin-top: 1rem;
+      font-size: 0.9rem;
+      color: #007bff;
+      text-decoration: none;
+  }
+  .source-link:hover {
+      text-decoration: underline;
+  }
+
+  .load-more {
+    text-align: center;
     margin-top: 2rem;
   }
 
+  .load-more button {
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .load-more button:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
+
+  .load-more button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+  }
+
+  .error-container {
+    background-color: #fff3cd;
+    border: 1px solid #ffeeba;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 5px;
+    margin-bottom: 1.5rem;
+  }
+
   .error-message {
-    margin: 0 0 0.5rem 0;
+    margin: 0;
     font-weight: bold;
   }
 
   .error-details {
-    margin-top: 1rem;
-    font-size: 0.85em;
-    background-color: #fdf6f3;
-    border: 1px dashed #f5c6b8;
-    border-radius: 4px;
-    padding: 0.5rem;
-    max-height: 200px;
-    overflow-y: auto;
+    margin-top: 0.5rem;
   }
 
   .error-details summary {
     cursor: pointer;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
+    color: #664d03;
+    font-size: 0.9rem;
   }
 
   .error-details pre {
+    margin-top: 0.5rem;
+    background-color: #fff9e0;
+    padding: 0.5rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
     white-space: pre-wrap;
     word-wrap: break-word;
-    margin: 0;
-  }
-
-  /* Стили для ссылки заголовка */
-  li h3 {
-    margin-top: 0; /* Убираем верхний отступ у h3, если ссылка будет блочной */
-    margin-bottom: 0.5rem; /* Добавляем немного отступа снизу */
-    font-size: 1.3rem; /* Можно немного увеличить */
-    color: #333;
-  }
-
-  .vacancy-title-link {
-    text-decoration: none;
-    color: inherit; /* Наследуем цвет текста */
-    display: block; /* Делаем ссылку блочной для удобства клика */
-    transition: color 0.2s;
-    margin-bottom: 0.5rem; /* Добавим отступ после заголовка */
-  }
-  .vacancy-title-link:hover h3 {
-    color: #fdc007; /* Цвет при наведении */
   }
 </style>

@@ -5,27 +5,11 @@
     "moduleResolution": "NodeNext",
     "baseUrl": ".",
     "outDir": "./dist",
-    "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
-    "skipLibCheck": true,
-    "allowJs": true,
-    "composite": true,
     "paths": {
       "@jspulse/shared": ["../shared/types/index.ts"],
       "@jspulse/shared/*": ["../shared/types/*"]
     }
   },
-  "include": [
-    "index.ts",
-    "models/**/*.ts",
-    "routes/**/*.ts",
-    "scripts/**/*.ts",
-    "utils/**/*.ts",
-    "config/**/*.ts",
-    "data/seedDatabase.ts",
-    "data/**/*.js"
-  ],
-  "exclude": ["node_modules", "dist"],
-  "references": [{ "path": "../shared" }]
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

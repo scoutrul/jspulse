@@ -13,34 +13,41 @@ services:
       - ./frontend/package.json:/app/frontend/package.json
       - ./frontend/svelte.config.js:/app/frontend/svelte.config.js
       - ./frontend/vite.config.ts:/app/frontend/vite.config.ts
-      # - ./frontend/tsconfig.json:/app/frontend/tsconfig.json # Раскомментировать, если есть
-      - ./shared:/app/shared
-    env_file:
-      - ./frontend/.env
-    depends_on:
-      - backend
-
-  backend:
-    build:
-      context: .
-      dockerfile: backend/Dockerfile
-    ports:
-      - "3001:3001"
-    volumes:
-      - ./backend/package.json:/app/backend/package.json
       - ./shared:/app/shared
     environment:
-      - MONGO_URL=mongodb://mongo:27017/jspulse
-      - PORT=3001
+      PUBLIC_BACKEND_URL: http://backend:3001
     depends_on:
-      - mongo
+      - backend
+    networks:
+      - jspulse-net
 
   mongo:
     image: mongo:latest
+    container_name: jspulse-mongo
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
+    networks:
+      - jspulse-net
+
+  backend:
+    build: 
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "3001:3001"
+    depends_on:
+      - mongo
+    environment:
+      MONGO_URI: mongodb://mongo:27017/jspulse
+      PORT: "3001"
+    networks:
+      - jspulse-net
+
+networks:
+  jspulse-net:
+    driver: bridge
 
 volumes:
   mongodb_data:

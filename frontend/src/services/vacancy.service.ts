@@ -1,3 +1,4 @@
+import ky from "ky";
 import { apiClient, hhClient } from "../api/http.client";
 import { API_CONFIG } from "../config/api.config";
 import type {
@@ -96,7 +97,7 @@ class VacancyService {
       source: "hh.ru",
       description: description,
       schedule: hhVacancy.schedule?.name,
-      skills: hhVacancy.key_skills?.map((skill) => skill.name) ?? [],
+      skills: hhVacancy.key_skills?.map((skill: { name: string }) => skill.name) ?? [],
       salaryFrom: salaryInfo.salaryFrom,
       salaryTo: salaryInfo.salaryTo,
       salaryCurrency: salaryInfo.salaryCurrency,

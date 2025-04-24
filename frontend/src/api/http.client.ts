@@ -1,37 +1,32 @@
-import ky, { type Options } from "ky";
+import ky, { type Options, HTTPError } from "ky";
+// import { PUBLIC_BACKEND_URL } from "$env/static/public"; // Не используется здесь
+// import { INTERNAL_BACKEND_URL } from "$env/dynamic/private"; // Не используется здесь
 import { API_CONFIG } from "../config/api.config";
 
-// Базовые опции для ky
-const baseOptions: Options = {
-  timeout: 10000,
+// Add base options configuration
+const baseOptions = {
   headers: {
-    "Content-Type": "application/json",
+    'Content-Type': 'application/json',
   },
-  // Хуки можно добавить здесь, если нужна глобальная логика
-  // hooks: {
-  //   beforeRequest: [...],
-  //   afterResponse: [...]
-  // }
+  timeout: 10000,
 };
 
-// Создаем экземпляр ky для внутреннего API
-// Обратите внимание: префикс URL добавляется к КАЖДОМУ запросу
+// Базовый клиент без prefixUrl
 export const apiClient = ky.create({
-  prefixUrl: API_CONFIG.BASE_URL, // Используем prefixUrl
+  // prefixUrl убран
   headers: baseOptions.headers,
   timeout: baseOptions.timeout,
 });
 
 // Создаем экземпляр ky для HeadHunter API
 export const hhClient = ky.create({
-  prefixUrl: API_CONFIG.HH_API.BASE_URL, // Используем prefixUrl
+  prefixUrl: API_CONFIG.HH_API.BASE_URL,
   headers: {
     ...baseOptions.headers,
-    "User-Agent": "JS-Pulse-App/1.0 (nikita@tonsky.me)", // Укажем контакт
+    "User-Agent": "JS-Pulse-App/1.0 (nikita@tonsky.me)",
   },
   timeout: baseOptions.timeout,
 });
 
-// Интерцепторы axios удалены.
-// Код, использующий apiClient или hhClient, должен будет вызывать
-// методы парсинга ответа, например: apiClient.get('vacancies').json<VacancyDTO[]>()
+// Реэкспортируем HTTPError
+export { HTTPError };

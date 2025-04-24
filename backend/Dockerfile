@@ -1,31 +1,39 @@
+# Use a single stage for building and running for now
 FROM node:20-alpine
-
 WORKDIR /app
 
-# Установка pnpm
+# Install pnpm globally
 RUN npm install -g pnpm
 
-# Копирование файлов package.json (оставим для возможного кэширования слоя)
-COPY package.json pnpm-workspace.yaml ./
+# Copy workspace configuration files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy package manifests for relevant workspaces
 COPY backend/package.json ./backend/
 COPY shared/package.json ./shared/
-# Если есть frontend/package.json, его тоже можно добавить для полноты, но не обязательно для backend
-# COPY frontend/package.json ./frontend/ 
+# If frontend manifest is needed for shared types, uncomment below
+# COPY frontend/package.json ./frontend/
 
-# Копирование ВСЕГО исходного кода проекта
-COPY . .
+# Install ALL dependencies from the lockfile for the entire workspace context
+# This ensures devDependencies like typescript are available for the build step.
+# Using --mount for caching pnpm store
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-# Установка ВСЕХ зависимостей (включая devDependencies для tsc)
-RUN pnpm install --prod=false
+# Copy the source code AFTER installing dependencies to leverage Docker cache
+COPY shared ./shared
+COPY backend ./backend
+# If frontend source is needed for shared types, uncomment below
+# COPY frontend ./frontend
 
-# Сборка shared пакета перед сборкой backend
-RUN pnpm --filter @jspulse/shared build
+# Build the backend package (using correct package name)
+RUN pnpm --filter jspulse-backend run build
 
-# Переход в директорию backend
+# Set the working directory for the runtime command
 WORKDIR /app/backend
 
-# Сборка самого backend (используя tsc -p tsconfig.json)
-RUN pnpm run build
+# Expose the port the backend listens on (adjust if different)
+EXPOSE 3001
 
-# Запуск бэкенда напрямую (БЕЗ nodemon)
-CMD ["node", "dist/index.js"]
+# Command to run the built application (relative to WORKDIR /app/backend)
+# Correct path based on ls output: dist/backend/src/index.js
+CMD ["node", "dist/backend/src/index.js"]
