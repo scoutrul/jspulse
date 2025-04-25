@@ -1,10 +1,10 @@
-import { sveltekit } from '@sveltejs/kit/vite';
-import { defineConfig } from 'vite';
-import path from 'path';
+import { sveltekit } from "@sveltejs/kit/vite";
+import { defineConfig } from "vite";
+import path from "path";
 
 export default defineConfig(() => {
   return {
-    envDir: '.',
+    envDir: ".",
     plugins: [sveltekit()],
 
     resolve: {
@@ -25,5 +25,8 @@ export default defineConfig(() => {
         allow: [path.resolve(__dirname, "../shared")],
       },
     },
+    // ssr: {
+    //   noExternal: ['jsdom', 'dompurify']
+    // }
   };
 });

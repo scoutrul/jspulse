@@ -1,32 +1,30 @@
 <script lang="ts">
-  import DOMPurify from "dompurify";
+  // import DOMPurify from "dompurify"; // Удаляем неиспользуемый импорт
   import { formatDate } from "$lib/utils/date.utils";
-  import type { VacancyDTO } from '../../../shared/types/dto/vacancy.dto';
-  import type { VacanciesResponseDTO } from '../../../shared/types/dto/VacanciesResponseDTO';
-  import type { SkillCountsDTO } from '../../../shared/types/dto/SkillsDTO';
-  import { apiClient, HTTPError } from '../api/http.client'; // Added apiClient and HTTPError
+  import type { PaginatedVacanciesResponse } from "@jspulse/shared";
+  import { apiClient, HTTPError } from "../api/http.client";
+  import type { PageData } from "./$types"; // Импортируем PageData
 
-  interface HomePageData {
-    initialVacancies: VacancyDTO[];
-    totalCount: number;
-    skillCounts: SkillCountsDTO;
-    error?: string;
-  }
+  export let data: PageData;
 
-  export let data: HomePageData;
+  // Выводим тип из данных сервера
+  type VacancyWithHtml = PageData["initialVacancies"][number];
+  let displayedVacancies: VacancyWithHtml[] = data.initialVacancies || [];
 
-  let displayedVacancies: VacancyDTO[] = data.initialVacancies || [];
   let totalVacancies: number = data.totalCount || 0;
-  let skillCounts: SkillCountsDTO = data.skillCounts || {};
   let loadedCount: number = displayedVacancies.length;
-  let selectedSkills: string[] = [];
+  let selectedSkills: string[] = []; // Оставляем для фильтрации, но не получаем из data
 
   let loadingMore = false;
   let loadingFilter = false;
   let clientError: string | null = data.error || null;
   let clientErrorDetails: string | null = null;
 
-  const fetchVacancies = async (limit: number, skip: number, skills: string[]): Promise<VacanciesResponseDTO | null> => {
+  const fetchVacancies = async (
+    limit: number,
+    skip: number,
+    skills: string[]
+  ): Promise<PaginatedVacanciesResponse["data"] | null> => {
     clientError = null;
     clientErrorDetails = null;
 
@@ -35,17 +33,21 @@
       skip: String(skip),
     });
     if (skills.length > 0) {
-      searchParams.set('skills', skills.join(','));
+      searchParams.set("skills", skills.join(","));
     }
 
     try {
-      // Use apiClient instead of ky
-      const responseData = await apiClient
-        .get('vacancies', { searchParams })
-        .json<VacanciesResponseDTO>();
+      const response = await apiClient
+        .get("api/vacancies", { searchParams }) // Добавляем api/
+        .json<PaginatedVacanciesResponse>();
 
-      return responseData;
-
+      if (response.status === "OK") {
+        return response.data; // Возвращаем вложенные данные
+      } else {
+        console.error("Client-side API Error (Non-OK status):", response);
+        clientError = `Ошибка API: ${response.message}`;
+        return null;
+      }
     } catch (err) {
       console.error("Client-side API Error:", err);
       let details = "";
@@ -77,51 +79,34 @@
     if (loadingMore || loadingFilter) return;
     loadingMore = true;
 
-    const response = await fetchVacancies(5, loadedCount, selectedSkills);
+    const responseData = await fetchVacancies(5, loadedCount, selectedSkills);
 
-    if (response) {
-      displayedVacancies = [...displayedVacancies, ...response.vacancies];
+    if (responseData) {
+      // Преобразуем даты перед добавлением
+      const newVacancies = responseData.vacancies.map((v) => ({
+        ...v,
+        publishedAt: new Date(v.publishedAt),
+      }));
+      displayedVacancies = [...displayedVacancies, ...newVacancies];
       loadedCount = displayedVacancies.length;
     }
     loadingMore = false;
   };
 
+  // Удаляем неиспользуемые функции
+  /*
   const applyFilters = async () => {
-    if (loadingFilter || loadingMore) return;
-    loadingFilter = true;
-    clientError = null;
-    clientErrorDetails = null;
-    loadedCount = 0;
-
-    const response = await fetchVacancies(10, 0, selectedSkills);
-
-    if (response) {
-      displayedVacancies = response.vacancies;
-      loadedCount = displayedVacancies.length;
-      totalVacancies = response.totalCount;
-    } else {
-      displayedVacancies = [];
-      loadedCount = 0;
-      totalVacancies = 0;
-    }
-    loadingFilter = false;
+    // ...
   };
 
   const toggleSkill = (skill: string) => {
-    if (selectedSkills.includes(skill)) {
-      selectedSkills = selectedSkills.filter((s) => s !== skill);
-    } else {
-      selectedSkills = [...selectedSkills, skill];
-    }
-    applyFilters();
+    // ...
   };
 
   const resetFilters = () => {
-    selectedSkills = [];
-    applyFilters();
+    // ...
   };
-
-  $: sortedSkills = Object.entries(skillCounts).sort(([, countA], [, countB]) => countB - countA);
+  */
 </script>
 
 <svelte:head>
@@ -129,37 +114,6 @@
 </svelte:head>
 
 <main>
-  <div class="filters">
-    <h3>Фильтры по навыкам:</h3>
-    {#if Object.keys(skillCounts).length === 0 && !clientError}
-      <p>Загрузка статистики по навыкам...</p>
-    {:else if Object.keys(skillCounts).length > 0}
-      <div class="tags-filter">
-        {#each sortedSkills as [skill, count]}
-          <button
-            class="tag-button {selectedSkills.includes(skill) ? 'selected' : ''}"
-            on:click={() => toggleSkill(skill)}
-            disabled={loadingFilter || loadingMore}
-          >
-            {skill} ({count})
-          </button>
-        {/each}
-      </div>
-    {/if}
-
-    {#if selectedSkills.length > 0}
-      <div class="clear-filter">
-        <button
-          class="clear-button"
-          on:click={resetFilters}
-          disabled={loadingFilter || loadingMore}
-        >
-          Сбросить фильтры
-        </button>
-      </div>
-    {/if}
-  </div>
-
   {#if loadingFilter}
     <p class="loading">Применение фильтров...</p>
   {/if}
@@ -179,8 +133,12 @@
   <div class="vacancies" class:loading={loadingFilter}>
     {#if !loadingFilter}
       <h2>
-        {totalVacancies} {totalVacancies === 1 ? 'вакансия' : totalVacancies >= 2 && totalVacancies <= 4 ? 'вакансии' : 'вакансий'}
-        {selectedSkills.length > 0 ? ` по навыкам: ${selectedSkills.join(', ')}` : ''}
+        {totalVacancies}
+        {totalVacancies === 1
+          ? "вакансия"
+          : totalVacancies >= 2 && totalVacancies <= 4
+            ? "вакансии"
+            : "вакансий"}
       </h2>
 
       {#if displayedVacancies.length === 0 && !clientError && !loadingFilter}
@@ -198,8 +156,10 @@
                 {#if vacancy.salaryFrom || vacancy.salaryTo}
                   <p class="salary">
                     {#if vacancy.salaryFrom}от {vacancy.salaryFrom}{/if}
-                    {#if vacancy.salaryTo} до {vacancy.salaryTo}{/if}
-                    {#if vacancy.salaryCurrency} {vacancy.salaryCurrency}{/if}
+                    {#if vacancy.salaryTo}
+                      до {vacancy.salaryTo}{/if}
+                    {#if vacancy.salaryCurrency}
+                      {vacancy.salaryCurrency}{/if}
                   </p>
                 {/if}
               </div>
@@ -211,7 +171,7 @@
                   <p class="employment"><strong>Занятость:</strong> {vacancy.employment}</p>
                 {/if}
                 {#if vacancy.schedule}
-                   <p class="schedule"><strong>График:</strong> {vacancy.schedule}</p>
+                  <p class="schedule"><strong>График:</strong> {vacancy.schedule}</p>
                 {/if}
                 {#if vacancy.address}
                   <p class="address"><strong>Адрес:</strong> {vacancy.address}</p>
@@ -225,18 +185,19 @@
                   {/each}
                 </div>
               {/if}
-              <p class="published-at">Опубликовано: {formatDate(vacancy.publishedAt.toISOString())}</p>
-               {#if vacancy.description}
-                 <details class="description-details">
-                   <summary>Описание</summary>
-                   <div>
-                     {@html typeof window !== 'undefined' ? DOMPurify.sanitize(vacancy.description) : vacancy.description}
-                   </div>
-                 </details>
-               {/if}
-               <a href={vacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
-                 Перейти к источнику ({vacancy.source})
-               </a>
+              <p class="published-at">
+                Опубликовано: {formatDate(vacancy.publishedAt.toISOString())}
+              </p>
+              <details class="description-details">
+                <summary>Описание</summary>
+                <div>
+                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                  {@html vacancy.htmlDescription}
+                </div>
+              </details>
+              <a href={vacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
+                Перейти к источнику ({vacancy.source})
+              </a>
             </li>
           {/each}
         </ul>
@@ -244,10 +205,7 @@
 
       {#if loadedCount < totalVacancies && !loadingFilter}
         <div class="load-more">
-          <button
-            on:click={loadMoreVacancies}
-            disabled={loadingMore}
-          >
+          <button on:click={loadMoreVacancies} disabled={loadingMore}>
             {#if loadingMore}
               Загрузка...
             {:else}
@@ -267,75 +225,6 @@
     padding: 1rem;
   }
 
-  .filters {
-    margin-bottom: 2rem;
-    padding: 1rem;
-    background-color: #f9f9f9;
-    border-radius: 8px;
-    border: 1px solid #eee;
-  }
-
-  .filters h3 {
-    margin-top: 0;
-    margin-bottom: 0.8rem;
-  }
-
-  .tags-filter {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    margin-bottom: 0.8rem;
-  }
-
-  .tag-button {
-    padding: 0.3rem 0.8rem;
-    border: 1px solid #ccc;
-    border-radius: 15px;
-    background-color: white;
-    cursor: pointer;
-    transition: background-color 0.2s, border-color 0.2s;
-    font-size: 0.9rem;
-  }
-
-  .tag-button:hover {
-    background-color: #eee;
-  }
-
-  .tag-button.selected {
-    background-color: #007bff;
-    color: white;
-    border-color: #007bff;
-  }
-   .tag-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-  }
-
-  .clear-filter {
-    margin-top: 0.8rem;
-  }
-
-  .clear-button {
-    padding: 0.4rem 1rem;
-    border: 1px solid #dc3545;
-    border-radius: 5px;
-    background-color: transparent;
-    color: #dc3545;
-    cursor: pointer;
-    transition: background-color 0.2s, color 0.2s;
-  }
-
-  .clear-button:hover {
-    background-color: #dc3545;
-    color: white;
-  }
-   .clear-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-    background-color: transparent !important;
-    color: #dc3545 !important;
-  }
-
   .loading {
     text-align: center;
     padding: 2rem;
@@ -348,8 +237,8 @@
     transition: opacity 0.3s ease-in-out;
   }
   .vacancies.loading {
-      opacity: 0.5;
-      pointer-events: none;
+    opacity: 0.5;
+    pointer-events: none;
   }
 
   .vacancies h2 {
@@ -381,7 +270,7 @@
     transition: box-shadow 0.2s ease-in-out;
   }
   li:hover {
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
   }
 
   li h3 {
@@ -391,11 +280,11 @@
     color: #0056b3;
   }
   .vacancy-title-link {
-      text-decoration: none;
-      color: inherit;
+    text-decoration: none;
+    color: inherit;
   }
   .vacancy-title-link:hover h3 {
-      text-decoration: underline;
+    text-decoration: underline;
   }
 
   .vacancy-header {
@@ -412,20 +301,26 @@
   .salary {
     margin: 0;
   }
-   .company::before { content: "🏢 "; }
-   .location::before { content: "📍 "; }
-   .salary::before { content: "💰 "; }
+  .company::before {
+    content: "🏢 ";
+  }
+  .location::before {
+    content: "📍 ";
+  }
+  .salary::before {
+    content: "💰 ";
+  }
 
   .vacancy-details {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 0.5rem 1.5rem;
-      margin-bottom: 1rem;
-      font-size: 0.9rem;
-      color: #666;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem 1.5rem;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: #666;
   }
   .vacancy-details p {
-      margin: 0;
+    margin: 0;
   }
 
   .skills {
@@ -433,7 +328,7 @@
     margin-bottom: 1rem;
   }
   .skills strong {
-      margin-right: 0.5rem;
+    margin-right: 0.5rem;
   }
 
   .skill-tag {
@@ -455,35 +350,35 @@
   }
 
   .description-details {
-      margin-top: 1rem;
-      margin-bottom: 1rem;
-      font-size: 0.95rem;
-      line-height: 1.6;
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
   }
   .description-details summary {
-      cursor: pointer;
-      font-weight: bold;
-      margin-bottom: 0.5rem;
-      color: #444;
+    cursor: pointer;
+    font-weight: bold;
+    margin-bottom: 0.5rem;
+    color: #444;
   }
   .description-details[open] summary {
-       margin-bottom: 0.8rem;
+    margin-bottom: 0.8rem;
   }
   .description-details > div {
-       padding: 0.5rem;
-       border-left: 3px solid #eee;
-       background-color: #fdfdfd;
+    padding: 0.5rem;
+    border-left: 3px solid #eee;
+    background-color: #fdfdfd;
   }
 
   .source-link {
-      display: block;
-      margin-top: 1rem;
-      font-size: 0.9rem;
-      color: #007bff;
-      text-decoration: none;
+    display: block;
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    color: #007bff;
+    text-decoration: none;
   }
   .source-link:hover {
-      text-decoration: underline;
+    text-decoration: underline;
   }
 
   .load-more {
