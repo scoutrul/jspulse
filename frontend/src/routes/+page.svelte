@@ -1,5 +1,4 @@
 <script lang="ts">
-  // import DOMPurify from "dompurify"; // Удаляем неиспользуемый импорт
   import { formatDate } from "$lib/utils/date.utils";
   import type { PaginatedVacanciesResponse } from "@jspulse/shared";
   import { apiClient, HTTPError } from "../api/http.client";
@@ -92,21 +91,6 @@
     }
     loadingMore = false;
   };
-
-  // Удаляем неиспользуемые функции
-  /*
-  const applyFilters = async () => {
-    // ...
-  };
-
-  const toggleSkill = (skill: string) => {
-    // ...
-  };
-
-  const resetFilters = () => {
-    // ...
-  };
-  */
 </script>
 
 <svelte:head>

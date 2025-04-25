@@ -1,6 +1,3 @@
-import ky from "ky";
-import { apiClient, hhClient } from "../api/http.client";
-import { API_CONFIG } from "../config/api.config";
 import type {
   VacancyDTO,
   HHVacancyRaw,
@@ -8,6 +5,9 @@ import type {
   PaginatedVacanciesResponse,
   HHResponseRaw,
 } from "@jspulse/shared";
+// import ky from "ky"; // Удаляем неиспользуемый импорт
+import { apiClient, hhClient } from "../api/http.client";
+import { API_CONFIG } from "../config/api.config";
 
 // Тип для трансформированной вакансии без _id
 type TransformedVacancy = Omit<VacancyDTO, "_id">;
