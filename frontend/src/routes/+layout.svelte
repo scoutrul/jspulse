@@ -1,3 +1,6 @@
+<script>
+  import "../app.css";
+</script>
 
 <div class="app-container">
   <header>
@@ -77,4 +80,4 @@
     font-size: 0.9rem;
   }
   */
-</style> 
+</style>
