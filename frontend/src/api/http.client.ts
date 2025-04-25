@@ -1,24 +1,26 @@
 import ky, { type Options, HTTPError } from "ky";
-// import { PUBLIC_BACKEND_URL } from "$env/static/public"; // Не используется здесь
-// import { INTERNAL_BACKEND_URL } from "$env/dynamic/private"; // Не используется здесь
+import { PUBLIC_BACKEND_URL } from "$env/static/public";
 import { API_CONFIG } from "../config/api.config";
 
-// Add base options configuration
-const baseOptions = {
+if (!PUBLIC_BACKEND_URL) {
+  console.error(
+    "FATAL: Переменная окружения PUBLIC_BACKEND_URL не найдена! Укажите ее в frontend/.env или в environment Docker-сервиса"
+  );
+}
+
+const baseOptions: Options = {
   headers: {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   },
   timeout: 10000,
 };
 
-// Базовый клиент без prefixUrl
 export const apiClient = ky.create({
-  // prefixUrl убран
+  prefixUrl: PUBLIC_BACKEND_URL,
   headers: baseOptions.headers,
   timeout: baseOptions.timeout,
 });
 
-// Создаем экземпляр ky для HeadHunter API
 export const hhClient = ky.create({
   prefixUrl: API_CONFIG.HH_API.BASE_URL,
   headers: {
@@ -28,5 +30,4 @@ export const hhClient = ky.create({
   timeout: baseOptions.timeout,
 });
 
-// Реэкспортируем HTTPError
 export { HTTPError };

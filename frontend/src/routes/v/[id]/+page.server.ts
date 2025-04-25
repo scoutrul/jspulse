@@ -1,38 +1,20 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoadEvent } from "./$types";
 import type { VacancyApiResponse } from "@jspulse/shared";
-// import ky, { HTTPError } from "ky"; // Убрали ky, т.к. используем apiClient
-// import { INTERNAL_BACKEND_URL } from "$env/dynamic/private"; // Убираем этот импорт
-import { apiClient } from "../../../api/http.client"; // Исправлен путь
-import { HTTPError } from "../../../api/http.client"; // Реэкспортируем HTTPError
-// Убираем импорт из $env
-// import { PUBLIC_BACKEND_URL } from "$env/dynamic/public";
+import { fetchApiData } from "$lib/utils/apiUtils";
 
 export async function load({ params }: PageServerLoadEvent) {
   const { id } = params;
   const endpoint = `api/vacancies/${id}`;
 
-  // Читаем переменную напрямую из process.env
-  const backendUrl = process.env.PUBLIC_BACKEND_URL;
-
-  if (!backendUrl) {
-    console.error("FATAL: Переменная окружения PUBLIC_BACKEND_URL не найдена в process.env");
-    error(500, { message: "Не настроен PUBLIC_BACKEND_URL в process.env" });
-  }
-
-  const fullApiUrl = `${backendUrl}/${endpoint}`;
-  console.log(`[v/${id}/+page.server.ts] Fetching data from: ${fullApiUrl}`);
-
   try {
-    // Используем apiClient с полным URL
-    const responseData = await apiClient.get(fullApiUrl).json<VacancyApiResponse>();
+    const responseData = await fetchApiData<VacancyApiResponse>(endpoint);
 
     if (
       responseData?.status !== "OK" ||
       responseData.data === null ||
       responseData.data === undefined
     ) {
-      // Ситуация: API вернул 200 ОК, но data: null (не должно быть при 404 от бэка)
       if (responseData?.status === "OK" && responseData.data === null) {
         console.warn(`[Load Vacancy ${id}] API вернул статус OK, но data = null.`);
         error(404, { message: `Вакансия с ID ${id} не найдена (API вернул null)` });
@@ -46,19 +28,13 @@ export async function load({ params }: PageServerLoadEvent) {
       vacancy: responseData.data,
     };
   } catch (err) {
-    console.error(`Ошибка при загрузке вакансии ${id}:`, err);
-    if (err instanceof HTTPError) {
-      const status = err.response.status;
-      const errorText = await err.response.text();
-      console.error(`Ответ сервера при ошибке (${status}):`, errorText.slice(0, 500));
-      if (status === 404) {
-        error(404, { message: `Вакансия с ID ${id} не найдена` });
-      }
-      error(status, { message: `Ошибка сервера при загрузке вакансии: ${err.message}` });
-    } else if (err instanceof Error) {
-      // Не HTTP ошибки (например, ошибка сети, DNS)
-      error(500, { message: `Внутренняя ошибка: ${err.message}` });
+    console.error(`[v/${id}/+page.server.ts] Ошибка при обработке данных вакансии ${id}:`, err);
+
+    if (err && typeof err === "object" && "status" in err && "message" in err) {
+      throw err;
     }
-    error(500, { message: "Непредвиденная ошибка при загрузке данных" });
+
+    const message = err instanceof Error ? err.message : "Неизвестная внутренняя ошибка";
+    error(500, { message: `Внутренняя ошибка при обработке вакансии ${id}: ${message}` });
   }
 }
