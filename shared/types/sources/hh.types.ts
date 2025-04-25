@@ -1,6 +1,5 @@
 // shared/types/sources/hh.types.ts
 // Определения типов для СЫРОГО ответа от HeadHunter API
-// ... (комментарии и вспомогательные типы HHAddress, HHDepartment, и т.д. остаются как были) ...
 
 // --- Вспомогательные типы ---
 
@@ -61,7 +60,6 @@ export interface HHSnippet {
 }
 
 // --- Основной интерфейс СЫРОЙ вакансии HH ---
-
 // Переименовываем в HHVacancyRaw, чтобы подчеркнуть, что это сырые данные
 export interface HHVacancyRaw {
   id: string;
@@ -83,7 +81,7 @@ export interface HHVacancyRaw {
   snippet?: HHSnippet;
   department?: HHDepartment | null;
   // ... прочие поля ...
-  premium?: boolean;
+  premium: boolean;
   has_test?: boolean;
   response_letter_required?: boolean;
   type?: { id: string; name: string };
@@ -107,7 +105,6 @@ export interface HHVacancyRaw {
 }
 
 // --- Интерфейс СЫРОГО ответа списка вакансий ---
-
 export interface HHResponseRaw {
   items: HHVacancyRaw[]; // Используем сырой тип
   found: number;

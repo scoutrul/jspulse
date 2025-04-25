@@ -1,13 +1,13 @@
-import mongoose from 'mongoose';
-import express from 'express';
-import cors from 'cors';
-import dotenv from 'dotenv';
-import vacancyRoutes from './routes/vacancyRoutes.js';
+import express, { Express, Request, Response } from "express";
+import dotenv from "dotenv";
+import cors from "cors";
+// import { connectDB } from "./config/db.js";
+import vacancyRoutes from "./routes/vacancyRoutes.js";
 
 // Загрузка переменных окружения
 dotenv.config();
 
-const app = express();
+const app: Express = express();
 // Читаем стандартную переменную PORT или используем 5000
 const port = process.env.PORT || 5000;
 
@@ -15,24 +15,11 @@ const port = process.env.PORT || 5000;
 app.use(cors()); // Разрешаем CORS-запросы (настройте более строго для продакшена)
 app.use(express.json()); // Для парсинга JSON-тел запросов
 
-// Подключение к MongoDB
-const mongoUri = process.env.MONGO_URI; // Берем только из env
-
-if (!mongoUri) {
-  console.error('MONGO_URI не определена в переменных окружения!'); // Обновляем сообщение об ошибке
-  process.exit(1); // Выход, если нет URI для подключения к БД
-}
-
-mongoose.connect(mongoUri)
-  .then(() => console.log('MongoDB подключена успешно'))
-  .catch(err => {
-    console.error('Ошибка подключения к MongoDB:', err);
-    process.exit(1); // Выход при ошибке подключения
-  });
+// connectDB(); // Комментируем вызов
 
 // Простой тестовый роут
-app.get('/', (req, res) => {
-  res.send('Backend JSPulse работает!');
+app.get("/", (req: Request, res: Response) => {
+  res.send("Backend is running!");
 });
 
 // TODO: Подключить основные роуты приложения (например, для вакансий)
@@ -41,9 +28,9 @@ app.get('/', (req, res) => {
 
 // Application Routes
 // TODO: Connect main application routes
-app.use('/api/vacancies', vacancyRoutes); // Подключаем маршруты вакансий
+app.use("/api/vacancies", vacancyRoutes); // Подключаем маршруты вакансий
 
 // Запуск сервера
 app.listen(port, () => {
-  console.log(`Сервер запущен на порту ${port}`);
+  console.log(`[server]: Server is running at http://localhost:${port}`);
 });

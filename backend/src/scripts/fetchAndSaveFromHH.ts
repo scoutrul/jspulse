@@ -1,14 +1,16 @@
 import mongoose from "mongoose";
 import "dotenv/config";
-import { Vacancy } from "../models/Vacancy.js";  // Исправляем на .js
-import { transformHHVacancyToIVacancy } from "../utils/transformations.js"; // Исправляем на .js
+import { Vacancy } from "../models/Vacancy.js";
+import { transformHHVacancyToIVacancy } from "../utils/transformations.js";
+// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
 import type { HHResponseRaw } from "@jspulse/shared";
 import ky, { HTTPError } from "ky";
-import { HH_API_BASE_URL } from "../config/api.js"; // Исправляем на .js
+
+import { HH_API_BASE_URL } from "../config/api.js";
 
 const SOURCE_HH = "hh.ru";
 const MAX_VACANCIES_PER_PAGE = 100; // HH API limit
-const MAX_PAGES_TO_FETCH = 20; // Увеличиваем количество страниц
+const MAX_PAGES_TO_FETCH = 20;
 const SEARCH_TEXT = "JavaScript Developer OR Frontend Developer";
 
 async function fetchAndSaveHHVacancies() {
@@ -20,7 +22,6 @@ async function fetchAndSaveHHVacancies() {
 
   let connection;
   try {
-    // Подключение к БД
     connection = await mongoose.connect(mongoUrl);
     console.log("Успешное подключение к MongoDB");
 
@@ -43,7 +44,6 @@ async function fetchAndSaveHHVacancies() {
       );
 
       try {
-        // Используем ky для запроса и парсинга JSON
         const data = await ky
           .get(HH_API_BASE_URL, {
             searchParams: searchParams,
@@ -101,16 +101,13 @@ async function fetchAndSaveHHVacancies() {
       }
     }
 
-    console.log("--- Итоговая статистика --- ");
+    console.log("Итоговая статистика: ");
     console.log(`Всего получено: ${totalReceived}`);
     console.log(`Новых сохранено: ${totalNew}`);
     console.log(`Уже существовало: ${totalExisting}`);
-    console.log("---------------------------");
   } catch (error) {
-    // Ошибки подключения к БД или другие общие ошибки
     console.error("Произошла критическая ошибка во время выполнения скрипта:", error);
   } finally {
-    // Закрытие соединения с БД
     if (connection) {
       await mongoose.disconnect();
       console.log("Соединение с MongoDB закрыто");
@@ -118,7 +115,6 @@ async function fetchAndSaveHHVacancies() {
   }
 }
 
-// Запуск скрипта
 fetchAndSaveHHVacancies();
 
 export default fetchAndSaveHHVacancies;

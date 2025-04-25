@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
 import dotenv from "dotenv";
 import path from "path";
-import { Vacancy } from "../models/Vacancy.js"; 
+import { fileURLToPath } from "url";
 
 // Загружаем переменные окружения из .env файла бэкенда
 // Используем import.meta.url для ESM
-const __filename = new URL(import.meta.url).pathname;
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-dotenv.config({ path: path.resolve(__dirname, "../.env") });
+dotenv.config({ path: path.resolve(__dirname, "../../../.env") });
 
 const MONGO_URI = process.env.MONGO_URI;
 
@@ -20,17 +20,29 @@ async function clearDatabase() {
   console.log("Подключение к MongoDB...");
   try {
     await mongoose.connect(MONGO_URI);
-    console.log("MongoDB подключен.");
+    console.log("Подключено к MongoDB для очистки");
 
-    console.log("Очистка коллекции vacancies...");
-    const deleteResult = await Vacancy.deleteMany({});
-    console.log(`Удалено ${deleteResult.deletedCount} вакансий.`);
+    const collections = await mongoose.connection.db.collections();
+    console.log(
+      "Найденные коллекции:",
+      collections.map((c) => c.collectionName)
+    );
+
+    let deletedCount = 0;
+    for (const collection of collections) {
+      console.log(`Очистка коллекции: ${collection.collectionName}...`);
+      const result = await collection.deleteMany({});
+      console.log(` -> Удалено документов: ${result.deletedCount}`);
+      deletedCount += result.deletedCount ?? 0;
+    }
+
+    console.log(`\nОчистка завершена. Всего удалено документов: ${deletedCount}`);
   } catch (error) {
     console.error("Ошибка при очистке базы данных:", error);
     process.exit(1);
   } finally {
     await mongoose.disconnect();
-    console.log("Отключено от MongoDB.");
+    console.log("Соединение с MongoDB закрыто");
   }
 }
 

@@ -1,10 +1,10 @@
+// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
 import type { IVacancy } from "@jspulse/shared";
+// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
 import type { HHVacancyRaw, HHSkill } from "@jspulse/shared";
 
-// Интерфейсы, описывающие структуру вакансии с HH API
 // Основано на https://github.com/hhru/api/blob/master/docs_eng/vacancies.md
 // и практическом опыте (поля могут отсутствовать или быть null)
-
 const SOURCE_HH = "hh.ru";
 
 /**

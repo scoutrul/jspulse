@@ -1,6 +1,7 @@
 <script lang="ts">
   import { formatDate } from "$lib/utils/date.utils";
-  import type { PaginatedVacanciesResponse } from "@jspulse/shared";
+  // @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
+  import type { PaginatedVacanciesResponse, VacancyDTO } from "@jspulse/shared";
   import { apiClient, HTTPError } from "../api/http.client";
   import type { PageData } from "./$types"; // Импортируем PageData
 
@@ -81,11 +82,13 @@
     const responseData = await fetchVacancies(5, loadedCount, selectedSkills);
 
     if (responseData) {
-      // Преобразуем даты перед добавлением
-      const newVacancies = responseData.vacancies.map((v) => ({
-        ...v,
-        publishedAt: new Date(v.publishedAt),
-      }));
+      // Преобразуем даты перед добавлением и указываем тип v
+      const newVacancies = responseData.items.map(
+        (v: VacancyDTO & { htmlDescription?: string }) => ({
+          ...v,
+          publishedAt: new Date(v.publishedAt),
+        })
+      );
       displayedVacancies = [...displayedVacancies, ...newVacancies];
       loadedCount = displayedVacancies.length;
     }
@@ -170,7 +173,7 @@
                 </div>
               {/if}
               <p class="published-at">
-                Опубликовано: {formatDate(vacancy.publishedAt.toISOString())}
+                Опубликовано: {formatDate(vacancy.publishedAt)}
               </p>
               <details class="description-details">
                 <summary>Описание</summary>

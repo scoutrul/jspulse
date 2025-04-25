@@ -16,4 +16,6 @@ export interface VacancyDTO {
   experience?: string;
   employment?: string;
   address?: string;
+  rawData?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
+  htmlDescription?: string; // Поле для очищенного HTML описания
 }

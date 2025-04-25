@@ -1,128 +1,100 @@
-import express, { Request, Response, Router } from "express";
-import { Vacancy, IVacancyDocument } from '../models/Vacancy.js';
-import { FilterQuery } from "mongoose";
-import type { PaginatedVacanciesResponse, VacancyDTO } from '@jspulse/shared';
-import mongoose from "mongoose"; // Add mongoose import
+import express, { Request, Response } from "express";
+import { Vacancy } from "../models/Vacancy.js";
+import { isValidObjectId } from "mongoose";
+// import { connectDB } from "../config/db.js"; // Временно комментируем
+import type { PaginatedVacanciesResponse, VacancyDTO, ApiSingleResponse } from "@jspulse/shared";
 
-const router: Router = express.Router();
+const router = express.Router();
 
-// Получить все вакансии с пагинацией и фильтрацией
 router.get("/", async (req: Request, res: Response) => {
+  const { limit = 10, page = 0, skills } = req.query;
+  const numLimit = parseInt(limit as string, 10);
+  const numPage = parseInt(page as string, 10);
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const query: any = {};
+  if (skills) {
+    query.skills = { $in: (skills as string).split(",").map((s) => s.trim()) };
+  }
+
   try {
-    // Проверка подключения к MongoDB
-    const db = mongoose.connection;
-    console.log('MongoDB connection state:', db.readyState);
-    console.log('Connected database:', db.name);
-    console.log('MongoDB host:', db.host);
-    console.log('MongoDB connection string:', process.env.MONGO_URL);
-    console.log('Filter parameters:', req.query);
-    
-    const page = parseInt(req.query.page as string) || 0;
-    const limit = parseInt(req.query.limit as string) || 10;
-    const skip = page * limit;
-
-    const filter: FilterQuery<IVacancyDocument> = {};
-    console.log('Initial filter:', filter);
-
-    const skillsQuery = req.query.skills as string;
-    if (skillsQuery) {
-      const skillsArray = skillsQuery.split(",").map(skill => skill.trim());
-      console.log('Processed skills filter:', skillsArray);
-      filter.skills = { $all: skillsArray };
-    }
-
-    console.log('Final filter before query:', filter);
-    const vacanciesDocs = await Vacancy.find(filter)
+    const total = await Vacancy.countDocuments(query);
+    const vacancies = await Vacancy.find(query)
+      .limit(numLimit)
+      .skip(numPage * numLimit)
       .sort({ publishedAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean<IVacancyDocument[]>();
+      .lean<VacancyDTO[]>();
 
-    // Теперь TypeScript знает тип doc
-    // Явно указываем возвращаемый тип для map
-    const vacancies: VacancyDTO[] = vacanciesDocs.map((doc): VacancyDTO => ({
-      _id: doc._id.toString(),
-      externalId: doc.externalId,
-      title: doc.title,
-      company: doc.company,
-      location: doc.location,
-      url: doc.url,
-      // Передаем Date напрямую, без toISOString()
-      publishedAt: doc.publishedAt,
-      source: doc.source,
-      description: doc.description,
-      schedule: doc.schedule,
-      skills: doc.skills || [],
-      salaryFrom: doc.salaryFrom,
-      salaryTo: doc.salaryTo,
-      salaryCurrency: doc.salaryCurrency,
-      experience: doc.experience,
-      employment: doc.employment,
-      address: doc.address,
-    }));
+    const totalPages = Math.ceil(total / numLimit);
 
-    const totalCount = await Vacancy.countDocuments(filter);
-
-    // Формируем ответ согласно PaginatedVacanciesResponse
-    const response: PaginatedVacanciesResponse = {
-      status: "OK",
-      message: "Вакансии успешно получены",
-      data: {
-        vacancies,
-        total: totalCount, // Используем поле total
-        page: page, // Текущая страница
-        limit: limit, // Лимит на странице
-        totalPages: Math.ceil(totalCount / limit), // Общее количество страниц
-      },
+    const response: PaginatedVacanciesResponse["data"] = {
+      items: vacancies.map((doc) => {
+        const { _id, ...rest } = doc;
+        return {
+          ...rest,
+          _id: _id.toString(),
+          publishedAt: doc.publishedAt,
+        };
+      }),
+      total,
+      page: numPage,
+      limit: numLimit,
+      totalPages,
     };
 
-    // Логируем полный ответ перед отправкой
-    console.log("Ответ API (/api/vacancies):");
-    console.log(JSON.stringify(response, null, 2));
+    const apiResponse: PaginatedVacanciesResponse = {
+      status: "OK",
+      data: response,
+    };
 
-    res.json(response);
-  } catch (error: unknown) {
+    console.log("[GET /vacancies] Response data sample:", apiResponse.data?.items?.slice(0, 1));
+    res.json(apiResponse);
+  } catch (error) {
     console.error("Ошибка при получении вакансий:", error);
-    const message = error instanceof Error ? error.message : "Неизвестная ошибка";
-    // Возвращаем стандартизированный ответ об ошибке
-    res.status(500).json({
-        status: "ERROR",
-        message: "Ошибка сервера при получении вакансий",
-        error: message
-    });
+    res.status(500).json({ status: "ERROR", message: "Ошибка сервера при получении вакансий" });
   }
 });
 
-// Получить вакансию по ID
 router.get("/:id", async (req: Request, res: Response) => {
+  const { id } = req.params;
+
+  if (!isValidObjectId(id)) {
+    return res.status(400).json({ status: "ERROR", message: "Некорректный ID вакансии" });
+  }
+
   try {
-    const vacancy = await Vacancy.findById(req.params.id);
+    const vacancy = await Vacancy.findById(id).lean<VacancyDTO>();
+
+    let response: ApiSingleResponse<VacancyDTO>;
 
     if (!vacancy) {
-      res.status(404).json({
-        status: "ERROR",
+      response = {
+        status: "OK",
+        data: null,
         message: "Вакансия не найдена",
-      });
-      return;
+      };
+      console.log(`[GET /vacancies/${id}] Вакансия не найдена`);
+      return res.status(200).json(response);
+    } else {
+      const { _id, ...rest } = vacancy;
+      response = {
+        status: "OK",
+        data: {
+          ...rest,
+          _id: _id.toString(),
+          publishedAt: vacancy.publishedAt,
+        },
+        message: "Вакансия найдена",
+      };
+      console.log(`[GET /vacancies/${id}] Вакансия найдена:`, response.data?.title);
+      res.json(response);
     }
-
-    res.json({
-      status: "OK",
-      message: "Вакансия успешно получена",
-      data: vacancy,
-    });
-  } catch (error: unknown) {
-    console.error(`Ошибка при получении вакансии ${req.params.id}:`, error);
-    const message = error instanceof Error ? error.message : "Неизвестная ошибка";
-    res.status(500).json({
-      status: "ERROR",
-      message: "Ошибка при получении вакансии",
-      error: message,
-    });
+  } catch (error) {
+    console.error(`Ошибка при получении вакансии ${id}:`, error);
+    res
+      .status(500)
+      .json({ status: "ERROR", message: `Ошибка сервера при получении вакансии ${id}` });
   }
 });
-
-// В GET /:id тоже стоит проверить возвращаемый тип и структуру ответа
-// Например, использовать ApiSingleResponse<VacancyDTO> из shared/types/dto/api.dto.ts
 
 export default router;

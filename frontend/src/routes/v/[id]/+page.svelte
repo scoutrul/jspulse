@@ -1,21 +1,19 @@
 <!-- frontend/src/routes/v/[id]/+page.svelte -->
 <script lang="ts">
   import type { PageData } from "./$types";
+  import { onMount } from "svelte";
   import DOMPurify from "dompurify";
-  import { browser } from "$app/environment"; // Для использования DOMPurify только в браузере
   import { formatDate } from "$lib/utils/date.utils"; // <-- Добавляем импорт
 
   export let data: PageData; // Данные из load функции в +page.server.ts
 
-  // DOMPurify можно использовать только в браузере
-  let sanitizedDescription = "";
-  $: if (browser && data.vacancy?.description) {
-    sanitizedDescription = DOMPurify.sanitize(data.vacancy.description);
-  } else if (data.vacancy?.description) {
-    // На сервере можно оставить как есть или применить базовую очистку, если нужно
-    // Но безопаснее всего рендерить HTML только на клиенте после DOMPurify
-    sanitizedDescription = ""; // Или отобразить заглушку/текстовую версию
-  }
+  let purifiedDescription: string | undefined;
+
+  onMount(() => {
+    if (data.vacancy?.description) {
+      purifiedDescription = DOMPurify.sanitize(data.vacancy.description);
+    }
+  });
 </script>
 
 <svelte:head>
@@ -114,12 +112,12 @@
         </section>
       {/if}
 
-      {#if sanitizedDescription}
+      {#if purifiedDescription}
         <section class="description-section">
           <h2>Описание вакансии:</h2>
           <div class="description-content">
             <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html sanitizedDescription}
+            {@html purifiedDescription}
           </div>
         </section>
       {/if}

@@ -3,22 +3,24 @@
  * @param dateString - Строка с датой (например, в ISO формате) или undefined.
  * @returns Локализованная строка даты или 'Не указана'.
  */
-export const formatDate = (dateString: string | undefined): string => {
-  if (!dateString) return 'Не указана';
+export function formatDate(dateString: string | Date): string {
   try {
-    const date = new Date(dateString);
-    // Проверка на валидность даты после парсинга
+    const date = typeof dateString === "string" ? new Date(dateString) : dateString;
+
     if (isNaN(date.getTime())) {
-        console.warn(`Invalid date string received: ${dateString}`);
-        return 'Некорректная дата';
+      console.warn(`[formatDate] Invalid date value received: ${dateString}`);
+      return "Некорректная дата";
     }
-    return new Intl.DateTimeFormat('ru-RU', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
+
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(date);
   } catch (error) {
-      console.error(`Error formatting date string: ${dateString}`, error);
-      return 'Ошибка формата';
+    console.error("[formatDate] Error formatting date:", error);
+    return "Ошибка форматирования";
   }
-}; 
+}

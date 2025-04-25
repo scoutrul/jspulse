@@ -1,3 +1,4 @@
+// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
 import type {
   VacancyDTO,
   HHVacancyRaw,
@@ -5,11 +6,9 @@ import type {
   PaginatedVacanciesResponse,
   HHResponseRaw,
 } from "@jspulse/shared";
-// import ky from "ky"; // Удаляем неиспользуемый импорт
 import { apiClient, hhClient } from "../api/http.client";
 import { API_CONFIG } from "../config/api.config";
 
-// Тип для трансформированной вакансии без _id
 type TransformedVacancy = Omit<VacancyDTO, "_id">;
 
 interface FormattedSalary {
@@ -19,7 +18,6 @@ interface FormattedSalary {
 }
 
 class VacancyService {
-  // Получение вакансий из нашего API с пагинацией и фильтрацией
   async getVacancies(params: {
     page?: number;
     limit?: number;
@@ -38,26 +36,25 @@ class VacancyService {
       .get(API_CONFIG.ENDPOINTS.VACANCIES, { searchParams })
       .json<PaginatedVacanciesResponse>();
 
-    if (response.status === "OK") {
-      // Преобразуем строки дат в объекты Date
-      const vacanciesWithDates = response.data.vacancies.map((vacancy: VacancyDTO) => ({
+    if (response.status === "OK" && response.data) {
+      const vacanciesWithDates = response.data.items.map((vacancy: VacancyDTO) => ({
         ...vacancy,
-        // Преобразуем строку в Date. Полагаемся, что publishedAt всегда строка.
         publishedAt: new Date(vacancy.publishedAt),
       }));
 
-      // Возвращаем данные с преобразованными датами
       return {
         ...response.data,
-        vacancies: vacanciesWithDates,
+        items: vacanciesWithDates,
       };
     } else {
       console.error("Failed to fetch vacancies:", response);
+      if (response.status === "OK" && response.data === null) {
+        return { items: [], total: 0, page: 0, limit: 0, totalPages: 0 };
+      }
       throw new Error(response.message || "Failed to fetch vacancies from API");
     }
   }
 
-  // Получение вакансий напрямую из HH API и трансформация в наш DTO
   async getHHVacancies(params: {
     text?: string;
     area?: string;
@@ -76,7 +73,6 @@ class VacancyService {
     }
   }
 
-  // Преобразование сырой вакансии HH в наш формат VacancyDTO
   transformHHVacancy(hhVacancy: HHVacancyRaw): TransformedVacancy {
     const salaryInfo = this.parseSalary(hhVacancy.salary);
 

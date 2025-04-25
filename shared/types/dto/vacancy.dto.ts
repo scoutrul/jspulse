@@ -1,4 +1,4 @@
-import type { BaseVacancy } from '../core/vacancy.base.js'; // Правильный импорт
+import type { BaseVacancy } from "../core/vacancy.base.js"; // Правильный импорт
 
 export interface VacancyDTO extends BaseVacancy {
   _id: string;
@@ -20,5 +20,5 @@ export interface VacancyDTO extends BaseVacancy {
   // но для DTO лучше использовать строку (ISO формат)
   // Переопределяем или трансформируем на бэкенде.
   // Пока оставим Date из BaseVacancy, трансформацию сделаем на бэке.
-  publishedAt: Date; // Убираем переопределение типа, оставляем Date как в BaseVacancy
+  publishedAt: Date;
 }

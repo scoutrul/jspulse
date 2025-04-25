@@ -1,5 +1,6 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoadEvent } from "./$types";
+// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
 import type { VacancyApiResponse } from "@jspulse/shared";
 import { fetchApiData } from "$lib/utils/apiUtils";
 

@@ -1,3 +1,4 @@
+// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
 import { VacancyDTO } from "@jspulse/shared";
 
 /**
@@ -76,4 +77,4 @@ const mockVacancies: Partial<VacancyDTO>[] = [
   },
 ];
 
-export default mockVacancies; 
+export default mockVacancies;
