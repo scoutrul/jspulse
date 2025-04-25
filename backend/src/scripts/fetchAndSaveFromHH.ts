@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import "dotenv/config";
 import { Vacancy } from "../models/Vacancy.js";
 import { transformHHVacancyToIVacancy } from "../utils/transformations.js";
-// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
+// ts-expect-error
 import type { HHResponseRaw } from "@jspulse/shared";
 import ky, { HTTPError } from "ky";
 
