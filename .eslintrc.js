@@ -45,6 +45,16 @@ module.exports = {
     ],
     "@typescript-eslint/explicit-module-boundary-types": "off", // Не требуем явно указывать тип возвращаемого значения для экспортируемых функций
     "@typescript-eslint/no-explicit-any": "warn", // Предупреждение при использовании any
+    "@typescript-eslint/ban-ts-comment": [
+      "warn", // Оставляем предупреждение
+      {
+        "ts-expect-error": "allow-with-description", // Разрешаем с описанием
+        "ts-ignore": false, // Запрещаем ts-ignore
+        "ts-nocheck": true,
+        "ts-check": false,
+        minimumDescriptionLength: 3,
+      },
+    ],
     "svelte/comment-directive": "error", // Требует 설명을 для <!-- svelte-ignore -->
     "svelte/no-at-html-tags": "warn", // Предупреждать об использовании {@html}
     "svelte/no-reactive-functions": "warn", // Предупреждать об использовании функций в реактивных объявлениях ($:)
