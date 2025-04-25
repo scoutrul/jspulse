@@ -2,4 +2,4 @@
  * DTO для количества вакансий по навыкам.
  * Представляет собой объект, где ключ - название навыка, значение - количество вакансий.
  */
-export type SkillCountsDTO = Record<string, number>; 
+export type SkillCountsDTO = Record<string, number>;

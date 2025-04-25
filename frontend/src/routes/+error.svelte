@@ -1,11 +1,11 @@
 <!-- frontend/src/routes/+error.svelte -->
 <script lang="ts">
-  import { page } from '$app/stores';
+  import { page } from "$app/stores";
 </script>
 
 <div class="error-page-container">
   <h1>Ошибка {$page.status}</h1>
-  <p>{$page.error?.message || 'Произошла непредвиденная ошибка'}</p>
+  <p>{$page.error?.message || "Произошла непредвиденная ошибка"}</p>
 
   {#if $page.error?.stack && import.meta.env.DEV}
     <h2>Stack Trace (Development Mode):</h2>
@@ -42,13 +42,13 @@
     margin-top: 1rem;
     font-size: 0.85em;
   }
-   a {
-     display: inline-block;
-     margin-top: 1.5rem;
-     color: #007bff;
-     text-decoration: none;
-   }
-   a:hover {
-     text-decoration: underline;
-   }
-</style> 
+  a {
+    display: inline-block;
+    margin-top: 1.5rem;
+    color: #007bff;
+    text-decoration: none;
+  }
+  a:hover {
+    text-decoration: underline;
+  }
+</style>

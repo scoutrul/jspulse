@@ -1,5 +1,5 @@
 /* Импорты Skeleton */
-@import '@skeletonlabs/skeleton';
+@import "@skeletonlabs/skeleton";
 /* @import '@skeletonlabs/skeleton/themes/skeleton.css'; */
 /* @import '@skeletonlabs/skeleton/themes/skeleton'; */
 /* @import '@skeletonlabs/skeleton/dist/themes/skeleton.css'; */
@@ -19,6 +19,6 @@
 /* @import '@skeletonlabs/skeleton/styles/presets/preset-shadcn-light.css'; */
 /* @import '@skeletonlabs/skeleton/styles/presets/preset-shadcn-dark.css'; */
 
-@import 'tailwindcss';
+@import "tailwindcss";
 
-/* Пользовательские стили можно добавлять ниже */ 
+/* Пользовательские стили можно добавлять ниже */

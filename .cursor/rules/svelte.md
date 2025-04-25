@@ -22,6 +22,7 @@ Declare component props using the `$props` rune and handle events as props. Exam
 
 Children and Components:
 Use the children prop for content projection instead of slots. Example:
+
 ```javascript
 let {children} = $props();
 <div>{@render children?.()}</div>
@@ -37,8 +38,10 @@ SEO Optimization:
 Implement meta tags and OpenGraph data. Use proper heading hierarchy and semantic HTML. Add descriptive alt text for images.
 
 ---
+
 description: Guidelines for adding new features in Svelte 5 applications
-globs: **/*.svelte, **/*.ts
+globs: **/\*.svelte, **/\*.ts
+
 ---
 
 You are a senior Svelte 5 developer with expertise in building scalable applications. Follow these guidelines when adding new features.
@@ -46,30 +49,33 @@ You are a senior Svelte 5 developer with expertise in building scalable applicat
 # Component Features
 
 ## Structure
+
 Place components in the `src/lib/components/` directory using a feature-based structure. Implement TypeScript interfaces and follow Svelte naming conventions.
 
 ## Example
+
 ```svelte
 <script lang="ts">
-  import type { Product } from '$lib/types';
-  
+  import type { Product } from "$lib/types";
+
   let { product } = $props<{
-    product: Product
+    product: Product;
   }>();
-  
+
   let isHovered = $state(false);
   let buttonClasses = $derived(() => ({
-    'btn-primary': true,
-    'btn-hover': isHovered
+    "btn-primary": true,
+    "btn-hover": isHovered,
   }));
 </script>
 
 <div class="product-card">
   <h3>{product.title}</h3>
-  <button class={Object.entries(buttonClasses)
-    .filter(([, value]) => value)
-    .map(([key]) => key)
-    .join(' ')}
+  <button
+    class={Object.entries(buttonClasses)
+      .filter(([, value]) => value)
+      .map(([key]) => key)
+      .join(" ")}
   >
     Add to Cart
   </button>
@@ -77,6 +83,7 @@ Place components in the `src/lib/components/` directory using a feature-based st
 ```
 
 ## Best Practices
+
 - Use runes for state management. Example: `let count = $state(0)`
 - Implement TypeScript for type safety and better developer experience
 - Keep components focused and use proper composition patterns
@@ -87,26 +94,28 @@ Place components in the `src/lib/components/` directory using a feature-based st
 # Store Features
 
 ## Structure
+
 Place stores in `src/lib/stores/` directory and implement proper TypeScript types.
 
 ## Example
+
 ```typescript
 // src/lib/stores/products.ts
-import { writable } from 'svelte/store';
+import { writable } from "svelte/store";
 
 function createProductStore() {
   const { subscribe, set, update } = writable({
     products: [],
     loading: false,
-    error: null
+    error: null,
   });
-  
+
   return {
     subscribe,
     async fetchProducts() {
-      update(state => ({ ...state, loading: true }));
+      update((state) => ({ ...state, loading: true }));
       // Fetch implementation
-    }
+    },
   };
 }
 
@@ -114,6 +123,7 @@ export const productStore = createProductStore();
 ```
 
 ## Best Practices
+
 - Use proper store patterns with TypeScript
 - Implement immutable state updates
 - Keep stores focused on specific features
@@ -123,12 +133,14 @@ export const productStore = createProductStore();
 # Route Features
 
 ## Structure
+
 Use SvelteKit for routing and place routes in `src/routes/` directory.
 
 ## Example
+
 ```typescript
 // src/routes/products/[id]/+page.ts
-import type { PageLoad } from './$types';
+import type { PageLoad } from "./$types";
 
 export const load: PageLoad = async ({ params, fetch }) => {
   const response = await fetch(`/api/products/${params.id}`);
@@ -137,9 +149,10 @@ export const load: PageLoad = async ({ params, fetch }) => {
 ```
 
 ## Best Practices
+
 - Use server-side rendering (SSR) for better SEO and performance
 - Implement proper data loading with SvelteKit load functions
 - Use route groups for organizing related pages
 - Implement proper client-side navigation
 - Use proper error boundaries and fallbacks
-- Implement proper API routes in `src/routes/api` 
+- Implement proper API routes in `src/routes/api`
