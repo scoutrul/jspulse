@@ -1,15 +1,14 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoadEvent } from "./$types";
-// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
 import type { VacancyApiResponse } from "@jspulse/shared";
 import { fetchApiData } from "$lib/utils/apiUtils";
 
-export async function load({ params }: PageServerLoadEvent) {
+export async function load({ params, fetch }: PageServerLoadEvent) {
   const { id } = params;
   const endpoint = `api/vacancies/${id}`;
 
   try {
-    const responseData = await fetchApiData<VacancyApiResponse>(endpoint);
+    const responseData = await fetchApiData<VacancyApiResponse>(endpoint, fetch);
 
     if (
       responseData?.status !== "OK" ||
