@@ -140,7 +140,7 @@ JS Пульс собирает свежие вакансии по фронтен
     ```bash
     docker-compose up -d mongo
     ```
-5.  Создайте и настройте файлы `.env` (см. секцию "Переменные окружения"). Для локальной разработки убедитесь, что `backend/.env` содержит `MONGO_URL=mongodb://localhost:27017/jspulse`.
+5.  Создайте и настройте файлы `.env` (см. секцию "Переменные окружения"). Для локальной разработки убедитесь, что `backend/.env` содержит `MONGO_URI=mongodb://localhost:27017/jspulse`.
 6.  Запустите всё в режиме разработки **одной командой из корня проекта**:
     ```bash
     pnpm run dev
@@ -165,7 +165,7 @@ JS Пульс собирает свежие вакансии по фронтен
     ```bash
     pnpm install
     ```
-4.  Создайте и настройте файлы `.env` (см. секцию "Переменные окружения"). Для Docker Compose `backend/.env` должен содержать `MONGO_URL=mongodb://mongo:27017/jspulse`.
+4.  Создайте и настройте файлы `.env` (см. секцию "Переменные окружения"). Для Docker Compose `backend/.env` должен содержать `MONGO_URI=mongodb://mongo:27017/jspulse`.
 5.  Запустите контейнеры (команда из корневого `package.json`):
     ```bash
     pnpm run docker:up
@@ -229,7 +229,7 @@ docker compose exec backend pnpm run db:refresh
 Проект использует файлы `.env` для конфигурации. Скопируйте соответствующие `.env.example` файлы (`/.env.example`, `/backend/.env.example`, `/frontend/.env.example`) в их оригинальные расположения (`.env`) и настройте переменные:
 
 - **`backend/.env`:**
-  - `MONGO_URL`: URL для подключения к MongoDB. Для **Docker Compose** используется `mongodb://mongo:27017/jspulse`, для **локального запуска** `mongodb://localhost:27017/jspulse`.
+  - `MONGO_URI`: URL для подключения к MongoDB. Для **Docker Compose** используется `mongodb://mongo:27017/jspulse`, для **локального запуска** `mongodb://localhost:27017/jspulse`.
   - `PORT` (опционально): Порт для бэкенда (по умолчанию 3001).
 - **`frontend/.env`:**
   - `VITE_API_URL`: Полный URL бэкенд API, доступный из браузера клиента (например, `http://localhost:3001`). **Важно:** При запуске фронтенда локально, а бэкенда в Docker, используйте `http://localhost:3001`. При запуске всего в Docker, можно использовать `http://backend:3001` (если настроено в `docker-compose.yml`, как сейчас), но для единообразия лучше всегда использовать `http://localhost:3001`.

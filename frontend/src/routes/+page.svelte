@@ -36,7 +36,7 @@
     const searchParams = {
       limit: String(limit),
       page: String(pageToLoad),
-      skills: skillsToLoad.join(',') // Передаем навыки через запятую
+      skills: skillsToLoad.join(","), // Передаем навыки через запятую
     };
 
     try {
@@ -48,11 +48,11 @@
       if (response.status === "OK" && response.data) {
         // Преобразуем даты перед возвратом
         const vacanciesWithDates = response.data.items.map((vacancy: VacancyDTO) => ({
-           ...vacancy,
-           publishedAt: new Date(vacancy.publishedAt),
-           // Важно: htmlDescription здесь не будет, он генерируется только в +page.server.ts
-           // Если нужно описание для новых вакансий, придется его запрашивать отдельно или менять API
-           htmlDescription: vacancy.description // Пока берем сырое описание
+          ...vacancy,
+          publishedAt: new Date(vacancy.publishedAt),
+          // Важно: htmlDescription здесь не будет, он генерируется только в +page.server.ts
+          // Если нужно описание для новых вакансий, придется его запрашивать отдельно или менять API
+          htmlDescription: vacancy.description, // Пока берем сырое описание
         }));
         // Обновляем общее количество и страницы (может измениться при фильтрации)
         totalVacancies = response.data.total;
@@ -61,7 +61,7 @@
         return { ...response.data, items: vacanciesWithDates };
       } else {
         console.error("Client-side API Error (Non-OK status or no data):", response);
-        clientError = `Ошибка API: ${response.message || 'Не удалось получить данные'}`;
+        clientError = `Ошибка API: ${response.message || "Не удалось получить данные"}`;
         return null;
       }
     } catch (err) {
@@ -69,9 +69,11 @@
       if (err instanceof KyHTTPError) {
         clientError = `Ошибка сети или сервера: ${err.message}`;
         try {
-           const errorBody = await err.response.json();
-           if (errorBody?.message) clientError += ` (${errorBody.message})`;
-        } catch { /* ignore */ }
+          const errorBody = await err.response.json();
+          if (errorBody?.message) clientError += ` (${errorBody.message})`;
+        } catch {
+          /* ignore */
+        }
       } else if (err instanceof Error) {
         clientError = "Ошибка загрузки вакансий: " + err.message;
       } else {
@@ -98,16 +100,17 @@
 
   // Реакция на изменение фильтров
   $: {
-    if (selectedSkills) { // Реагируем только на selectedSkills
+    if (selectedSkills) {
+      // Реагируем только на selectedSkills
       console.log("[+page.svelte] Фильтры изменились, перезагрузка:", selectedSkills);
       loadingFilter = true;
       displayedVacancies = []; // Очищаем список перед загрузкой
       currentPage = -1; // Сбрасываем страницу, чтобы loadMore начал с 0
       // Используем setTimeout, чтобы Svelte успел очистить список перед началом загрузки
       setTimeout(() => {
-         loadMoreVacancies().finally(() => {
-             loadingFilter = false;
-         });
+        loadMoreVacancies().finally(() => {
+          loadingFilter = false;
+        });
       }, 0);
     }
   }
@@ -118,7 +121,6 @@
 </svelte:head>
 
 <main>
-
   <section class="filters">
     <h2>Фильтр по навыкам ({availableSkills?.length ?? 0})</h2>
     {#if availableSkills && availableSkills.length > 0}
@@ -154,10 +156,10 @@
           : (displayedVacancies?.length ?? 0) >= 2 && (displayedVacancies?.length ?? 0) <= 4
             ? "вакансии найдено"
             : "вакансий найдено"}
-         (из {totalVacancies} всего)
+        (из {totalVacancies} всего)
       </h2>
 
-       {#if displayedVacancies && displayedVacancies.length === 0 && !clientError}
+      {#if displayedVacancies && displayedVacancies.length === 0 && !clientError}
         <p class="no-vacancies">Вакансий по выбранным фильтрам не найдено</p>
       {:else if displayedVacancies}
         <ul>
@@ -215,8 +217,8 @@
                 </details>
               {:else if vacancy.description}
                 <details class="description-details">
-                   <summary>Описание (raw)</summary>
-                   <pre>{vacancy.description}</pre>
+                  <summary>Описание (raw)</summary>
+                  <pre>{vacancy.description}</pre>
                 </details>
               {/if}
               <a href={vacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
@@ -278,26 +280,24 @@
     border-radius: 15px;
     border: 1px solid #dee2e6;
     font-size: 0.9rem;
-    transition: background-color 0.2s, border-color 0.2s;
+    transition:
+      background-color 0.2s,
+      border-color 0.2s;
   }
   .skills-list label:hover {
-      background-color: #f1f3f5;
+    background-color: #f1f3f5;
   }
-   .skills-list input[type="checkbox"] {
-      margin-right: 0.5rem;
-      accent-color: #007bff; /* Цвет чекбокса */
-   }
-   .skills-list input[type="checkbox"]:checked + label {
-        background-color: #e7f3ff;
-        border-color: #007bff;
-        font-weight: 500;
-   }
+  .skills-list input[type="checkbox"] {
+    margin-right: 0.5rem;
+    accent-color: #007bff; /* Цвет чекбокса */
+  }
 
   .loading {
     text-align: center;
     padding: 2rem;
     color: #555;
     font-style: italic;
+    font-weight: bold;
   }
 
   .vacancies {
@@ -461,26 +461,6 @@
   .error-message {
     margin: 0;
     font-weight: bold;
-  }
-
-  .error-details {
-    margin-top: 0.5rem;
-  }
-
-  .error-details summary {
-    cursor: pointer;
-    color: #664d03;
-    font-size: 0.9rem;
-  }
-
-  .error-details pre {
-    margin-top: 0.5rem;
-    background-color: #fff9e0;
-    padding: 0.5rem;
-    border-radius: 3px;
-    font-size: 0.85rem;
-    white-space: pre-wrap;
-    word-wrap: break-word;
   }
 
   /* Возвращаем стили для .load-more */
