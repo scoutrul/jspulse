@@ -1,21 +1,21 @@
 import express, { Express, Request, Response } from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-// import { connectDB } from "./config/db.js";
+import { connectDB } from "./config/db.js";
 import vacancyRoutes from "./routes/vacancyRoutes.js";
 
 // Загрузка переменных окружения
 dotenv.config();
 
 const app: Express = express();
-// Читаем стандартную переменную PORT или используем 5000
-const port = process.env.PORT || 5000;
+
+const port = process.env.PORT;
 
 // Middleware
 app.use(cors()); // Разрешаем CORS-запросы (настройте более строго для продакшена)
 app.use(express.json()); // Для парсинга JSON-тел запросов
 
-// connectDB(); // Комментируем вызов
+connectDB();
 
 // Простой тестовый роут
 app.get("/", (req: Request, res: Response) => {

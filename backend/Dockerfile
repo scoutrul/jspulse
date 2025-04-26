@@ -25,8 +25,8 @@ COPY backend ./backend
 # If frontend source is needed for shared types, uncomment below
 # COPY frontend ./frontend
 
-# Build the backend package (using correct package name)
-RUN pnpm --filter jspulse-backend run build
+# Build all workspace packages with a build script (including shared)
+RUN pnpm -r run build
 
 # Set the working directory for the runtime command
 WORKDIR /app/backend

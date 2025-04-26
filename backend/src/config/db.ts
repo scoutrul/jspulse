@@ -12,7 +12,10 @@ export const connectDB = async () => {
 
   try {
     // Используем импортированный MONGO_URI
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(MONGO_URI, {
+      serverSelectionTimeoutMS: 5000, // Таймаут выбора сервера
+      socketTimeoutMS: 45000, // Таймаут сокета
+    });
     console.log("MongoDB подключена успешно.");
   } catch (error) {
     console.error("Ошибка подключения к MongoDB:", error);
