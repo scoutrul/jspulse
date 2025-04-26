@@ -30,37 +30,22 @@
       <header class="vacancy-header">
         <h1>{vacancy.title}</h1>
         <div class="company-info">
-          {#if vacancy.employer?.logo_urls?.["90"]}
-            <img
-              src={vacancy.employer.logo_urls["90"]}
-              alt={`Логотип ${vacancy.employer?.name || "компании"}`}
-              class="company-logo"
-            />
-          {/if}
           <div>
             <p class="company-name">
-              {#if vacancy.employer?.alternate_url}
-                <a href={vacancy.employer.alternate_url} target="_blank" rel="noopener noreferrer">
-                  {vacancy.employer?.name || "Не указано"}
-                </a>
-              {:else}
-                {vacancy.employer?.name || "Не указано"}
-              {/if}
+              {vacancy.company || "Не указано"}
             </p>
             {#if vacancy.location}
               <p class="location">{vacancy.location}</p>
             {/if}
           </div>
         </div>
-        {#if vacancy.salaryFrom || vacancy.salaryTo}
+        {#if vacancy.salaryFrom || vacancy.salaryTo || vacancy.salaryCurrency}
           <p class="salary">
             {#if vacancy.salaryFrom}от {vacancy.salaryFrom.toLocaleString("ru-RU")}{/if}
             {#if vacancy.salaryTo}
               до {vacancy.salaryTo.toLocaleString("ru-RU")}{/if}
             {#if vacancy.salaryCurrency}
               {vacancy.salaryCurrency}{/if}
-            {#if vacancy.salary?.gross === false}
-              (на руки){/if}
           </p>
         {/if}
         <p class="published-date">Опубликовано: {formatDate(vacancy.publishedAt)}</p>
@@ -151,31 +136,14 @@
   }
 
   .company-info {
-    display: flex;
-    align-items: center;
     gap: 1rem;
     margin-bottom: 0.75rem;
-  }
-
-  .company-logo {
-    width: 50px;
-    height: 50px;
-    object-fit: contain;
-    border-radius: 4px;
-    border: 1px solid #eee;
   }
 
   .company-name {
     font-weight: bold;
     font-size: 1.1rem;
     margin: 0;
-  }
-  .company-name a {
-    color: inherit;
-    text-decoration: none;
-  }
-  .company-name a:hover {
-    text-decoration: underline;
   }
 
   .location {
