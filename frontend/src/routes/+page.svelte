@@ -2,98 +2,115 @@
   import { formatDate } from "$lib/utils/date.utils";
   // @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
   import type { PaginatedVacanciesResponse, VacancyDTO } from "@jspulse/shared";
-  import { apiClient, HTTPError } from "../api/http.client";
-  import type { PageData } from "./$types"; // Импортируем PageData
+  import { apiClient, KyHTTPError } from "../api/http.client";
+  import type { PageData } from "./$types";
 
   export let data: PageData;
 
-  // Выводим тип из данных сервера
-  type VacancyWithHtml = PageData["initialVacancies"][number];
+  type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
+
+  // Переменные для отображения и пагинации
   let displayedVacancies: VacancyWithHtml[] = data.initialVacancies || [];
-
   let totalVacancies: number = data.totalCount || 0;
-  let loadedCount: number = displayedVacancies.length;
-  let selectedSkills: string[] = []; // Оставляем для фильтрации, но не получаем из data
+  let currentPage: number = data.page ?? 0; // Начинаем с текущей страницы от сервера
+  let totalPages: number = data.totalPages ?? 0;
+  let limit: number = data.limit ?? 10;
 
+  // Навыки для фильтрации
+  let availableSkills: string[] = data.availableSkills || [];
+  let selectedSkills: string[] = [];
+
+  // Состояния загрузки
   let loadingMore = false;
   let loadingFilter = false;
   let clientError: string | null = data.error || null;
-  let clientErrorDetails: string | null = null;
 
+  // Функция для загрузки вакансий (восстанавливаем и адаптируем)
   const fetchVacancies = async (
-    limit: number,
-    skip: number,
-    skills: string[]
+    pageToLoad: number,
+    skillsToLoad: string[]
   ): Promise<PaginatedVacanciesResponse["data"] | null> => {
     clientError = null;
-    clientErrorDetails = null;
 
-    const searchParams = new URLSearchParams({
+    // Определяем параметры запроса
+    const searchParams = {
       limit: String(limit),
-      skip: String(skip),
-    });
-    if (skills.length > 0) {
-      searchParams.set("skills", skills.join(","));
-    }
+      page: String(pageToLoad),
+      skills: skillsToLoad.join(',') // Передаем навыки через запятую
+    };
 
     try {
+      // Исправляем путь запроса и передаем параметры
       const response = await apiClient
-        .get("api/vacancies", { searchParams }) // Добавляем api/
+        .get("api/vacancies", { searchParams }) // Добавляем 'api/' к пути
         .json<PaginatedVacanciesResponse>();
 
-      if (response.status === "OK") {
-        return response.data; // Возвращаем вложенные данные
+      if (response.status === "OK" && response.data) {
+        // Преобразуем даты перед возвратом
+        const vacanciesWithDates = response.data.items.map((vacancy: VacancyDTO) => ({
+           ...vacancy,
+           publishedAt: new Date(vacancy.publishedAt),
+           // Важно: htmlDescription здесь не будет, он генерируется только в +page.server.ts
+           // Если нужно описание для новых вакансий, придется его запрашивать отдельно или менять API
+           htmlDescription: vacancy.description // Пока берем сырое описание
+        }));
+        // Обновляем общее количество и страницы (может измениться при фильтрации)
+        totalVacancies = response.data.total;
+        totalPages = response.data.totalPages;
+
+        return { ...response.data, items: vacanciesWithDates };
       } else {
-        console.error("Client-side API Error (Non-OK status):", response);
-        clientError = `Ошибка API: ${response.message}`;
+        console.error("Client-side API Error (Non-OK status or no data):", response);
+        clientError = `Ошибка API: ${response.message || 'Не удалось получить данные'}`;
         return null;
       }
     } catch (err) {
       console.error("Client-side API Error:", err);
-      let details = "";
-      if (err instanceof HTTPError) {
+      if (err instanceof KyHTTPError) {
         clientError = `Ошибка сети или сервера: ${err.message}`;
         try {
-          const errorBody = await err.response.json();
-          if (errorBody && typeof errorBody === "object" && "error" in errorBody) {
-            details = `Детали от сервера: ${JSON.stringify(errorBody.error)}`;
-          } else {
-            details = `Ответ сервера (${err.response.status}): ${await err.response.text()}`;
-          }
-        } catch (parseError) {
-          details = `Не удалось получить детали ошибки от сервера. Status: ${err.response.status}.`;
-        }
+           const errorBody = await err.response.json();
+           if (errorBody?.message) clientError += ` (${errorBody.message})`;
+        } catch { /* ignore */ }
       } else if (err instanceof Error) {
         clientError = "Ошибка загрузки вакансий: " + err.message;
-        details = `Stack: ${err.stack || "N/A"}`;
       } else {
         clientError = "Произошла неизвестная ошибка при загрузке вакансий.";
-        details = `Unknown error type: ${JSON.stringify(err)}`;
       }
-      clientErrorDetails = details;
       return null;
     }
   };
 
+  // Функция для загрузки следующей страницы
   const loadMoreVacancies = async () => {
-    if (loadingMore || loadingFilter) return;
+    if (loadingMore || currentPage + 1 >= totalPages) return;
     loadingMore = true;
 
-    const responseData = await fetchVacancies(5, loadedCount, selectedSkills);
+    const nextPage = currentPage + 1;
+    const responseData = await fetchVacancies(nextPage, selectedSkills);
 
     if (responseData) {
-      // Преобразуем даты перед добавлением и указываем тип v
-      const newVacancies = responseData.items.map(
-        (v: VacancyDTO & { htmlDescription?: string }) => ({
-          ...v,
-          publishedAt: new Date(v.publishedAt),
-        })
-      );
-      displayedVacancies = [...displayedVacancies, ...newVacancies];
-      loadedCount = displayedVacancies.length;
+      displayedVacancies = [...displayedVacancies, ...responseData.items];
+      currentPage = nextPage;
     }
     loadingMore = false;
   };
+
+  // Реакция на изменение фильтров
+  $: {
+    if (selectedSkills) { // Реагируем только на selectedSkills
+      console.log("[+page.svelte] Фильтры изменились, перезагрузка:", selectedSkills);
+      loadingFilter = true;
+      displayedVacancies = []; // Очищаем список перед загрузкой
+      currentPage = -1; // Сбрасываем страницу, чтобы loadMore начал с 0
+      // Используем setTimeout, чтобы Svelte успел очистить список перед началом загрузки
+      setTimeout(() => {
+         loadMoreVacancies().finally(() => {
+             loadingFilter = false;
+         });
+      }, 0);
+    }
+  }
 </script>
 
 <svelte:head>
@@ -101,36 +118,48 @@
 </svelte:head>
 
 <main>
+
+  <section class="filters">
+    <h2>Фильтр по навыкам ({availableSkills?.length ?? 0})</h2>
+    {#if availableSkills && availableSkills.length > 0}
+      <div class="skills-list">
+        {#each availableSkills as skill (skill)}
+          <label>
+            <input type="checkbox" bind:group={selectedSkills} value={skill} />
+            {skill}
+          </label>
+        {/each}
+      </div>
+    {:else}
+      <p>Нет доступных навыков для фильтрации.</p>
+    {/if}
+  </section>
+
   {#if loadingFilter}
     <p class="loading">Применение фильтров...</p>
   {/if}
 
-  {#if clientError}
+  {#if clientError && !loadingFilter}
     <div class="error-container">
       <p class="error-message">⚠️ {clientError}</p>
-      {#if clientErrorDetails}
-        <details class="error-details">
-          <summary>Подробнее</summary>
-          <pre>{clientErrorDetails}</pre>
-        </details>
-      {/if}
     </div>
   {/if}
 
   <div class="vacancies" class:loading={loadingFilter}>
     {#if !loadingFilter}
       <h2>
-        {totalVacancies}
-        {totalVacancies === 1
-          ? "вакансия"
-          : totalVacancies >= 2 && totalVacancies <= 4
-            ? "вакансии"
-            : "вакансий"}
+        {displayedVacancies?.length ?? 0}
+        {(displayedVacancies?.length ?? 0) === 1
+          ? "вакансия найдена"
+          : (displayedVacancies?.length ?? 0) >= 2 && (displayedVacancies?.length ?? 0) <= 4
+            ? "вакансии найдено"
+            : "вакансий найдено"}
+         (из {totalVacancies} всего)
       </h2>
 
-      {#if displayedVacancies.length === 0 && !clientError && !loadingFilter}
-        <p class="no-vacancies">Вакансий не найдено</p>
-      {:else}
+       {#if displayedVacancies && displayedVacancies.length === 0 && !clientError}
+        <p class="no-vacancies">Вакансий по выбранным фильтрам не найдено</p>
+      {:else if displayedVacancies}
         <ul>
           {#each displayedVacancies as vacancy (vacancy._id)}
             <li>
@@ -175,13 +204,21 @@
               <p class="published-at">
                 Опубликовано: {formatDate(vacancy.publishedAt)}
               </p>
-              <details class="description-details">
-                <summary>Описание</summary>
-                <div>
-                  <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-                  {@html vacancy.htmlDescription}
-                </div>
-              </details>
+              <!-- Описание может быть не очищено для подгруженных вакансий -->
+              {#if vacancy.htmlDescription}
+                <details class="description-details">
+                  <summary>Описание</summary>
+                  <div>
+                    <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+                    {@html vacancy.htmlDescription}
+                  </div>
+                </details>
+              {:else if vacancy.description}
+                <details class="description-details">
+                   <summary>Описание (raw)</summary>
+                   <pre>{vacancy.description}</pre>
+                </details>
+              {/if}
               <a href={vacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
                 Перейти к источнику ({vacancy.source})
               </a>
@@ -190,13 +227,14 @@
         </ul>
       {/if}
 
-      {#if loadedCount < totalVacancies && !loadingFilter}
+      <!-- Возвращаем кнопку "Показать еще" -->
+      {#if !loadingFilter && currentPage + 1 < totalPages}
         <div class="load-more">
           <button on:click={loadMoreVacancies} disabled={loadingMore}>
             {#if loadingMore}
               Загрузка...
             {:else}
-              Показать еще 5
+              Показать еще {limit}
             {/if}
           </button>
         </div>
@@ -212,6 +250,49 @@
     padding: 1rem;
   }
 
+  /* Стили для фильтров */
+  .filters {
+    background-color: #f8f9fa;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+  }
+  .filters h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.3rem;
+    color: #495057;
+  }
+  .skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1rem;
+  }
+  .skills-list label {
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    background-color: #fff;
+    padding: 0.4rem 0.8rem;
+    border-radius: 15px;
+    border: 1px solid #dee2e6;
+    font-size: 0.9rem;
+    transition: background-color 0.2s, border-color 0.2s;
+  }
+  .skills-list label:hover {
+      background-color: #f1f3f5;
+  }
+   .skills-list input[type="checkbox"] {
+      margin-right: 0.5rem;
+      accent-color: #007bff; /* Цвет чекбокса */
+   }
+   .skills-list input[type="checkbox"]:checked + label {
+        background-color: #e7f3ff;
+        border-color: #007bff;
+        font-weight: 500;
+   }
+
   .loading {
     text-align: center;
     padding: 2rem;
@@ -220,7 +301,7 @@
   }
 
   .vacancies {
-    margin-top: 2rem;
+    margin-top: 1rem;
     transition: opacity 0.3s ease-in-out;
   }
   .vacancies.loading {
@@ -232,7 +313,7 @@
     border-bottom: 2px solid #eee;
     padding-bottom: 0.5rem;
     margin-bottom: 1.5rem;
-    font-size: 1.6rem;
+    font-size: 1.4rem; /* Уменьшил размер заголовка списка */
     color: #333;
   }
 
@@ -368,31 +449,6 @@
     text-decoration: underline;
   }
 
-  .load-more {
-    text-align: center;
-    margin-top: 2rem;
-  }
-
-  .load-more button {
-    padding: 0.8rem 2rem;
-    font-size: 1rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-  }
-
-  .load-more button:hover:not(:disabled) {
-    background-color: #0056b3;
-  }
-
-  .load-more button:disabled {
-    background-color: #aaa;
-    cursor: not-allowed;
-  }
-
   .error-container {
     background-color: #fff3cd;
     border: 1px solid #ffeeba;
@@ -425,5 +481,42 @@
     font-size: 0.85rem;
     white-space: pre-wrap;
     word-wrap: break-word;
+  }
+
+  /* Возвращаем стили для .load-more */
+  .load-more {
+    text-align: center;
+    margin-top: 2rem;
+  }
+
+  .load-more button {
+    padding: 0.8rem 2rem;
+    font-size: 1rem;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+
+  .load-more button:hover:not(:disabled) {
+    background-color: #0056b3;
+  }
+
+  .load-more button:disabled {
+    background-color: #aaa;
+    cursor: not-allowed;
+  }
+
+  .description-details pre {
+    margin-top: 0.5rem;
+    background-color: #f8f9fa;
+    padding: 0.5rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    border: 1px solid #e9ecef;
   }
 </style>
