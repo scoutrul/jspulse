@@ -7,6 +7,7 @@ import type { PaginatedVacanciesResponse, VacancyDTO, ApiSingleResponse } from "
 const router = express.Router();
 
 router.get("/", async (req: Request, res: Response) => {
+  console.log("[GET /api/vacancies] Запрос получен");
   const { limit = 10, page = 0, skills } = req.query;
   const numLimit = parseInt(limit as string, 10);
   const numPage = parseInt(page as string, 10);
@@ -18,16 +19,17 @@ router.get("/", async (req: Request, res: Response) => {
   }
 
   try {
+    console.log("[GET /api/vacancies] Начинаем запрос к БД с query:", query);
     const total = await Vacancy.countDocuments(query);
+    console.log(`[GET /api/vacancies] Найдено total: ${total}`);
     const vacancies = await Vacancy.find(query)
       .limit(numLimit)
       .skip(numPage * numLimit)
       .sort({ publishedAt: -1 })
       .lean<VacancyDTO[]>();
+    console.log(`[GET /api/vacancies] Получено вакансий из БД: ${vacancies.length}`);
 
-    const totalPages = Math.ceil(total / numLimit);
-
-    const response: PaginatedVacanciesResponse["data"] = {
+    const responseData: PaginatedVacanciesResponse["data"] = {
       items: vacancies.map((doc) => {
         const { _id, ...rest } = doc;
         return {
@@ -39,18 +41,19 @@ router.get("/", async (req: Request, res: Response) => {
       total,
       page: numPage,
       limit: numLimit,
-      totalPages,
+      totalPages: Math.ceil(total / numLimit),
     };
 
     const apiResponse: PaginatedVacanciesResponse = {
       status: "OK",
-      data: response,
+      data: responseData,
     };
 
-    console.log("[GET /vacancies] Response data sample:", apiResponse.data?.items?.slice(0, 1));
+    console.log("[GET /api/vacancies] Успешно сформирован ответ");
     res.json(apiResponse);
   } catch (error) {
-    console.error("Ошибка при получении вакансий:", error);
+    console.error("[GET /api/vacancies] Ошибка в блоке try/catch:", error);
+    console.log("[GET /api/vacancies] Отправка ответа 500...");
     res.status(500).json({ status: "ERROR", message: "Ошибка сервера при получении вакансий" });
   }
 });

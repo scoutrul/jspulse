@@ -14,7 +14,7 @@ export interface IVacancy extends BaseVacancy {
   // Дополнительные нормализованные поля, хранящиеся в БД
   description?: string;
   schedule?: string;
-  skills: string[];
+  skills?: string[]; // Делаем skills опциональным
   salaryFrom?: number;
   salaryTo?: number;
   salaryCurrency?: string;

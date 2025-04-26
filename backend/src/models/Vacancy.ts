@@ -1,8 +1,24 @@
 import mongoose, { Schema, Document } from "mongoose";
-import type { IVacancy } from "@jspulse/shared";
+import { IVacancy, VacancySource } from "@jspulse/shared";
 
 export interface IVacancyDocument extends IVacancy, Document {
   externalId: string;
+  title: string;
+  company: string;
+  location?: string;
+  url: string;
+  publishedAt: Date;
+  source: VacancySource;
+  description?: string;
+  schedule?: string;
+  skills?: string[];
+  salaryFrom?: number;
+  salaryTo?: number;
+  salaryCurrency?: string;
+  experience?: string;
+  employment?: string;
+  address?: string;
+  rawData?: any;
 }
 
 const vacancySchema = new Schema<IVacancyDocument>(
@@ -12,11 +28,11 @@ const vacancySchema = new Schema<IVacancyDocument>(
     company: { type: String, required: true },
     location: { type: String },
     url: { type: String, required: true },
-    publishedAt: { type: Date, required: true, index: true },
-    source: { type: String, required: true, index: true },
+    publishedAt: { type: Date, required: true },
+    source: { type: String, required: true, enum: Object.values(VacancySource) },
     description: { type: String },
     schedule: { type: String },
-    skills: [{ type: String, index: true }],
+    skills: [{ type: String }],
     salaryFrom: { type: Number },
     salaryTo: { type: Number },
     salaryCurrency: { type: String },
@@ -28,7 +44,10 @@ const vacancySchema = new Schema<IVacancyDocument>(
   {
     timestamps: true,
     versionKey: false,
+    collection: "vacancies",
   }
 );
+
+vacancySchema.index({ publishedAt: -1 });
 
 export const Vacancy = mongoose.model<IVacancyDocument>("Vacancy", vacancySchema);
