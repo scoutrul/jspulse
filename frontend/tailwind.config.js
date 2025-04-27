@@ -12,7 +12,7 @@ export default {
   },
   plugins: [
     skeleton({
-      themes: { preset: ["skeleton"] }, // Используем базовую тему Skeleton
+      themes: { preset: ["nosh"] }, // Используем тему Nosh
     }),
   ],
 };
