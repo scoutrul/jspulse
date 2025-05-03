@@ -16,8 +16,8 @@
     }
   },
   "scripts": {
-    "build": "echo \"Shared types already in dist\"",
-    "dev": "echo \"Shared types already in dist\""
+    "build": "node scripts/build.js",
+    "dev": "node scripts/build.js && tsc --noEmit --watch"
   },
   "dependencies": {},
   "devDependencies": {

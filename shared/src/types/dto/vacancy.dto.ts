@@ -1,4 +1,4 @@
-import type { BaseVacancy } from "../core/vacancy.base.js"; // Правильный импорт
+import type { BaseVacancy } from "../core/vacancy.base.js";
 
 export interface VacancyDTO extends BaseVacancy {
   _id?: string; // MongoDB ID становится опциональным, т.к. при создании его может не быть
@@ -14,4 +14,5 @@ export interface VacancyDTO extends BaseVacancy {
   employment?: string;
   address?: string;
   publishedAt: Date;
-}
+  htmlDescription?: string; // Поле для очищенного HTML описания
+} 

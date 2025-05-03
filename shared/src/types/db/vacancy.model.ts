@@ -1,8 +1,4 @@
-// Убираем импорт mongoose
-// import mongoose from "mongoose";
-// Добавляем .js к относительным импортам и исправляем имя типа
 import type { BaseVacancy } from "../core/vacancy.base.js";
-// import type { HHVacancyRaw } from '../sources/hh.types.js'; // Удаляем неиспользуемый импорт
 
 /**
  * Интерфейс для документа вакансии в MongoDB.
@@ -24,8 +20,5 @@ export interface IVacancy extends Omit<BaseVacancy, 'publishedAt'> {
   address?: string;
 
   // Поле для хранения оригинальных данных от API
-  rawData?: any; // eslint-disable-line @typescript-eslint/no-explicit-any
-}
-
-// Экспортируем интерфейс для модели моего без Document
-// IVacancyDocument будет создан в backend и расширит IVacancy + Document
+  rawData?: any;
+} 

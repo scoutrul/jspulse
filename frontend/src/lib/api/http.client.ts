@@ -14,36 +14,44 @@ function createApiClient() {
   }
   const baseUrl = backendUrl || "http://localhost:3001";
 
-  console.log(`[http.client] Создание клиента API для ${baseUrl}`);
+  console.log(`Backend Base URL: ${baseUrl}`);
 
-  const client = ky.create({
+  // Базовые настройки для всех запросов
+  const baseOptions = {
     prefixUrl: baseUrl,
+    headers: {
+      "Content-Type": "application/json"
+    },
     timeout: 30000,
     retry: {
       limit: 2,
       methods: ["get"],
       statusCodes: [408, 413, 429, 500, 502, 503, 504],
-    },
+    }
+  };
+
+  console.log(`Base Ky Options:`, baseOptions);
+
+  const client = ky.create({
+    ...baseOptions,
     hooks: {
       beforeRequest: [
         (request) => {
-          console.log(`[http.client] Отправка запроса: ${request.method} ${request.url}`);
+          console.log(`Sending request: ${request.method} ${request.url}`);
         },
       ],
       afterResponse: [
         (_request, _options, response) => {
-          console.log(`[http.client] Получен ответ: ${response.status} ${response.url}`);
+          // Логирование только для успешных ответов
+          if (response.ok) {
+            console.log(`Response received: ${response.status} ${response.url}`);
+          }
           return response;
         },
       ],
       beforeError: [
         (error) => {
-          console.error(`[http.client] Ошибка запроса:`, {
-            message: error.message,
-            name: error.name,
-            status: error.response?.status,
-            url: error.request.url,
-          });
+          console.error(`Client-side API Error:`, error);
           return error;
         },
       ],

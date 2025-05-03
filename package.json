@@ -1,39 +1,28 @@
 {
-  "name": "jspulse",
+  "name": "@jspulse/shared",
+  "version": "1.0.0",
   "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
   "scripts": {
+    "prebuild": "rm -rf dist && mkdir -p dist/types/core dist/types/db dist/types/dto dist/types/sources",
     "dev": "concurrently \"pnpm --filter @jspulse/shared run dev\" \"pnpm --filter @jspulse/backend run dev\" \"pnpm --filter @jspulse/frontend run dev\"",
-    "build": "pnpm --filter @jspulse/shared build && pnpm --filter @jspulse/backend build && pnpm --filter @jspulse/frontend build",
-    "docker:up": "pnpm run build && docker-compose up --build -d",
-    "docker:down": "docker-compose down",
-    "lint": "eslint . --ext .js,.ts,.svelte",
-    "lint:fix": "eslint . --ext .js,.ts,.svelte --fix",
-    "format": "prettier --write .",
-    "prepare": "husky",
-    "local-deps": "pnpm --filter @jspulse/shared build && pnpm install --offline"
+    "build": "pnpm --filter @jspulse/shared run build && pnpm --filter @jspulse/backend build && pnpm --filter @jspulse/frontend build"
   },
+  "dependencies": {},
   "devDependencies": {
-    "@types/cors": "^2.8.17",
-    "@types/express": "^5.0.1",
-    "@typescript-eslint/eslint-plugin": "^6.21.0",
-    "@typescript-eslint/parser": "^6.21.0",
-    "concurrently": "^9.1.2",
-    "eslint": "^8.57.1",
-    "eslint-config-prettier": "^10.1.2",
-    "eslint-plugin-prettier": "^5.2.6",
-    "eslint-plugin-svelte": "^2.46.1",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.5.1",
-    "prettier": "^3.5.3",
-    "prettier-plugin-svelte": "^3.3.3"
-  },
-  "lint-staged": {
-    "*.{js,ts,svelte}": [
-      "eslint --fix",
-      "prettier --write"
-    ],
-    "*.{json,md,yaml,yml}": [
-      "prettier --write"
-    ]
+    "typescript": "^5.3.3",
+    "@types/node": "^20.11.19"
   }
 }

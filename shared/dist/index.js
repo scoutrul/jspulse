@@ -1,2 +1,2 @@
 // Экспортируем все типы из types
-export * from '../dist/types/index.js';
+export * from './types/index.js'; 

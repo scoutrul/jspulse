@@ -1,4 +1,3 @@
-// shared/types/sources/hh.types.ts
 // Определения типов для СЫРОГО ответа от HeadHunter API
 
 // --- Вспомогательные типы ---
@@ -60,7 +59,6 @@ export interface HHSnippet {
 }
 
 // --- Основной интерфейс СЫРОЙ вакансии HH ---
-// Переименовываем в HHVacancyRaw, чтобы подчеркнуть, что это сырые данные
 export interface HHVacancyRaw {
   id: string;
   name: string; // = title
@@ -111,4 +109,4 @@ export interface HHResponseRaw {
   pages: number;
   page: number;
   per_page: number;
-}
+} 

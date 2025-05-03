@@ -1,5 +1,3 @@
-// shared/types/index.ts
-
 // Экспорт базовых типов
 export * from "./core/vacancy.base.js";
 
@@ -23,11 +21,4 @@ export {
   VacanciesResponse,
   HHVacancy,
   HHResponse
-} from "./vacancy.types.js";
-
-// Импортируем конкретные типы, чтобы избежать конфликтов
-import { VacancyDTO } from "./dto/vacancy.dto.js";
-import { PaginatedResponse, ApiSingleResponse } from "./dto/api.dto.js";
-
-// Специализированный тип для ответа с вакансиями
-export type PaginatedVacanciesResponse = PaginatedResponse<VacancyDTO>;
+} from "./vacancy.types.js"; 
