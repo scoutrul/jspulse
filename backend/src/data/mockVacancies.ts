@@ -1,9 +1,10 @@
-import { VacancyDTO } from "@jspulse/shared";
+import { IVacancy } from "@jspulse/shared";
 
 /**
  * Моковые данные вакансий
+ * Важно: skills являются обязательным полем для корректной работы фильтрации
  */
-const mockVacancies: Partial<VacancyDTO>[] = [
+const mockVacancies: Partial<IVacancy>[] = [
   {
     externalId: "mock-1",
     title: "Frontend-разработчик (React)",
@@ -13,10 +14,12 @@ const mockVacancies: Partial<VacancyDTO>[] = [
     skills: ["react", "javascript", "typescript", "redux", "remote"],
     salaryFrom: 150000,
     salaryTo: 250000,
-    salaryCurrency: "₽",
+    salaryCurrency: "RUR",
     url: "https://example.com/job1",
     source: "mock",
     publishedAt: new Date("2024-04-20T10:00:00Z"),
+    experience: "3–6 лет",
+    employment: "Удаленная работа",
   },
   {
     externalId: "mock-2",
@@ -27,10 +30,12 @@ const mockVacancies: Partial<VacancyDTO>[] = [
     skills: ["vue", "vuex", "javascript", "css", "middle"],
     salaryFrom: 180000,
     salaryTo: 220000,
-    salaryCurrency: "₽",
+    salaryCurrency: "RUR",
     url: "https://example.com/job2",
     source: "mock",
     publishedAt: new Date("2024-04-21T11:30:00Z"),
+    experience: "1–3 года",
+    employment: "Полная занятость",
   },
   {
     externalId: "mock-3",
@@ -41,10 +46,12 @@ const mockVacancies: Partial<VacancyDTO>[] = [
     skills: ["javascript", "senior", "react", "angular", "vue", "remote"],
     salaryFrom: 4000,
     salaryTo: 6000,
-    salaryCurrency: "$",
+    salaryCurrency: "USD",
     url: "https://example.com/job3",
     source: "mock",
     publishedAt: new Date("2024-04-19T09:00:00Z"),
+    experience: "более 6 лет",
+    employment: "Удаленная работа",
   },
   {
     externalId: "mock-4",
@@ -55,10 +62,12 @@ const mockVacancies: Partial<VacancyDTO>[] = [
     skills: ["javascript", "html", "css", "junior"],
     salaryFrom: 80000,
     salaryTo: 100000,
-    salaryCurrency: "₽",
+    salaryCurrency: "RUR",
     url: "https://example.com/job4",
     source: "mock",
     publishedAt: new Date("2024-04-22T15:00:00Z"),
+    experience: "Нет опыта",
+    employment: "Полная занятость",
   },
   {
     externalId: "mock-5",
@@ -69,10 +78,12 @@ const mockVacancies: Partial<VacancyDTO>[] = [
     skills: ["svelte", "sveltekit", "javascript", "git", "remote"],
     salaryFrom: 150000,
     salaryTo: 200000,
-    salaryCurrency: "₽",
+    salaryCurrency: "RUR",
     url: "https://example.com/job5",
     source: "mock",
     publishedAt: new Date("2024-04-23T12:00:00Z"),
+    experience: "1–3 года",
+    employment: "Удаленная работа",
   },
 ];
 

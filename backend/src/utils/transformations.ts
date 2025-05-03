@@ -1,50 +1,81 @@
 // import { parseHTML } from "linkedom"; // Удаляем импорт, если пакет не установлен
-import type { IVacancy, HHVacancyRaw, HHSkill } from "@jspulse/shared";
+import type { BaseVacancy, HHVacancyRaw, HHSkill } from "@jspulse/shared";
 
 // Основано на https://github.com/hhru/api/blob/master/docs_eng/vacancies.md
 
+// Константы для источников данных
 const SOURCE_HH = "hh.ru";
 
+/**
+ * Нормализует строку навыка: удаляет лишние пробелы и приводит к нижнему регистру
+ */
 function normalizeSkill(skill: string): string {
   return skill.trim().toLowerCase();
 }
 
-export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Partial<IVacancy> {
-  const skills = hhVacancy.key_skills?.map((skill: HHSkill) => normalizeSkill(skill.name)) || [];
+/**
+ * Трансформирует данные из HeadHunter API в наш формат вакансии
+ */
+export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Omit<
+  BaseVacancy,
+  "publishedAt"
+> & {
+  skills: string[];
+  description?: string;
+  salaryFrom?: number;
+  salaryTo?: number;
+  salaryCurrency?: string;
+  experience?: string;
+  employment?: string;
+  address?: string;
+  publishedAt: Date;
+  rawData: any;
+} {
+  // Получаем навыки (skills) из hhVacancy.key_skills и нормализуем их
+  const skills = hhVacancy.key_skills
+    ? hhVacancy.key_skills.map((skill: HHSkill) => normalizeSkill(skill.name))
+    : [];
 
-  const transformed: Partial<IVacancy> = {
+  // Формируем описание из разных источников (предпочитая полное описание)
+  const description =
+    hhVacancy.description ??
+    hhVacancy.snippet?.responsibility ??
+    hhVacancy.snippet?.requirement ??
+    "Описание отсутствует";
+
+  // Приводим данные к нашему формату
+  const transformed = {
+    // Базовые поля
     externalId: hhVacancy.id,
     title: hhVacancy.name,
-    company: hhVacancy.employer?.name,
-    location: hhVacancy.area?.name,
-    schedule: hhVacancy.schedule?.name,
-    description:
-      hhVacancy.description ??
-      hhVacancy.snippet?.responsibility ??
-      hhVacancy.snippet?.requirement ??
-      "Описание отсутствует",
-    skills: Array.isArray(skills) ? skills : [],
-    salaryFrom: hhVacancy.salary?.from ?? undefined,
-    salaryTo: hhVacancy.salary?.to ?? undefined,
-    salaryCurrency: hhVacancy.salary?.currency ?? undefined,
+    company: hhVacancy.employer?.name || "Неизвестная компания",
+    location: hhVacancy.area?.name || "Неизвестное местоположение",
     url: hhVacancy.alternate_url,
     publishedAt: new Date(hhVacancy.published_at),
     source: SOURCE_HH,
+
+    // Дополнительные поля
+    description,
+    skills,
+    salaryFrom: hhVacancy.salary?.from ?? undefined,
+    salaryTo: hhVacancy.salary?.to ?? undefined,
+    salaryCurrency: hhVacancy.salary?.currency ?? undefined,
     experience: hhVacancy.experience?.name,
     employment: hhVacancy.employment?.name,
     address: hhVacancy.address?.raw,
+
+    // Сохраняем исходные данные
     rawData: hhVacancy,
   };
 
   return transformed;
 }
 
-// Функция для очистки HTML от потенциально опасных элементов
-function sanitizeHTML(html: string): string {
-  // Если пакет для очистки HTML не установлен, просто возвращаем исходный HTML
-  // В реальном проекте здесь должна быть защита от XSS!
+/**
+ * Очищает HTML от потенциально опасных элементов
+ * В будущем, здесь должна быть реализация с использованием DOMPurify или аналога
+ */
+export function sanitizeHTML(html: string): string {
+  // В идеале, здесь должна быть реализация с DOMPurify
   return html;
-  // В идеале использовать библиотеки для очистки, например:
-  // const { document } = parseHTML(html);
-  // return document.body.innerHTML;
 }

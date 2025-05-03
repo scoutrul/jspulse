@@ -3,10 +3,12 @@ node_modules/
 
 # Build artifacts
 .svelte-kit/
-dist/
+backend/dist/
+frontend/dist/
 build/
 frontend/build/
 frontend/build/env.js
+!shared/dist/
 *.tsbuildinfo
 tsconfig.tsbuildinfo
 

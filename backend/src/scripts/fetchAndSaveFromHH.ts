@@ -13,21 +13,13 @@ const MAX_PAGES_TO_FETCH = 5;
 const SEARCH_TEXT = "JavaScript Developer OR Frontend Developer";
 
 async function fetchAndSaveHHVacancies() {
-  const mongoUrl =
-    process.env.NODE_ENV === "development"
-      ? process.env.MONGO_URI_LOCALHOST
-      : process.env.MONGO_URI;
-
-  const MONGO_URI = mongoUrl;
-
-  if (!MONGO_URI) {
-    console.error("Ошибка: Не задана переменная окружения MONGO_URI");
-    process.exit(1);
-  }
+  console.log("Запускаю импорт вакансий с HeadHunter...");
+  // Принудительно используем локальный MongoDB
+  const mongoUrl = "mongodb://localhost:27017/jspulse";
 
   let connection;
   try {
-    connection = await mongoose.connect(MONGO_URI);
+    connection = await mongoose.connect(mongoUrl);
     console.log("Успешное подключение к MongoDB");
 
     let totalReceived = 0;
@@ -81,16 +73,44 @@ async function fetchAndSaveHHVacancies() {
           const transformedData = transformHHVacancyToIVacancy(hhVacancy);
           if (!transformedData) continue;
 
+          // Проверяем, что есть skills для фильтрации
+          if (
+            !transformedData.skills ||
+            !Array.isArray(transformedData.skills) ||
+            transformedData.skills.length === 0
+          ) {
+            // Если навыков нет, добавляем хотя бы один базовый навык из заголовка вакансии
+            const titleWords = transformedData.title.toLowerCase().split(/\W+/);
+            const possibleSkills = [
+              "javascript",
+              "react",
+              "vue",
+              "angular",
+              "typescript",
+              "frontend",
+              "backend",
+            ];
+            const detectedSkills = possibleSkills.filter(
+              (skill) =>
+                titleWords.includes(skill) ||
+                (transformedData.description &&
+                  transformedData.description.toLowerCase().includes(skill))
+            );
+
+            transformedData.skills = detectedSkills.length > 0 ? detectedSkills : ["javascript"]; // Дефолтный навык, если ничего не найдено
+
+            console.log(
+              `Для вакансии "${transformedData.title}" добавлены навыки: ${transformedData.skills.join(", ")}`
+            );
+          }
+
           const existingVacancy = await Vacancy.findOne({
             externalId: transformedData.externalId,
             source: SOURCE_HH,
           });
 
           if (!existingVacancy) {
-            await Vacancy.create({
-              ...transformedData,
-              source: SOURCE_HH,
-            });
+            await Vacancy.create(transformedData);
             pageNew++;
           } else {
             pageExisting++;

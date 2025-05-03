@@ -3,39 +3,54 @@ import "dotenv/config";
 import { Vacancy } from "../models/Vacancy.js";
 import mockVacancies from "./mockVacancies.js";
 
-const mongoUrl =
-  process.env.NODE_ENV === "development" ? process.env.MONGO_URI_LOCALHOST : process.env.MONGO_URI;
-
-const MONGO_URI = mongoUrl;
-
+/**
+ * Заполняет базу данных тестовыми вакансиями
+ */
 async function seedDatabase() {
-  if (!MONGO_URI) {
-    console.error("Ошибка: Переменная окружения MONGO_URI не установлена.");
-    process.exit(1);
-  }
+  // Используем URI из переменных окружения, с приоритетом для локального MongoDB
+  const mongoUrl =
+    process.env.MONGO_URI_LOCALHOST || process.env.MONGO_URI || "mongodb://localhost:27017/jspulse";
 
-  console.log("Подключение к MongoDB для сидинга...");
+  console.log("Подключение к MongoDB для заполнения тестовыми данными...");
   try {
-    await mongoose.connect(MONGO_URI);
+    await mongoose.connect(mongoUrl);
     console.log("MongoDB подключен для сидинга.");
 
-    console.log("Очистка коллекции перед сидингом...");
-    await Vacancy.deleteMany({});
-    console.log("Старые данные удалены.");
+    console.log("Очистка коллекции тестовых вакансий...");
+    await Vacancy.deleteMany({ source: "mock" });
+    console.log("Старые тестовые данные удалены.");
 
-    // TODO: Убедиться, что структура mockVacancies соответствует IVacancy
-    console.log("Добавление моковых вакансий...");
-    const result = await Vacancy.insertMany(mockVacancies);
-    console.log(`Успешно добавлено ${result.length} моковых вакансий`);
+    // Убедимся, что в моковых вакансиях есть все необходимые поля
+    const validatedVacancies = mockVacancies.map((vacancy) => {
+      // Обязательно должны быть skills для фильтрации
+      if (!vacancy.skills || !Array.isArray(vacancy.skills) || vacancy.skills.length === 0) {
+        vacancy.skills = ["javascript"];
+        console.warn(`Для вакансии "${vacancy.title}" добавлен дефолтный навык javascript`);
+      }
+      return vacancy;
+    });
+
+    console.log("Добавление тестовых вакансий...");
+    const result = await Vacancy.insertMany(validatedVacancies);
+    console.log(`Успешно добавлено ${result.length} тестовых вакансий`);
 
     console.log("Добавленные вакансии (первые 5):");
     result.slice(0, 5).forEach((vacancy, index) => {
       const v = vacancy.toObject();
-      console.log(`${index + 1}. ${v.title} - ${v.company}`);
+      console.log(`${index + 1}. ${v.title} - ${v.company} - Навыки: ${v.skills?.join(", ")}`);
     });
     if (result.length > 5) {
       console.log("... и еще", result.length - 5);
     }
+
+    // Проверим, что вакансии доступны через API фильтрации
+    const uniqueSkills = new Set<string>();
+    result.forEach((vacancy) => {
+      const v = vacancy.toObject();
+      v.skills?.forEach((skill) => uniqueSkills.add(skill));
+    });
+    console.log(`Доступно ${uniqueSkills.size} уникальных навыков для фильтрации:`);
+    console.log(Array.from(uniqueSkills).join(", "));
   } catch (error) {
     if (error instanceof Error) {
       console.error("Ошибка при заполнении базы данных:", error.message);
@@ -45,8 +60,9 @@ async function seedDatabase() {
     process.exit(1);
   } finally {
     await mongoose.disconnect();
-    console.log("Соединение с MongoDB (сидинг) закрыто.");
+    console.log("Соединение с MongoDB закрыто.");
   }
 }
 
+// Запускаем функцию
 seedDatabase();
