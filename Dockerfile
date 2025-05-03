@@ -1,51 +1,87 @@
-FROM node:20-alpine
+FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Копируем файлы pnpm для установки зависимостей всего воркспейса
-COPY pnpm-workspace.yaml ./
-COPY pnpm-lock.yaml ./
-COPY package.json ./
+# Install pnpm
+RUN npm install -g pnpm
 
-# Копируем package.json и исходный код для shared и backend
-COPY shared/package.json ./shared/package.json
-COPY shared/src ./shared/src
-COPY shared/tsconfig.json ./shared/tsconfig.json
-COPY backend/package.json ./backend/package.json
-COPY backend/src ./backend/src
-COPY backend/tsconfig.json ./backend/tsconfig.json
+# Copy root package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
-# Устанавливаем все зависимости (включая dev для сборки)
-# Используем --frozen-lockfile для воспроизводимости
-RUN npm install -g pnpm@8
+# Copy package.json from each package
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
+COPY shared/package.json ./shared/
+
+# Install dependencies using pnpm
 RUN pnpm install --frozen-lockfile
 
-# Собираем shared пакет
+# Copy all source code
+COPY shared/ ./shared/
+COPY backend/ ./backend/
+COPY frontend/ ./frontend/
+
+# Build packages in correct order
 RUN pnpm --filter @jspulse/shared build
-
-# Собираем backend пакет
 RUN pnpm --filter @jspulse/backend build
+RUN pnpm --filter @jspulse/frontend build
 
-# --- Опциональный этап для уменьшения размера образа ---
-# Можно создать новый образ только с production зависимостями и dist папками
-# FROM node:20-alpine
-# WORKDIR /app
-# COPY --from=0 /app/pnpm-lock.yaml ./
-# COPY --from=0 /app/package.json ./
-# COPY --from=0 /app/backend/package.json ./backend/package.json
-# COPY --from=0 /app/shared/package.json ./shared/package.json
-# RUN npm install -g pnpm@8
-# RUN pnpm install --prod --frozen-lockfile
-# COPY --from=0 /app/shared/dist ./shared/dist
-# COPY --from=0 /app/backend/dist ./backend/dist
-# -------------------------------------------------------
+# Backend stage
+FROM node:20-alpine AS backend-stage
 
-# Устанавливаем рабочую директорию для запуска бэкенда
+WORKDIR /app
+
+# Copy package files and workspace configuration
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+# Copy package.json files for all packages
+COPY --from=builder /app/backend/package.json ./backend/package.json
+COPY --from=builder /app/shared/package.json ./shared/package.json
+
+# Copy node_modules and built files
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/backend/node_modules ./backend/node_modules
+COPY --from=builder /app/shared/node_modules ./shared/node_modules
+COPY --from=builder /app/backend/dist ./backend/dist
+COPY --from=builder /app/shared/dist ./shared/dist
+
+# Set working directory to backend
 WORKDIR /app/backend
 
-# Открываем порт, который слушает приложение
+# Expose port
+EXPOSE 3001
+
+# Start backend
+CMD ["node", "dist/index.js"]
+
+# Frontend stage
+FROM node:20-alpine AS frontend-stage
+
+WORKDIR /app
+
+# Copy package files and workspace configuration
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
+COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
+
+# Copy package.json files for all packages
+COPY --from=builder /app/frontend/package.json ./frontend/package.json
+COPY --from=builder /app/shared/package.json ./shared/package.json
+
+# Copy node_modules and built files
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/frontend/node_modules ./frontend/node_modules
+COPY --from=builder /app/shared/node_modules ./shared/node_modules
+COPY --from=builder /app/frontend/build ./frontend/build
+COPY --from=builder /app/shared/dist ./shared/dist
+
+# Set working directory to frontend
+WORKDIR /app/frontend
+
+# Expose port
 EXPOSE 3000
 
-# Команда для запуска приложения
-# Путь к главному файлу после сборки
-CMD ["node", "dist/src/index.js"]
+# Start frontend in production mode
+CMD ["node", "build/index.js"]

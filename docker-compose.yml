@@ -1,54 +1,58 @@
 version: "3.8"
 
 services:
-  frontend:
-    build:
-      context: .
-      dockerfile: frontend/Dockerfile
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./frontend/src:/app/frontend/src
-      - ./frontend/static:/app/frontend/static
-      - ./frontend/package.json:/app/frontend/package.json
-      - ./frontend/svelte.config.js:/app/frontend/svelte.config.js
-      - ./frontend/vite.config.ts:/app/frontend/vite.config.ts
-      - ./shared:/app/shared
-    environment:
-      VITE_PUBLIC_BACKEND_URL: http://localhost:3001
-      INTERNAL_BACKEND_URL: http://backend:3001
-    depends_on:
-      - backend
-    networks:
-      - jspulse-net
-
-  mongo:
+  mongodb:
     image: mongo:latest
-    container_name: jspulse-mongo
     ports:
       - "27017:27017"
     volumes:
       - mongodb_data:/data/db
-    networks:
-      - jspulse-net
+    # Удаляем настройки аутентификации
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
   backend:
     build:
       context: .
-      dockerfile: backend/Dockerfile
+      dockerfile: Dockerfile
+      target: backend-stage
     ports:
       - "3001:3001"
     depends_on:
-      - mongo
+      mongodb:
+        condition: service_healthy
     environment:
-      MONGO_URI: mongodb://mongo:27017/jspulse
-      PORT: "3001"
-    networks:
-      - jspulse-net
+      - PORT=3001
+      - MONGO_URI=mongodb://mongodb:27017/jspulse
+      - NODE_ENV=production
+    restart: unless-stopped
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
-networks:
-  jspulse-net:
-    driver: bridge
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: frontend-stage
+    ports:
+      - "3000:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+      - ORIGIN=http://localhost:3000
+      - VITE_PUBLIC_BACKEND_URL=http://localhost:3001
+      - INTERNAL_BACKEND_URL=http://backend:3001
 
 volumes:
   mongodb_data:

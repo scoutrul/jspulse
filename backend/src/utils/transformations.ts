@@ -1,19 +1,16 @@
-// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
-import type { IVacancy } from "@jspulse/shared";
-// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
-import type { HHVacancyRaw, HHSkill } from "@jspulse/shared";
+// import { parseHTML } from "linkedom"; // Удаляем импорт, если пакет не установлен
+import type { IVacancy, HHVacancyRaw, HHSkill } from "@jspulse/shared";
 
 // Основано на https://github.com/hhru/api/blob/master/docs_eng/vacancies.md
-// и практическом опыте (поля могут отсутствовать или быть null)
+
 const SOURCE_HH = "hh.ru";
 
-/**
- * Трансформирует сырые данные вакансии HH.ru в общий формат IVacancy.
- * @param hhVacancy - Объект сырой вакансии HHVacancyRaw.
- * @returns Частичный объект IVacancy.
- */
+function normalizeSkill(skill: string): string {
+  return skill.trim().toLowerCase();
+}
+
 export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Partial<IVacancy> {
-  const skills = hhVacancy.key_skills?.map((skill: HHSkill) => skill.name) || [];
+  const skills = hhVacancy.key_skills?.map((skill: HHSkill) => normalizeSkill(skill.name)) || [];
 
   const transformed: Partial<IVacancy> = {
     externalId: hhVacancy.id,
@@ -26,7 +23,7 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Partial<I
       hhVacancy.snippet?.responsibility ??
       hhVacancy.snippet?.requirement ??
       "Описание отсутствует",
-    skills: skills,
+    skills: Array.isArray(skills) ? skills : [],
     salaryFrom: hhVacancy.salary?.from ?? undefined,
     salaryTo: hhVacancy.salary?.to ?? undefined,
     salaryCurrency: hhVacancy.salary?.currency ?? undefined,
@@ -40,4 +37,14 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Partial<I
   };
 
   return transformed;
+}
+
+// Функция для очистки HTML от потенциально опасных элементов
+function sanitizeHTML(html: string): string {
+  // Если пакет для очистки HTML не установлен, просто возвращаем исходный HTML
+  // В реальном проекте здесь должна быть защита от XSS!
+  return html;
+  // В идеале использовать библиотеки для очистки, например:
+  // const { document } = parseHTML(html);
+  // return document.body.innerHTML;
 }

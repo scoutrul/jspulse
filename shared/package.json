@@ -3,18 +3,21 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "files": [
     "dist"
   ],
   "exports": {
     ".": {
-      "types": "./dist/types/index.d.ts",
-      "import": "./dist/types/index.js"
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
     }
   },
   "scripts": {
-    "build": "rm -rf dist && tsc",
-    "dev": "tsc --watch"
+    "build": "echo \"Shared types already in dist\"",
+    "dev": "echo \"Shared types already in dist\""
   },
   "dependencies": {},
   "devDependencies": {

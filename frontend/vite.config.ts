@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [sveltekit()],
   resolve: {
     alias: {
-      "@jspulse/shared": path.resolve(__dirname, "../shared/types"),
+      "@jspulse/shared": path.resolve(__dirname, "../shared/dist/types"), // Исправляем путь
     },
   },
   optimizeDeps: {

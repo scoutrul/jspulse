@@ -2,7 +2,7 @@
   // @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
   // TODO: Уточнить, нужен ли ts-ignore после всех рефакторингов типов
   import type { PaginatedVacanciesResponse, VacancyDTO } from "@jspulse/shared";
-  import { apiClient, KyHTTPError } from "../api/http.client";
+  import { apiClient, HTTPError } from "$lib/api/http.client";
   import type { PageData } from "./$types";
   import Filters from "$lib/components/Filters.svelte";
   import VacancyList from "$lib/components/VacancyList.svelte";
@@ -59,7 +59,7 @@
       }
     } catch (err) {
       console.error("Client-side API Error:", err);
-      if (err instanceof KyHTTPError) {
+      if (err instanceof HTTPError) {
         clientError = `Ошибка сети или сервера: ${err.message}`;
         try {
           const errorBody = await err.response.json();

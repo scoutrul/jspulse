@@ -1,61 +1,44 @@
-# Node
+# Dependencies
 node_modules/
-npm-debug.log
-yarn-debug.log
-yarn-error.log
-.pnpm-debug.log
+
+# Build artifacts
+.svelte-kit/
+dist/
+build/
+frontend/build/
+frontend/build/env.js
+*.tsbuildinfo
+tsconfig.tsbuildinfo
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
 
 # Environment variables
 .env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Build
-dist/
-build/
-.svelte-kit/
-
-# Database
-data/mongo/
-
-# OS
-.DS_Store
-Thumbs.db
+.env.*
+!.env.example
 
 # IDE
-# .cursor/
+.cursor/
 .idea/
 .vscode/
 *.sublime-project
 *.sublime-workspace
 
-# Logs
-logs/
-*.log
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
-# TypeScript build info
-*.tsbuildinfo
-
-# Editor specific
-.vscode/
-.idea/
-.cursor/
-.cursor/mcp.json
-
-# Frontend build artifacts
-frontend/.svelte-kit/
-frontend/build/
-frontend/vite.config.ts.timestamp-*.mjs
-
-# Backend build artifacts
-backend/dist/
-
-# Other
-.env
-.env.*
-!.env.example
-
-# Data
-data/
+# Docker data volumes
+data/mongo/

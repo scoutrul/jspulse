@@ -1,28 +1,33 @@
 import mongoose from "mongoose";
-import "dotenv/config";
+import ky, { HTTPError } from "ky";
 import { Vacancy } from "../models/Vacancy.js";
 import { transformHHVacancyToIVacancy } from "../utils/transformations.js";
-// ts-expect-error
 import type { HHResponseRaw } from "@jspulse/shared";
-import ky, { HTTPError } from "ky";
-
+import dotenv from "dotenv";
+dotenv.config();
 import { HH_API_BASE_URL } from "../config/api.js";
 
 const SOURCE_HH = "hh.ru";
-const MAX_VACANCIES_PER_PAGE = 100; // HH API limit
-const MAX_PAGES_TO_FETCH = 20;
+const MAX_VACANCIES_PER_PAGE = 10; // HH API limit
+const MAX_PAGES_TO_FETCH = 5;
 const SEARCH_TEXT = "JavaScript Developer OR Frontend Developer";
 
 async function fetchAndSaveHHVacancies() {
-  const mongoUrl = process.env.MONGO_URI;
-  if (!mongoUrl) {
+  const mongoUrl =
+    process.env.NODE_ENV === "development"
+      ? process.env.MONGO_URI_LOCALHOST
+      : process.env.MONGO_URI;
+
+  const MONGO_URI = mongoUrl;
+
+  if (!MONGO_URI) {
     console.error("Ошибка: Не задана переменная окружения MONGO_URI");
     process.exit(1);
   }
 
   let connection;
   try {
-    connection = await mongoose.connect(mongoUrl);
+    connection = await mongoose.connect(MONGO_URI);
     console.log("Успешное подключение к MongoDB");
 
     let totalReceived = 0;
@@ -45,14 +50,20 @@ async function fetchAndSaveHHVacancies() {
 
       try {
         const data = await ky
-          .get(HH_API_BASE_URL, {
+          .get(HH_API_BASE_URL + "/vacancies", {
             searchParams: searchParams,
             headers: {
-              "User-Agent": "JSPulse/1.0 (nikita@tonsky.me)", // Рекомендуется указывать User-Agent с контактом
+              "User-Agent": "JSPulse",
+              "HH-User-Agent": "JSPulse",
             },
-            timeout: 30000, // Таймаут 30 секунд
+            timeout: 30000,
           })
           .json<HHResponseRaw>();
+
+        if (!data.items) {
+          console.error(`Ошибка: Ответ от API не содержит 'items'. Полный ответ:`, data);
+          return;
+        }
 
         const receivedCount = data.items.length;
         console.log(`Страница ${page + 1}: Получено ${receivedCount} вакансий.`);

@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { IVacancy, VacancySource } from "@jspulse/shared";
+import { IVacancy } from "@jspulse/shared";
 
 export interface IVacancyDocument extends IVacancy, Document {
   externalId: string;
@@ -8,7 +8,7 @@ export interface IVacancyDocument extends IVacancy, Document {
   location?: string;
   url: string;
   publishedAt: Date;
-  source: VacancySource;
+  source: string;
   description?: string;
   schedule?: string;
   skills?: string[];
@@ -29,7 +29,7 @@ const vacancySchema = new Schema<IVacancyDocument>(
     location: { type: String },
     url: { type: String, required: true },
     publishedAt: { type: Date, required: true },
-    source: { type: String, required: true, enum: Object.values(VacancySource) },
+    source: { type: String, required: true },
     description: { type: String },
     schedule: { type: String },
     skills: [{ type: String }],

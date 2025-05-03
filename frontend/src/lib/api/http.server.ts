@@ -1,6 +1,5 @@
 import { error } from "@sveltejs/kit";
-// import { apiClient, HTTPError } from "../../api/http.client"; // Больше не используем apiClient здесь
-import { HTTPError as KyHTTPError } from "ky"; // Импортируем тип ошибки, если он нужен
+import { HTTPError as KyHTTPError } from "ky";
 
 /**
  * Выполняет GET-запрос к API бэкенда с использованием предоставленной функции fetch.
@@ -16,25 +15,22 @@ async function fetchApiData<TResponse>(
   endpoint: string,
   fetchFn: typeof fetch
 ): Promise<TResponse> {
-  // Получаем внутренний URL бэкенда из переменных окружения Node.js (доступных на сервере)
+  // На сервере используем INTERNAL_BACKEND_URL с fallback на localhost в dev
   const internalBackendUrl = process.env.INTERNAL_BACKEND_URL;
-
   if (!internalBackendUrl) {
-    const errorMsg = "FATAL: Переменная окружения INTERNAL_BACKEND_URL не найдена на сервере!";
-    console.error(errorMsg);
-    error(500, { message: errorMsg });
+    console.warn("[http.server] INTERNAL_BACKEND_URL не задан, используем localhost:3001");
   }
+  const baseUrl = internalBackendUrl || "http://localhost:3001";
 
   // Формируем полный URL
-  const fullUrl = `${internalBackendUrl}/${endpoint}`.replace(/([^:]\/)\/+/g, "$1"); // Убираем двойные слеши, кроме как в http://
+  const fullUrl = `${baseUrl}/${endpoint}`.replace(/([^:]\/)\/+/g, "$1");
 
   console.log(`[fetchApiData Server] Запрос данных с эндпоинта: ${fullUrl}`);
 
   try {
-    const response = await fetchFn(fullUrl); // Используем fetchFn с полным URL
+    const response = await fetchFn(fullUrl);
 
     if (!response.ok) {
-      // Обрабатываем HTTP ошибки
       const status = response.status;
       let errorText = "Не удалось прочитать тело ответа";
       try {
@@ -56,7 +52,6 @@ async function fetchApiData<TResponse>(
     console.log(`[fetchApiData Server] Получен ответ для эндпоинта: ${fullUrl}`);
     return responseData;
   } catch (err) {
-    // Обрабатываем сетевые или другие ошибки fetch
     console.error(`[fetchApiData Server] Ошибка при запросе к ${fullUrl}:`, err);
     if (err instanceof Error) {
       error(500, { message: `Внутренняя ошибка при запросе к ${fullUrl}: ${err.message}` });
@@ -66,6 +61,4 @@ async function fetchApiData<TResponse>(
   }
 }
 
-// Экспортируем тип ошибки Ky, если он используется где-то еще,
-// но основная функция теперь не зависит от apiClient
 export { fetchApiData, KyHTTPError as HTTPError };
