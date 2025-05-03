@@ -1,11 +1,8 @@
 import express, { Express, Request, Response } from "express";
-import dotenv from "dotenv";
+import "dotenv/config";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 import vacancyRoutes from "./routes/vacancyRoutes.js";
-
-// Загрузка переменных окружения
-dotenv.config();
 
 const app: Express = express();
 
@@ -22,13 +19,7 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Backend is running!");
 });
 
-// TODO: Подключить основные роуты приложения (например, для вакансий)
-// import vacancyRoutes from './routes/vacancyRoutes'; // Предполагаемый путь
-// app.use('/api/vacancies', vacancyRoutes);
-
-// Application Routes
-// TODO: Connect main application routes
-app.use("/api/vacancies", vacancyRoutes); // Подключаем маршруты вакансий
+app.use("/api/vacancies", vacancyRoutes);
 
 // Запуск сервера
 app.listen(port, () => {

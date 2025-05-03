@@ -1,17 +1,17 @@
 {
-  "name": "jspulse-backend",
+  "name": "@jspulse/backend",
   "version": "0.1.0",
   "description": "Backend для JS Пульс - агрегатора вакансий по фронтенду",
   "type": "module",
-  "main": "./dist/backend/src/index.js",
+  "main": "./dist/index.js",
   "scripts": {
-    "start": "node dist/backend/src/index.js",
+    "start": "node dist/index.js",
     "dev": "nodemon",
-    "build": "rm -rf dist && tsc -p tsconfig.json",
-    "seed:run": "node -r dotenv/config dist/backend/src/data/seedDatabase.js",
-    "fetch:hh:run": "node -r dotenv/config dist/backend/src/scripts/fetchAndSaveFromHH.js",
-    "clear:db:run": "node -r dotenv/config dist/backend/src/scripts/clearDatabase.js",
-    "db:refresh": "pnpm run build && pnpm run clear:db:run && pnpm run seed:run && pnpm run fetch:hh:run",
+    "build": "rm -rf dist && mkdir -p dist/config dist/models dist/routes dist/scripts dist/utils dist/data && npx tsc",
+    "db:seed": "tsx src/data/seedDatabase.ts",
+    "db:hh": "tsx src/scripts/fetchAndSaveFromHH.ts",
+    "db:clear": "tsx src/scripts/clearDatabase.ts",
+    "db": "pnpm run db:seed && pnpm run db:hh",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
@@ -28,6 +28,7 @@
     "@types/node": "^22.14.1",
     "nodemon": "^3.0.1",
     "ts-node": "^10.9.2",
+    "tsx": "^4.19.4",
     "typescript": "^5.8.3"
   }
 }

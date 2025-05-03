@@ -2,7 +2,7 @@
   import { formatDate } from "$lib/utils/date.utils";
   // @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
   import type { PaginatedVacanciesResponse, VacancyDTO } from "@jspulse/shared";
-  import { apiClient, KyHTTPError } from "../api/http.client";
+  import { apiClient, HTTPError } from "$lib/api/http.client";
   import type { PageData } from "./$types";
 
   export let data: PageData;
@@ -66,7 +66,7 @@
       }
     } catch (err) {
       console.error("Client-side API Error:", err);
-      if (err instanceof KyHTTPError) {
+      if (err instanceof HTTPError) {
         clientError = `Ошибка сети или сервера: ${err.message}`;
         try {
           const errorBody = await err.response.json();

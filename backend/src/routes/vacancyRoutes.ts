@@ -1,18 +1,17 @@
-import express, { Request, Response } from "express";
+import express, { Request, Response, Router, RequestHandler } from "express";
 import { Vacancy } from "../models/Vacancy.js";
 import { isValidObjectId } from "mongoose";
-// import { connectDB } from "../config/db.js"; // Временно комментируем
 import type { PaginatedVacanciesResponse, VacancyDTO, ApiSingleResponse } from "@jspulse/shared";
 
-const router = express.Router();
+const router: Router = express.Router();
 
-router.get("/", async (req: Request, res: Response) => {
+// Используем RequestHandler для правильной типизации обработчиков маршрутов
+router.get("/", (async (req: Request, res: Response) => {
   console.log("[GET /api/vacancies] Запрос получен");
   const { limit = 10, page = 0, skills } = req.query;
   const numLimit = parseInt(limit as string, 10);
   const numPage = parseInt(page as string, 10);
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const query: any = {};
   if (skills) {
     query.skills = { $in: (skills as string).split(",").map((s) => s.trim()) };
@@ -50,15 +49,17 @@ router.get("/", async (req: Request, res: Response) => {
     };
 
     console.log("[GET /api/vacancies] Успешно сформирован ответ");
-    res.json(apiResponse);
+    return res.json(apiResponse);
   } catch (error) {
     console.error("[GET /api/vacancies] Ошибка в блоке try/catch:", error);
     console.log("[GET /api/vacancies] Отправка ответа 500...");
-    res.status(500).json({ status: "ERROR", message: "Ошибка сервера при получении вакансий" });
+    return res
+      .status(500)
+      .json({ status: "ERROR", message: "Ошибка сервера при получении вакансий" });
   }
-});
+}) as unknown as RequestHandler);
 
-router.get("/:id", async (req: Request, res: Response) => {
+router.get("/:id", (async (req: Request, res: Response) => {
   const { id } = req.params;
 
   if (!isValidObjectId(id)) {
@@ -78,26 +79,26 @@ router.get("/:id", async (req: Request, res: Response) => {
       };
       console.log(`[GET /vacancies/${id}] Вакансия не найдена`);
       return res.status(200).json(response);
-    } else {
-      const { _id, ...rest } = vacancy;
-      response = {
-        status: "OK",
-        data: {
-          ...rest,
-          _id: _id.toString(),
-          publishedAt: vacancy.publishedAt,
-        },
-        message: "Вакансия найдена",
-      };
-      console.log(`[GET /vacancies/${id}] Вакансия найдена:`, response.data?.title);
-      res.json(response);
     }
+
+    const { _id, ...rest } = vacancy;
+    response = {
+      status: "OK",
+      data: {
+        ...rest,
+        _id: _id.toString(),
+        publishedAt: vacancy.publishedAt,
+      },
+      message: "Вакансия найдена",
+    };
+    console.log(`[GET /vacancies/${id}] Вакансия найдена:`, response.data?.title);
+    return res.json(response);
   } catch (error) {
     console.error(`Ошибка при получении вакансии ${id}:`, error);
-    res
+    return res
       .status(500)
       .json({ status: "ERROR", message: `Ошибка сервера при получении вакансии ${id}` });
   }
-});
+}) as unknown as RequestHandler);
 
 export default router;
