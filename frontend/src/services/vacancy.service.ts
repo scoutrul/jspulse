@@ -6,7 +6,7 @@ import type {
   PaginatedVacanciesResponse,
   HHResponseRaw,
 } from "@jspulse/shared";
-import { apiClient, hhClient } from "../api/http.client";
+import { apiClient } from "$lib/api/http.client";
 import { API_CONFIG } from "../config/api.config";
 
 type TransformedVacancy = Omit<VacancyDTO, "_id">;

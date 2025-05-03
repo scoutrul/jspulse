@@ -1,7 +1,7 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import type { PaginatedVacanciesResponse, VacancyDTO } from "@jspulse/shared";
-import { fetchApiData } from "$lib/utils/apiUtils";
+import { fetchApiData } from "$lib/api/http.server";
 
 interface HomePageData {
   initialVacancies: (VacancyDTO & { htmlDescription?: string })[];

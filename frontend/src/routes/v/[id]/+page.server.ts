@@ -1,40 +1,21 @@
 import { error } from "@sveltejs/kit";
-import type { PageServerLoadEvent } from "./$types";
-import type { VacancyApiResponse } from "@jspulse/shared";
-import { fetchApiData } from "$lib/utils/apiUtils";
+import type { PageServerLoad } from "./$types";
+import type { VacancyDTO } from "@jspulse/shared";
+import { fetchApiData } from "$lib/api/http.server";
 
-export async function load({ params, fetch }: PageServerLoadEvent) {
+export const load: PageServerLoad = async ({ params, fetch }) => {
   const { id } = params;
   const endpoint = `api/vacancies/${id}`;
 
   try {
-    const responseData = await fetchApiData<VacancyApiResponse>(endpoint, fetch);
-
-    if (
-      responseData?.status !== "OK" ||
-      responseData.data === null ||
-      responseData.data === undefined
-    ) {
-      if (responseData?.status === "OK" && responseData.data === null) {
-        console.warn(`[Load Vacancy ${id}] API вернул статус OK, но data = null.`);
-        error(404, { message: `Вакансия с ID ${id} не найдена (API вернул null)` });
-      } else {
-        console.error(`Некорректный ответ API для вакансии ${id}:`, responseData);
-        error(500, { message: "Некорректный ответ от API" });
-      }
-    }
-
+    const response = await fetchApiData<VacancyDTO>(endpoint, fetch);
     return {
-      vacancy: responseData.data,
+      vacancy: response,
     };
   } catch (err) {
-    console.error(`[v/${id}/+page.server.ts] Ошибка при обработке данных вакансии ${id}:`, err);
-
-    if (err && typeof err === "object" && "status" in err && "message" in err) {
-      throw err;
-    }
-
-    const message = err instanceof Error ? err.message : "Неизвестная внутренняя ошибка";
-    error(500, { message: `Внутренняя ошибка при обработке вакансии ${id}: ${message}` });
+    console.error(`[+page.server.ts] Ошибка при загрузке вакансии ${id}:`, err);
+    throw error(500, {
+      message: `Не удалось загрузить вакансию ${id}`,
+    });
   }
-}
+};
