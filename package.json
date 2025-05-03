@@ -3,13 +3,14 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"pnpm --filter @jspulse/shared run dev\" \"pnpm --filter @jspulse/backend run dev\" \"pnpm --filter @jspulse/frontend run dev\"",
-    "build": "pnpm -r run build",
+    "build": "pnpm --filter @jspulse/shared build && pnpm --filter @jspulse/backend build && pnpm --filter @jspulse/frontend build",
     "docker:up": "pnpm run build && docker-compose up --build -d",
     "docker:down": "docker-compose down",
     "lint": "eslint . --ext .js,.ts,.svelte",
     "lint:fix": "eslint . --ext .js,.ts,.svelte --fix",
     "format": "prettier --write .",
-    "prepare": "husky"
+    "prepare": "husky",
+    "local-deps": "pnpm --filter @jspulse/shared build && pnpm install --offline"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
