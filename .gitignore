@@ -8,7 +8,7 @@ frontend/dist/
 build/
 frontend/build/
 frontend/build/env.js
-!shared/dist/
+shared/dist/
 *.tsbuildinfo
 tsconfig.tsbuildinfo
 

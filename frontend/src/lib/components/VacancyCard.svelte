@@ -1,6 +1,5 @@
 <script lang="ts">
-  // @ts-ignore TODO: Define proper Vacancy type, maybe reuse from shared?
-  import type { VacancyDTO } from "@jspulse/shared";
+  import { VacancyDTOSchema, type VacancyDTO } from "@jspulse/shared";
   import { formatDate } from "$lib/utils/date.utils";
 
   type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
@@ -10,83 +9,91 @@
   // Параметр для отображения полного неусеченного описания
   export let showFullDescription = false;
 
-  $: hasSalary = vacancy.salaryFrom || vacancy.salaryTo || vacancy.salaryCurrency;
-  $: hasDetails = vacancy.experience || vacancy.employment || vacancy.schedule || vacancy.address;
-  $: hasSkills = vacancy.skills && vacancy.skills.length > 0;
+  // Валидируем входящие данные
+  $: validationResult = VacancyDTOSchema.safeParse(vacancy);
+  $: if (!validationResult.success) {
+    console.warn('[VacancyCard] Невалидные данные вакансии:', validationResult.error);
+  }
+
+  // Используем данные только если они валидны, или используем исходные данные с проверками
+  $: validVacancy = validationResult.success ? validationResult.data : vacancy;
+  $: hasSalary = validVacancy.salaryFrom || validVacancy.salaryTo || validVacancy.salaryCurrency;
+  $: hasDetails = validVacancy.experience || validVacancy.employment || validVacancy.schedule || validVacancy.address;
+  $: hasSkills = validVacancy.skills && validVacancy.skills.length > 0;
 </script>
 
 <li>
-  <a href="/v/{vacancy._id}" class="vacancy-title-link">
-    <h3>{vacancy.title}</h3>
+  <a href="/v/{validVacancy._id}" class="vacancy-title-link">
+    <h3>{validVacancy.title}</h3>
   </a>
   <div class="vacancy-header">
-    {#if vacancy.company}
-      <p class="company">{vacancy.company}</p>
+    {#if validVacancy.company}
+      <p class="company">{validVacancy.company}</p>
     {/if}
-    {#if vacancy.location}
-      <p class="location">{vacancy.location}</p>
+    {#if validVacancy.location}
+      <p class="location">{validVacancy.location}</p>
     {/if}
     {#if hasSalary}
       <p class="salary">
-        {#if vacancy.salaryFrom}от {vacancy.salaryFrom}{/if}
-        {#if vacancy.salaryTo}
-          до {vacancy.salaryTo}{/if}
-        {#if vacancy.salaryCurrency}
-          {vacancy.salaryCurrency}{/if}
+        {#if validVacancy.salaryFrom}от {validVacancy.salaryFrom}{/if}
+        {#if validVacancy.salaryTo}
+          до {validVacancy.salaryTo}{/if}
+        {#if validVacancy.salaryCurrency}
+          {validVacancy.salaryCurrency}{/if}
       </p>
     {/if}
   </div>
   {#if hasDetails}
     <div class="vacancy-details">
-      {#if vacancy.experience}
-        <p class="experience"><strong>Опыт:</strong> {vacancy.experience}</p>
+      {#if validVacancy.experience}
+        <p class="experience"><strong>Опыт:</strong> {validVacancy.experience}</p>
       {/if}
-      {#if vacancy.employment}
-        <p class="employment"><strong>Занятость:</strong> {vacancy.employment}</p>
+      {#if validVacancy.employment}
+        <p class="employment"><strong>Занятость:</strong> {validVacancy.employment}</p>
       {/if}
-      {#if vacancy.schedule}
-        <p class="schedule"><strong>График:</strong> {vacancy.schedule}</p>
+      {#if validVacancy.schedule}
+        <p class="schedule"><strong>График:</strong> {validVacancy.schedule}</p>
       {/if}
-      {#if vacancy.address}
-        <p class="address"><strong>Адрес:</strong> {vacancy.address}</p>
+      {#if validVacancy.address}
+        <p class="address"><strong>Адрес:</strong> {validVacancy.address}</p>
       {/if}
     </div>
   {/if}
   {#if hasSkills}
     <div class="skills">
       <strong>Навыки:</strong>
-      {#each vacancy.skills as skill}
+      {#each validVacancy.skills as skill}
         <span class="skill-tag">{skill}</span>
       {/each}
     </div>
   {/if}
-  {#if vacancy.publishedAt}
+  {#if validVacancy.publishedAt}
     <p class="published-at">
-      Опубликовано: {formatDate(vacancy.publishedAt)}
+      Опубликовано: {formatDate(validVacancy.publishedAt)}
     </p>
   {/if}
-  {#if vacancy.htmlDescription}
+  {#if validVacancy.htmlDescription}
     <details class="description-details" open={expandDescription}>
       <summary>Описание</summary>
       <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-      <div>{@html vacancy.htmlDescription}</div>
+      <div>{@html validVacancy.htmlDescription}</div>
       
-      {#if showFullDescription && vacancy.description}
+      {#if showFullDescription && validVacancy.description}
         <div class="full-description">
           <h4>Исходный текст:</h4>
-          <pre>{vacancy.description}</pre>
+          <pre>{validVacancy.description}</pre>
         </div>
       {/if}
     </details>
-  {:else if vacancy.description}
+  {:else if validVacancy.description}
     <details class="description-details" open={expandDescription}>
       <summary>Описание</summary>
-      <pre>{vacancy.description}</pre>
+      <pre>{validVacancy.description}</pre>
     </details>
   {/if}
-  {#if vacancy.url}
-    <a href={vacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
-      Перейти к источнику ({vacancy.source})
+  {#if validVacancy.url}
+    <a href={validVacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
+      Перейти к источнику ({validVacancy.source})
     </a>
   {/if}
 </li>

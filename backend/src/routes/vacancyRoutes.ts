@@ -1,9 +1,30 @@
 import express, { Request, Response, Router, RequestHandler } from "express";
 import { Vacancy } from "../models/Vacancy.js";
 import { isValidObjectId } from "mongoose";
-import type { PaginatedVacanciesResponse, VacancyDTO, ApiSingleResponse } from "@jspulse/shared";
+import { 
+  VacancyDTOSchema, 
+  VacancySearchSchema, 
+  ApiResponseSchema,
+  VacancyDTO,
+  z
+} from "@jspulse/shared";
+import { validateBody, validateQuery, validateParams } from "../middleware/validation.middleware.js";
 
 const router: Router = express.Router();
+
+// ID параметр схема
+const IdParamSchema = z.object({
+  id: z.string().refine(val => isValidObjectId(val), {
+    message: "Некорректный ID вакансии"
+  })
+});
+
+// Схема поиска по навыкам
+const SkillsQuerySchema = z.object({
+  limit: z.coerce.number().int().positive().default(10),
+  page: z.coerce.number().int().nonnegative().default(0),
+  skills: z.string().optional()
+});
 
 // Эндпоинт для получения списка всех доступных навыков
 router.get("/skills", (async (req: Request, res: Response) => {
@@ -20,29 +41,34 @@ router.get("/skills", (async (req: Request, res: Response) => {
     console.log(`[GET /api/vacancies/skills] Найдено ${skills.length} уникальных навыков`);
 
     return res.json({
-      status: "OK",
+      success: true,
       data: skills,
-      message: `Найдено ${skills.length} навыков`,
+      meta: {
+        count: skills.length
+      }
     });
   } catch (error) {
     console.error("[GET /api/vacancies/skills] Ошибка:", error);
     return res.status(500).json({
-      status: "ERROR",
-      message: "Ошибка сервера при получении списка навыков",
+      success: false,
+      error: {
+        code: 500,
+        message: "Ошибка сервера при получении списка навыков",
+        details: error instanceof Error ? error.message : undefined
+      }
     });
   }
 }) as unknown as RequestHandler);
 
 // Используем RequestHandler для правильной типизации обработчиков маршрутов
-router.get("/", (async (req: Request, res: Response) => {
+router.get("/", validateQuery(SkillsQuerySchema), (async (req: Request, res: Response) => {
   console.log("[GET /api/vacancies] Запрос получен");
-  const { limit = 10, page = 0, skills } = req.query;
-  const numLimit = parseInt(limit as string, 10);
-  const numPage = parseInt(page as string, 10);
+  // Здесь query уже валидирована благодаря middleware
+  const { limit, page, skills } = req.query as z.infer<typeof SkillsQuerySchema>;
 
   const query: any = {};
   if (skills) {
-    query.skills = { $in: (skills as string).split(",").map((s) => s.trim()) };
+    query.skills = { $in: skills.split(",").map((s) => s.trim()) };
   }
 
   try {
@@ -50,96 +76,118 @@ router.get("/", (async (req: Request, res: Response) => {
     const total = await Vacancy.countDocuments(query);
     console.log(`[GET /api/vacancies] Найдено total: ${total}`);
     const vacancies = await Vacancy.find(query)
-      .limit(numLimit)
-      .skip(numPage * numLimit)
+      .limit(limit)
+      .skip(page * limit)
       .sort({ publishedAt: -1 })
       .lean<VacancyDTO[]>();
     console.log(`[GET /api/vacancies] Получено вакансий из БД: ${vacancies.length}`);
 
-    // Если нашли вакансии, но не получили skills для фильтрации, логируем это
-    if (vacancies.length > 0) {
-      const hasSkills = vacancies.every(
-        (v) => v.skills && Array.isArray(v.skills) && v.skills.length > 0
-      );
-      if (!hasSkills) {
-        console.warn(
-          "[GET /api/vacancies] Внимание: некоторые вакансии не имеют skills для фильтрации"
-        );
-      }
-    }
-
-    const responseData: PaginatedVacanciesResponse["data"] = {
-      items: vacancies.map((doc) => {
-        const { _id, ...rest } = doc;
+    // Валидируем вакансии через Zod
+    const validatedVacancies = vacancies.map(vacancy => {
+      // Преобразуем ObjectId в строку
+      const vacancyWithStringId = {
+        ...vacancy,
+        _id: vacancy._id.toString()
+      };
+      
+      // Валидируем через схему
+      const result = VacancyDTOSchema.safeParse(vacancyWithStringId);
+      
+      // Если невалидно, логируем и возвращаем исправленную версию
+      if (!result.success) {
+        console.warn(`[GET /api/vacancies] Невалидная вакансия ${vacancy._id}:`, result.error);
+        // Применяем дефолтные значения
         return {
-          ...rest,
-          _id: _id.toString(),
-          publishedAt: doc.publishedAt,
-          // Гарантируем, что skills всегда будет массивом
-          skills: doc.skills && Array.isArray(doc.skills) ? doc.skills : [],
+          ...vacancyWithStringId,
+          skills: Array.isArray(vacancy.skills) ? vacancy.skills : [],
+          publishedAt: new Date()
         };
-      }),
-      total,
-      page: numPage,
-      limit: numLimit,
-      totalPages: Math.ceil(total / numLimit),
-    };
+      }
+      
+      return result.data;
+    });
 
-    const apiResponse: PaginatedVacanciesResponse = {
-      status: "OK",
-      data: responseData,
-    };
-
-    console.log("[GET /api/vacancies] Успешно сформирован ответ");
-    return res.json(apiResponse);
+    return res.json({
+      success: true,
+      data: validatedVacancies,
+      meta: {
+        page,
+        limit,
+        totalItems: total,
+        totalPages: Math.ceil(total / limit),
+        hasNextPage: page < Math.ceil(total / limit) - 1,
+        hasPrevPage: page > 0
+      }
+    });
   } catch (error) {
     console.error("[GET /api/vacancies] Ошибка в блоке try/catch:", error);
     console.log("[GET /api/vacancies] Отправка ответа 500...");
-    return res
-      .status(500)
-      .json({ status: "ERROR", message: "Ошибка сервера при получении вакансий" });
+    return res.status(500).json({ 
+      success: false, 
+      error: {
+        code: 500,
+        message: "Ошибка сервера при получении вакансий",
+        details: error instanceof Error ? error.message : undefined
+      }
+    });
   }
 }) as unknown as RequestHandler);
 
-router.get("/:id", (async (req: Request, res: Response) => {
+router.get("/:id", validateParams(IdParamSchema), (async (req: Request, res: Response) => {
   const { id } = req.params;
-
-  if (!isValidObjectId(id)) {
-    return res.status(400).json({ status: "ERROR", message: "Некорректный ID вакансии" });
-  }
 
   try {
     const vacancy = await Vacancy.findById(id).lean<VacancyDTO>();
 
-    let response: ApiSingleResponse<VacancyDTO>;
-
     if (!vacancy) {
-      response = {
-        status: "OK",
-        data: null,
-        message: "Вакансия не найдена",
-      };
       console.log(`[GET /vacancies/${id}] Вакансия не найдена`);
-      return res.status(200).json(response);
+      return res.status(404).json({
+        success: false,
+        error: {
+          code: 404,
+          message: "Вакансия не найдена"
+        }
+      });
     }
 
-    const { _id, ...rest } = vacancy;
-    response = {
-      status: "OK",
-      data: {
-        ...rest,
-        _id: _id.toString(),
-        publishedAt: vacancy.publishedAt,
-      },
-      message: "Вакансия найдена",
+    // Преобразуем _id из ObjectId в строку
+    const vacancyWithStringId = {
+      ...vacancy,
+      _id: vacancy._id.toString()
     };
-    console.log(`[GET /vacancies/${id}] Вакансия найдена:`, response.data?.title);
-    return res.json(response);
+    
+    // Валидируем вакансию через Zod
+    const result = VacancyDTOSchema.safeParse(vacancyWithStringId);
+    
+    if (!result.success) {
+      console.warn(`[GET /vacancies/${id}] Невалидная вакансия:`, result.error);
+      // В случае проблем с форматом данных пытаемся исправить их
+      return res.json({
+        success: true,
+        data: {
+          ...vacancyWithStringId,
+          skills: Array.isArray(vacancy.skills) ? vacancy.skills : [],
+          publishedAt: vacancy.publishedAt instanceof Date ? 
+            vacancy.publishedAt : new Date(vacancy.publishedAt || Date.now())
+        }
+      });
+    }
+    
+    console.log(`[GET /vacancies/${id}] Вакансия найдена:`, result.data.title);
+    return res.json({
+      success: true,
+      data: result.data
+    });
   } catch (error) {
     console.error(`Ошибка при получении вакансии ${id}:`, error);
-    return res
-      .status(500)
-      .json({ status: "ERROR", message: `Ошибка сервера при получении вакансии ${id}` });
+    return res.status(500).json({ 
+      success: false, 
+      error: {
+        code: 500,
+        message: `Ошибка сервера при получении вакансии ${id}`,
+        details: error instanceof Error ? error.message : undefined
+      }
+    });
   }
 }) as unknown as RequestHandler);
 

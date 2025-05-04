@@ -1,35 +1,47 @@
+import { DateSchema, z } from "@jspulse/shared";
+
 /**
- * Форматирует строку даты или undefined в локализованную строку (DD.MM.YYYY).
- * @param dateInput - Строка с датой, объект Date, undefined или null.
- * @returns Локализованная строка даты или 'Дата не указана'.
+ * Форматирует дату в локализованную строку (DD.MM.YYYY HH:MM)
+ * с использованием Zod для валидации входных данных.
+ * 
+ * @param dateInput - Любой поддерживаемый формат даты 
+ * @returns Локализованная строка даты или сообщение об ошибке
  */
-export function formatDate(dateInput: string | Date | number | undefined | null): string {
+export function formatDate(dateInput: unknown): string {
   try {
-    // Проверяем на undefined или null
-    if (dateInput === undefined || dateInput === null) {
+    // Дополнительная проверка на null/undefined
+    if (dateInput === null || dateInput === undefined) {
       return "Дата не указана";
     }
-
-    // Если это объект с getTime методом, используем его
-    if (typeof dateInput === 'object' && dateInput !== null && 'getTime' in dateInput) {
-      try {
-        const timestamp = dateInput.getTime();
-        const date = new Date(timestamp);
-        return formatDateInstance(date);
-      } catch (e) {
-        return "Некорректная дата";
-      }
+    
+    console.log(`[formatDate] Input type: ${typeof dateInput}`, dateInput);
+    
+    // Используем Zod DateSchema для валидации и преобразования
+    const result = DateSchema.safeParse(dateInput);
+    
+    if (!result.success) {
+      console.warn(`[formatDate] Невалидная дата:`, result.error);
+      return "Дата не указана";
     }
     
-    // Для строк и чисел
-    const date = dateInput instanceof Date ? 
-      dateInput : 
-      typeof dateInput === 'number' ?
-        new Date(dateInput) :
-        new Date(String(dateInput));
+    const date = result.data;
     
-    return formatDateInstance(date);
+    // Дополнительная проверка на корректность даты
+    if (!date || isNaN(date.getTime())) {
+      console.warn(`[formatDate] Невалидная дата после парсинга:`, date);
+      return "Дата не указана";
+    }
+    
+    // Форматируем дату в локальный формат
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
   } catch (error) {
+    console.error(`[formatDate] Ошибка форматирования:`, error);
     return "Ошибка форматирования";
   }
 }
@@ -41,16 +53,21 @@ export function formatDate(dateInput: string | Date | number | undefined | null)
  */
 function formatDateInstance(date: Date): string {
   // Проверяем валидность даты
-  if (isNaN(date.getTime())) {
+  if (!date || isNaN(date.getTime())) {
     return "Некорректная дата";
   }
   
-  // Форматируем дату в локальный формат
-  return new Intl.DateTimeFormat("ru-RU", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
+  try {
+    // Форматируем дату в локальный формат
+    return new Intl.DateTimeFormat("ru-RU", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  } catch (e) {
+    console.error(`[formatDateInstance] Error formatting date:`, e);
+    return "Ошибка форматирования";
+  }
 }
