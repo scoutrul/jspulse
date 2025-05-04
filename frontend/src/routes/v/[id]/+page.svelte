@@ -43,9 +43,13 @@
 <main class="vacancy-detail-page">
   <h1>Детали вакансии</h1>
   
-  <!-- Используем карточку вакансии с автоматически раскрытым описанием -->
+  <!-- Используем карточку вакансии с автоматически раскрытым описанием и полным исходным текстом -->
   <ul class="vacancies-list">
-    <VacancyCard vacancy={vacancy} expandDescription={true} />
+    <VacancyCard 
+      vacancy={vacancy} 
+      expandDescription={true} 
+      showFullDescription={true} 
+    />
   </ul>
 </main>
 

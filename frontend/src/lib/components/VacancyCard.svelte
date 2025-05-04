@@ -7,6 +7,8 @@
   export let vacancy: VacancyWithHtml;
   // Параметр для автоматического раскрытия описания
   export let expandDescription = false;
+  // Параметр для отображения полного неусеченного описания
+  export let showFullDescription = false;
 
   $: hasSalary = vacancy.salaryFrom || vacancy.salaryTo || vacancy.salaryCurrency;
   $: hasDetails = vacancy.experience || vacancy.employment || vacancy.schedule || vacancy.address;
@@ -66,14 +68,19 @@
   {#if vacancy.htmlDescription}
     <details class="description-details" open={expandDescription}>
       <summary>Описание</summary>
-      <div>
-        <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-        {@html vacancy.htmlDescription}
-      </div>
+      <!-- eslint-disable-next-line svelte/no-at-html-tags -->
+      <div>{@html vacancy.htmlDescription}</div>
+      
+      {#if showFullDescription && vacancy.description}
+        <div class="full-description">
+          <h4>Исходный текст:</h4>
+          <pre>{vacancy.description}</pre>
+        </div>
+      {/if}
     </details>
   {:else if vacancy.description}
     <details class="description-details" open={expandDescription}>
-      <summary>Описание (raw)</summary>
+      <summary>Описание</summary>
       <pre>{vacancy.description}</pre>
     </details>
   {/if}
@@ -215,5 +222,18 @@
   }
   .source-link:hover {
     text-decoration: underline;
+  }
+
+  .full-description {
+    margin-top: 1.5rem;
+    padding-top: 1rem;
+    border-top: 1px dashed #ddd;
+  }
+  
+  .full-description h4 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: #666;
   }
 </style>
