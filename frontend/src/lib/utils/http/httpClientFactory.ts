@@ -1,4 +1,4 @@
-import { HttpClient, HttpRequestOptions } from "./HttpClient";
+import type { HttpClient, HttpRequestOptions } from "./HttpClient";
 import { KyBrowserClient } from "./KyBrowserClient";
 import { KyServerClient } from "./KyServerClient";
 import { browser } from "$app/environment";
@@ -20,13 +20,15 @@ interface HttpClientOptions {
  */
 export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
   const {
-    baseUrl = import.meta.env.VITE_API_URL || "",
+    baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3001",
     defaultHeaders = {},
     timeout = 30000,
     retry = 1,
     fetch = undefined  // Опциональный fetch из SvelteKit
   } = options;
 
+  console.log(`[httpClientFactory] Creating client with baseUrl: ${baseUrl}`);
+  
   // В зависимости от окружения создаем разные клиенты
   if (browser) {
     // Клиент для браузера

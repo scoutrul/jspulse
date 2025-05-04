@@ -1,5 +1,5 @@
 import ky from "ky-universal";
-import { HttpClient, HttpRequestOptions } from "./HttpClient";
+import type { HttpClient, HttpRequestOptions } from "./HttpClient";
 
 /**
  * Реализация HttpClient с использованием ky-universal для серверного рендеринга
@@ -61,7 +61,20 @@ export class KyServerClient implements HttpClient {
     options?: any
   ): Promise<T> {
     try {
-      const fullUrl = this.baseUrl ? new URL(url, this.baseUrl).toString() : url;
+      let fullUrl = url;
+      
+      // Проверяем, является ли URL абсолютным
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        // Если baseUrl указан, используем его как основу
+        if (this.baseUrl) {
+          fullUrl = new URL(url, this.baseUrl).toString();
+        } else {
+          // Без baseUrl нужно добавить абсолютный путь
+          fullUrl = `http://localhost:3001/${url.startsWith('/') ? url.substring(1) : url}`;
+        }
+      }
+      
+      console.log(`[KyServerClient] Выполняем запрос к: ${fullUrl}`);
       
       const response = await this.kyInstance(fullUrl, {
         method,

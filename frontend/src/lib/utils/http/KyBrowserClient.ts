@@ -1,5 +1,6 @@
-import ky, { Options as KyOptions } from "ky";
-import { HttpClient, HttpRequestOptions } from "./HttpClient";
+import ky from "ky";
+import type { Options as KyOptions } from "ky";
+import type { HttpClient, HttpRequestOptions } from "./HttpClient";
 
 /**
  * Реализация HttpClient с использованием ky для браузера
@@ -13,7 +14,7 @@ export class KyBrowserClient implements HttpClient {
     this.defaultOptions = {
       retry: 1,
       timeout: 30000,
-      credentials: "include", // Включаем передачу куки для CORS запросов
+      credentials: "same-origin", // Изменяем на same-origin для избежания CORS проблем
       hooks: {
         beforeRequest: [],
         afterResponse: [],
@@ -56,7 +57,21 @@ export class KyBrowserClient implements HttpClient {
     options?: KyOptions
   ): Promise<T> {
     try {
-      const fullUrl = this.baseUrl ? new URL(url, this.baseUrl).toString() : url;
+      let fullUrl = url;
+      
+      // Проверяем, является ли URL абсолютным
+      if (!url.startsWith('http://') && !url.startsWith('https://')) {
+        // Если baseUrl указан, используем его как основу
+        if (this.baseUrl) {
+          fullUrl = new URL(url, this.baseUrl).toString();
+        } else {
+          // Без baseUrl используем текущий домен
+          fullUrl = `${window.location.origin}/${url.startsWith('/') ? url.substring(1) : url}`;
+        }
+      }
+      
+      console.log(`[KyBrowserClient] Выполняем запрос к: ${fullUrl}`);
+      
       const response = await ky(fullUrl, {
         method,
         ...options,

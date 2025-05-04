@@ -5,6 +5,8 @@
 
   type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
   export let vacancy: VacancyWithHtml;
+  // Параметр для автоматического раскрытия описания
+  export let expandDescription = false;
 
   $: hasSalary = vacancy.salaryFrom || vacancy.salaryTo || vacancy.salaryCurrency;
   $: hasDetails = vacancy.experience || vacancy.employment || vacancy.schedule || vacancy.address;
@@ -62,7 +64,7 @@
     </p>
   {/if}
   {#if vacancy.htmlDescription}
-    <details class="description-details">
+    <details class="description-details" open={expandDescription}>
       <summary>Описание</summary>
       <div>
         <!-- eslint-disable-next-line svelte/no-at-html-tags -->
@@ -70,7 +72,7 @@
       </div>
     </details>
   {:else if vacancy.description}
-    <details class="description-details">
+    <details class="description-details" open={expandDescription}>
       <summary>Описание (raw)</summary>
       <pre>{vacancy.description}</pre>
     </details>

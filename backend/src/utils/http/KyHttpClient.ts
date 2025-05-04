@@ -1,5 +1,6 @@
-import ky, { Options as KyOptions } from "ky";
-import { HttpClient, HttpRequestOptions } from "./HttpClient";
+import ky from "ky";
+import type { Options as KyOptions } from "ky";
+import { HttpClient, HttpRequestOptions } from "./HttpClient.js";
 
 /**
  * Адаптер для библиотеки ky, реализующий интерфейс HttpClient

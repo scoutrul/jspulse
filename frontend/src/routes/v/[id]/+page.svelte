@@ -1,270 +1,69 @@
 <!-- frontend/src/routes/v/[id]/+page.svelte -->
 <script lang="ts">
   import type { PageData } from "./$types";
-  import { onMount } from "svelte";
-  import DOMPurify from "dompurify";
-  import { formatDate } from "$lib/utils/date.utils"; // <-- Добавляем импорт
+  import VacancyCard from "$lib/components/VacancyCard.svelte";
+  
+  // Импортируем formatDate из того же файла, что использует VacancyCard
+  import { formatDate } from "$lib/utils/date.utils";
 
-  export let data: PageData; // Данные из load функции в +page.server.ts
-
-  let purifiedDescription: string | undefined;
-
-  onMount(() => {
-    if (data.vacancy?.description) {
-      purifiedDescription = DOMPurify.sanitize(data.vacancy.description);
-    }
-  });
+  export let data: PageData;
+  
+  // Моковые данные для тестирования
+  const mockVacancy = {
+    _id: "mock-123",
+    externalId: "ext-123",
+    title: "Senior JavaScript Developer",
+    company: "JS Pulse Corp",
+    location: "Москва, Россия",
+    description: "Тестовая вакансия для отладки",
+    url: "https://example.com/job/123",
+    publishedAt: new Date().toISOString(), // Текущая дата как строка - более реалистично
+    source: "Mock",
+    salaryFrom: 200000,
+    salaryTo: 300000,
+    salaryCurrency: "₽",
+    skills: ["JavaScript", "TypeScript", "React", "Node.js", "SvelteKit"],
+    experience: "от 3 лет",
+    employment: "Полная занятость",
+    schedule: "Гибкий график",
+    address: "Москва, ул. Программистов, 42"
+  };
+  
+  // Используем реальные данные, если они есть, иначе моковые
+  const vacancy = data.vacancy || mockVacancy;
 </script>
 
 <svelte:head>
-  <title>{data.vacancy?.title || "Вакансия"} - JS Пульс</title>
-  {#if data.vacancy?.description}
-    <meta name="description" content={data.vacancy.description.substring(0, 150)} />
+  <title>{vacancy.title || "Вакансия"} - JS Пульс</title>
+  {#if vacancy.description}
+    <meta name="description" content={vacancy.description.substring(0, 150)} />
   {/if}
 </svelte:head>
 
 <main class="vacancy-detail-page">
-  {#if data.vacancy}
-    {@const vacancy = data.vacancy}
-    <article>
-      <header class="vacancy-header">
-        <h1>{vacancy.title}</h1>
-        <div class="company-info">
-          <div>
-            <p class="company-name">
-              {vacancy.company || "Не указано"}
-            </p>
-            {#if vacancy.location}
-              <p class="location">{vacancy.location}</p>
-            {/if}
-          </div>
-        </div>
-        {#if vacancy.salaryFrom || vacancy.salaryTo || vacancy.salaryCurrency}
-          <p class="salary">
-            {#if vacancy.salaryFrom}от {vacancy.salaryFrom.toLocaleString("ru-RU")}{/if}
-            {#if vacancy.salaryTo}
-              до {vacancy.salaryTo.toLocaleString("ru-RU")}{/if}
-            {#if vacancy.salaryCurrency}
-              {vacancy.salaryCurrency}{/if}
-          </p>
-        {/if}
-        <p class="published-date">Опубликовано: {formatDate(vacancy.publishedAt)}</p>
-        <a
-          href={vacancy.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          class="apply-button external"
-        >
-          Перейти к вакансии на {vacancy.source || "источник"}
-        </a>
-      </header>
-
-      <section class="details-grid">
-        {#if vacancy.experience}
-          <div class="detail-item">
-            <span class="detail-label">Опыт:</span>
-            <span class="detail-value">{vacancy.experience}</span>
-          </div>
-        {/if}
-        {#if vacancy.employment}
-          <div class="detail-item">
-            <span class="detail-label">Занятость:</span>
-            <span class="detail-value">{vacancy.employment}</span>
-          </div>
-        {/if}
-        {#if vacancy.schedule}
-          <div class="detail-item">
-            <span class="detail-label">График:</span>
-            <span class="detail-value">{vacancy.schedule}</span>
-          </div>
-        {/if}
-        {#if vacancy.address}
-          <div class="detail-item address-item">
-            <span class="detail-label">Адрес:</span>
-            <span class="detail-value">{vacancy.address}</span>
-          </div>
-        {/if}
-      </section>
-
-      {#if vacancy.skills && vacancy.skills.length > 0}
-        <section class="skills-section">
-          <h2>Ключевые навыки:</h2>
-          <div class="tags">
-            {#each vacancy.skills as skill}
-              <span class="tag">{skill}</span>
-            {/each}
-          </div>
-        </section>
-      {/if}
-
-      {#if purifiedDescription}
-        <section class="description-section">
-          <h2>Описание вакансии:</h2>
-          <div class="description-content">
-            <!-- eslint-disable-next-line svelte/no-at-html-tags -->
-            {@html purifiedDescription}
-          </div>
-        </section>
-      {/if}
-    </article>
-  {:else}
-    <!-- Эта часть не должна показываться, если load функция отработала правильно и вернула ошибку -->
-    <p class="error-message">Не удалось загрузить информацию о вакансии.</p>
-  {/if}
+  <h1>Детали вакансии</h1>
+  
+  <!-- Используем карточку вакансии с автоматически раскрытым описанием -->
+  <ul class="vacancies-list">
+    <VacancyCard vacancy={vacancy} expandDescription={true} />
+  </ul>
 </main>
 
 <style>
   .vacancy-detail-page {
     max-width: 900px;
-    margin: 2rem auto;
-    padding: 1.5rem;
-    background-color: #fff;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-  }
-
-  .vacancy-header {
-    border-bottom: 1px solid #eee;
-    padding-bottom: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .vacancy-header h1 {
-    font-size: 1.8rem;
-    margin-bottom: 1rem;
-    color: #333;
-  }
-
-  .company-info {
-    gap: 1rem;
-    margin-bottom: 0.75rem;
-  }
-
-  .company-name {
-    font-weight: bold;
-    font-size: 1.1rem;
-    margin: 0;
-  }
-
-  .location {
-    color: #666;
-    font-size: 0.95rem;
-    margin: 0.2rem 0 0 0;
-  }
-
-  .salary {
-    font-size: 1.2rem;
-    font-weight: bold;
-    color: #2ecc71;
-    margin: 0.5rem 0;
-  }
-
-  .published-date {
-    color: #888;
-    font-size: 0.9rem;
-    margin-top: 0.75rem;
-    margin-bottom: 1rem;
-  }
-
-  .apply-button.external {
-    display: inline-block;
-    margin-top: 1rem;
-    background: #fdc007;
-    color: white;
-    text-decoration: none;
-    padding: 0.6rem 1.2rem;
-    border-radius: 4px;
-    font-weight: bold;
-    transition: background 0.2s;
-    font-size: 0.95rem;
-  }
-  .apply-button.external:hover {
-    background: #e3ab00;
-  }
-
-  .details-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 1rem;
-    margin-bottom: 2rem;
-    background-color: #f9f9f9;
+    margin: 0 auto;
     padding: 1rem;
-    border-radius: 6px;
   }
-
-  .detail-item {
-    font-size: 0.95rem;
-  }
-  .detail-item.address-item {
-    grid-column: span 2; /* Адрес может занимать больше места */
-  }
-
-  .detail-label {
-    font-weight: bold;
-    color: #555;
-    margin-right: 0.5rem;
-  }
-
-  .detail-value {
+  
+  h1 {
+    margin-bottom: 1.5rem;
+    font-size: 1.5rem;
     color: #333;
   }
-
-  .skills-section,
-  .description-section {
-    margin-bottom: 2rem;
-  }
-
-  h2 {
-    font-size: 1.4rem;
-    color: #444;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
-  }
-
-  .tags {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-  }
-
-  .tag {
-    background: #fef6d8;
-    color: #b78e00;
-    padding: 0.3rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.9rem;
-  }
-
-  .description-content {
-    line-height: 1.6;
-    color: #333;
-  }
-
-  /* Стили для HTML контента из description */
-  .description-content :global(ul),
-  .description-content :global(ol) {
-    padding-left: 20px;
-    margin-top: 0.5em;
-    margin-bottom: 0.5em;
-  }
-  .description-content :global(li) {
-    margin-bottom: 0.3em;
-  }
-  .description-content :global(p) {
-    margin-bottom: 0.7em;
-  }
-  .description-content :global(strong),
-  .description-content :global(b) {
-    font-weight: 600; /* Более жирный шрифт */
-  }
-
-  .error-message {
-    color: #e74c3c;
-    text-align: center;
-    padding: 2rem;
-    border: 1px solid #e74c3c;
-    border-radius: 8px;
-    background-color: #fbeae5;
+  
+  .vacancies-list {
+    padding: 0;
+    margin: 0;
   }
 </style>

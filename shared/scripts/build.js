@@ -26,27 +26,39 @@ async function copyDir(src, dest) {
         // Рекурсивно копируем поддиректорию
         await copyDir(srcPath, destPath);
       } else if (entry.isFile()) {
-        // Копируем файл и обрабатываем импорты
-        let content = await fs.readFile(srcPath, 'utf8');
-        
-        // Для .ts файлов создаем .js и .d.ts файлы
         if (srcPath.endsWith('.ts')) {
-          // Создаем .js файл (просто экспорты, для типов не нужна реальная реализация)
-          const jsContent = content
-            .replace(/import\s+.*?from\s+['"](.+?)['"]/g, (match, importPath) => {
-              // Заменяем расширение .ts на .js в импортах
-              if (!importPath.endsWith('.js') && !importPath.startsWith('@')) {
-                return match.replace(importPath, `${importPath}.js`);
-              }
-              return match;
-            })
-            .replace(/export\s+interface/g, 'export {}; // interface')
-            .replace(/export\s+type/g, 'export {}; // type');
+          // Для TypeScript файлов создаем два отдельных файла
           
-          await fs.writeFile(destPath.replace('.ts', '.js'), jsContent);
+          // 1. Создаем .d.ts файл (с типами)
+          const dtsContent = await fs.readFile(srcPath, 'utf8');
+          const dtsPath = destPath.replace('.ts', '.d.ts');
+          await fs.writeFile(dtsPath, dtsContent);
           
-          // Создаем .d.ts файл (декларация типов)
-          await fs.writeFile(destPath.replace('.ts', '.d.ts'), content);
+          // 2. Создаем пустой .js файл со всеми экспортами
+          const content = await fs.readFile(srcPath, 'utf8');
+          
+          // Создаем простой пустой экспорт для каждого экспортируемого типа
+          const jsContent = '// Автоматически сгенерированный файл\n' +
+                           '// Содержит только экспорты без реализации\n\n' + 
+                           // Находим все экспортируемые сущности
+                           content.match(/export\s+(interface|type|class|enum|const|function|let|var)\s+([a-zA-Z0-9_]+)/g)
+                                 ?.map(exp => {
+                                     // Извлекаем имя экспортируемой сущности
+                                     const match = exp.match(/export\s+(interface|type|class|enum|const|function|let|var)\s+([a-zA-Z0-9_]+)/);
+                                     if (match && match[2]) {
+                                         const name = match[2];
+                                         // Если это интерфейс или тип, экспортируем пустой объект
+                                         if (match[1] === 'interface' || match[1] === 'type') {
+                                             return `export const ${name} = {}; // Empty placeholder for TypeScript ${match[1]}`;
+                                         }
+                                     }
+                                     return null;
+                                 })
+                                 .filter(Boolean)
+                                 .join('\n');
+          
+          const jsPath = destPath.replace('.ts', '.js');
+          await fs.writeFile(jsPath, jsContent || '// Empty export\nexport {};\n');
         } else {
           // Для других файлов просто копируем
           await fs.copyFile(srcPath, destPath);
