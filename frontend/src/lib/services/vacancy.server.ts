@@ -1,10 +1,14 @@
 import type { PaginatedVacanciesResponse, VacancyDTO } from "@jspulse/shared";
-import { fetchApiData } from "$lib/api/http.server";
 import { transformVacancies, extractSkillsFromVacancies } from "$lib/utils/vacancyTransformations";
+import { createHttpClient } from "$lib/utils/http";
 import type { VacanciesOptions, VacanciesResponse } from "./vacancy.service";
 
 /**
  * Получение вакансий на сервере
+ * 
+ * @param fetch Функция fetch из SvelteKit
+ * @param options Опции запроса вакансий
+ * @param sanitizeHtml Опциональная функция для санитизации HTML
  */
 export const fetchVacanciesServer = async (
   fetch: typeof globalThis.fetch,
@@ -13,18 +17,25 @@ export const fetchVacanciesServer = async (
 ): Promise<VacanciesResponse> => {
   const { limit = 10, page = 0, skills = [] } = options;
   
+  // Создаем экземпляр HTTP-клиента для SSR, передавая функцию fetch
+  const httpClient = createHttpClient({
+    // Базовый URL будет браться из .env
+  });
+  
   try {
-    const searchParams = new URLSearchParams({
+    const params: Record<string, string> = {
       limit: String(limit),
       page: String(page),
-    });
+    };
     
     if (skills.length > 0) {
-      searchParams.append('skills', skills.join(','));
+      params.skills = skills.join(',');
     }
     
-    const vacanciesPath = `api/vacancies?${searchParams.toString()}`;
-    const vacanciesResponse = await fetchApiData<PaginatedVacanciesResponse>(vacanciesPath, fetch);
+    const vacanciesResponse = await httpClient.get<PaginatedVacanciesResponse>(
+      "api/vacancies", 
+      { params }
+    );
 
     if (
       vacanciesResponse.status !== "OK" ||
@@ -58,14 +69,20 @@ export const fetchVacanciesServer = async (
 
 /**
  * Получение доступных навыков на сервере
+ * 
+ * @param fetch Функция fetch из SvelteKit
+ * @param fallbackVacancies Вакансии для извлечения навыков в случае ошибки API
  */
 export const fetchSkillsServer = async (
   fetch: typeof globalThis.fetch,
   fallbackVacancies?: VacancyDTO[]
 ): Promise<string[]> => {
+  // Создаем экземпляр HTTP-клиента для SSR
+  const httpClient = createHttpClient();
+  
   try {
     console.log("[vacancy.server] Запрос доступных навыков через API");
-    const skillsResponse = await fetchApiData<{ data: string[] }>("api/vacancies/skills", fetch);
+    const skillsResponse = await httpClient.get<{ status: string; data: string[] }>("api/vacancies/skills");
 
     if (skillsResponse.status === "OK" && Array.isArray(skillsResponse.data)) {
       return skillsResponse.data;

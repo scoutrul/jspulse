@@ -1,6 +1,6 @@
 import type { PaginatedVacanciesResponse, VacancyDTO } from "@jspulse/shared";
-import { apiClient, HTTPError } from "$lib/api/http.client";
 import { transformVacancies } from "$lib/utils/vacancyTransformations";
+import { httpClient } from "$lib/utils/http";
 
 export interface VacanciesOptions {
   limit?: number;
@@ -25,16 +25,19 @@ export const fetchVacanciesClient = async (
 ): Promise<VacanciesResponse> => {
   const { limit = 10, page = 0, skills = [] } = options;
   
-  const searchParams = {
+  const params: Record<string, string> = {
     limit: String(limit),
     page: String(page),
-    skills: skills.join(","),
   };
+  
+  if (skills.length > 0) {
+    params.skills = skills.join(",");
+  }
 
   try {
-    const response = await apiClient
-      .get("api/vacancies", { searchParams })
-      .json<PaginatedVacanciesResponse>();
+    const response = await httpClient.get<PaginatedVacanciesResponse>("api/vacancies", { 
+      params 
+    });
 
     if (response.status === "OK" && response.data) {
       const transformedVacancies = transformVacancies(response.data.items);
@@ -61,15 +64,7 @@ export const fetchVacanciesClient = async (
     console.error("Client-side API Error:", err);
     let errorMessage = "Произошла неизвестная ошибка при загрузке вакансий";
     
-    if (err instanceof HTTPError) {
-      errorMessage = `Ошибка сети или сервера: ${err.message}`;
-      try {
-        const errorBody = await err.response.json();
-        if (errorBody?.message) errorMessage += ` (${errorBody.message})`;
-      } catch {
-        /* ignore */
-      }
-    } else if (err instanceof Error) {
+    if (err instanceof Error) {
       errorMessage = "Ошибка загрузки вакансий: " + err.message;
     }
     
