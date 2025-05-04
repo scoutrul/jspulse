@@ -11,6 +11,7 @@ interface HttpClientOptions {
   defaultHeaders?: Record<string, string>;
   timeout?: number;
   retry?: number;
+  fetch?: typeof globalThis.fetch;
 }
 
 /**
@@ -22,7 +23,8 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     baseUrl = import.meta.env.VITE_API_URL || "",
     defaultHeaders = {},
     timeout = 30000,
-    retry = 1
+    retry = 1,
+    fetch = undefined  // Опциональный fetch из SvelteKit
   } = options;
 
   // В зависимости от окружения создаем разные клиенты
@@ -37,13 +39,17 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     });
   } else {
     // Клиент для SSR
-    return new KyServerClient(baseUrl, {
-      headers: {
-        ...defaultHeaders,
+    return new KyServerClient(
+      baseUrl, 
+      {
+        headers: {
+          ...defaultHeaders,
+        },
+        timeout,
+        retry
       },
-      timeout,
-      retry
-    });
+      fetch  // Передаем fetch из SvelteKit, если он предоставлен
+    );
   }
 }
 

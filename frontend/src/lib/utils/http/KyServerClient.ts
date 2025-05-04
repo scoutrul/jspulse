@@ -1,4 +1,4 @@
-import ky, { Options as KyOptions } from "ky-universal";
+import ky from "ky-universal";
 import { HttpClient, HttpRequestOptions } from "./HttpClient";
 
 /**
@@ -6,9 +6,10 @@ import { HttpClient, HttpRequestOptions } from "./HttpClient";
  */
 export class KyServerClient implements HttpClient {
   private baseUrl: string;
-  private defaultOptions: KyOptions;
+  private defaultOptions: any; // Используем any для опций, так как типы могут отличаться от клиентской версии
+  private kyInstance: typeof ky;
 
-  constructor(baseUrl: string = "", defaultOptions: KyOptions = {}) {
+  constructor(baseUrl: string = "", defaultOptions: any = {}, fetchInstance?: typeof globalThis.fetch) {
     this.baseUrl = baseUrl;
     this.defaultOptions = {
       retry: 1,
@@ -19,12 +20,17 @@ export class KyServerClient implements HttpClient {
       },
       ...defaultOptions,
     };
+    
+    // Создаем экземпляр ky с нужным fetch
+    this.kyInstance = fetchInstance 
+      ? ky.create({ fetch: fetchInstance }) 
+      : ky;
   }
 
-  private mapOptions(options?: HttpRequestOptions, body?: unknown): KyOptions {
+  private mapOptions(options?: HttpRequestOptions, body?: unknown): any {
     if (!options && !body) return this.defaultOptions;
 
-    const kyOptions: KyOptions = { ...this.defaultOptions };
+    const kyOptions: any = { ...this.defaultOptions };
 
     if (options?.headers) {
       kyOptions.headers = { ...kyOptions.headers, ...options.headers };
@@ -52,18 +58,32 @@ export class KyServerClient implements HttpClient {
   private async request<T>(
     method: string,
     url: string,
-    options?: KyOptions
+    options?: any
   ): Promise<T> {
     try {
       const fullUrl = this.baseUrl ? new URL(url, this.baseUrl).toString() : url;
-      const response = await ky(fullUrl, {
+      
+      const response = await this.kyInstance(fullUrl, {
         method,
         ...options,
       });
 
       return await response.json();
-    } catch (error) {
+    } catch (error: any) {
       console.error(`[HTTP SERVER ${method}] Ошибка запроса ${url}:`, error);
+      
+      // Проверяем, имеет ли ошибка response (для ky ошибки HTTP могут иметь response)
+      if (error.response) {
+        try {
+          // Пытаемся получить JSON из ответа ошибки
+          const errorData = await error.response.json();
+          return errorData as T; // Возвращаем ответ с ошибкой как структуру API
+        } catch (jsonError) {
+          // Если нельзя распарсить JSON, создаем ошибочный ответ
+          throw error;
+        }
+      }
+      
       throw error;
     }
   }
