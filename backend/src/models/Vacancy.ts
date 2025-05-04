@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { BaseVacancy, IVacancy } from "@jspulse/shared";
+import { type BaseVacancy, type IVacancy } from "@jspulse/shared";
 
 // Интерфейс документа Mongoose для вакансии, расширяет IVacancy из shared
 export interface IVacancyDocument extends IVacancy, Document {

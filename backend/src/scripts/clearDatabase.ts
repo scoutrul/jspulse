@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { connectDB } from "../config/db.js";
 import "dotenv/config";
 import { Vacancy } from "../models/Vacancy.js";
 
@@ -16,7 +17,7 @@ async function clearDatabase() {
     console.log("Connected to MongoDB");
 
     console.log("Clearing database...");
-    
+
     // Удаляем все вакансии из базы данных
     const result = await Vacancy.deleteMany({});
     console.log(`Удалено вакансий: ${result.deletedCount}`);

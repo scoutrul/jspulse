@@ -3,7 +3,7 @@ import "dotenv/config";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 import vacancyRoutes from "./routes/vacancyRoutes.js";
-import { logger, errorHandler, authGuard, AppError } from "./middleware";
+import { logger, errorHandler, authGuard, AppError } from "./middleware/index.js";
 
 const app: Express = express();
 

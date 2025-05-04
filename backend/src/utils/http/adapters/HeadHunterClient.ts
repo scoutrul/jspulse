@@ -1,11 +1,11 @@
-import { HttpClient, HttpRequestOptions } from "../HttpClient";
-import { KyHttpClient } from "../KyHttpClient";
-import { LoggingHttpClient } from "../LoggingHttpClient";
+import { HttpClient, HttpRequestOptions } from "../HttpClient.js";
+import { KyHttpClient } from "../KyHttpClient.js";
+import { LoggingHttpClient } from "../LoggingHttpClient.js";
 
 // Интерфейсы для типов данных HeadHunter API
 export interface HHVacancy {
   id: string;
-  name: string; 
+  name: string;
   salary?: {
     from?: number;
     to?: number;
@@ -54,7 +54,7 @@ export interface HHSearchResponse {
  */
 export class HeadHunterClient {
   private httpClient: HttpClient;
-  
+
   constructor(options: {
     userAgent?: string;
     logging?: boolean;
@@ -68,15 +68,15 @@ export class HeadHunterClient {
       retry: 2,
       timeout: 15000
     });
-    
+
     // Если нужно логирование, оборачиваем в декоратор
     if (options.logging) {
       client = new LoggingHttpClient(client);
     }
-    
+
     this.httpClient = client;
   }
-  
+
   /**
    * Поиск вакансий в HeadHunter
    * @param params Параметры поиска
@@ -86,7 +86,7 @@ export class HeadHunterClient {
       params: this.prepareSearchParams(params)
     });
   }
-  
+
   /**
    * Получение подробной информации о вакансии
    * @param id Идентификатор вакансии
@@ -94,16 +94,16 @@ export class HeadHunterClient {
   async getVacancy(id: string): Promise<HHVacancy> {
     return this.httpClient.get<HHVacancy>(`vacancies/${id}`);
   }
-  
+
   /**
    * Преобразует параметры поиска в формат, принимаемый API HeadHunter
    */
   private prepareSearchParams(params: HHSearchParams): Record<string, string> {
     const result: Record<string, string> = {};
-    
+
     for (const [key, value] of Object.entries(params)) {
       if (value === undefined || value === null) continue;
-      
+
       if (Array.isArray(value)) {
         result[key] = value.join(",");
       } else if (typeof value === "boolean") {
@@ -112,7 +112,7 @@ export class HeadHunterClient {
         result[key] = String(value);
       }
     }
-    
+
     return result;
   }
 } 

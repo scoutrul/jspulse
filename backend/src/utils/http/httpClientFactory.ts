@@ -1,7 +1,7 @@
-import { HttpClient } from "./HttpClient";
-import { KyHttpClient } from "./KyHttpClient";
-import { LoggingHttpClient } from "./LoggingHttpClient";
-import { CachingHttpClient } from "./CachingHttpClient";
+import { HttpClient } from "./HttpClient.js";
+import { KyHttpClient } from "./KyHttpClient.js";
+import { LoggingHttpClient } from "./LoggingHttpClient.js";
+import { CachingHttpClient } from "./CachingHttpClient.js";
 
 /**
  * Настройки для создания HTTP-клиента
@@ -46,10 +46,10 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
 
   // Если нужно кэширование, добавляем декоратор
   if (caching) {
-    const cachingOptions = typeof caching === 'boolean' 
+    const cachingOptions = typeof caching === 'boolean'
       ? { ttl: 60000 } // По умолчанию 1 минута
       : caching;
-    
+
     httpClient = new CachingHttpClient(httpClient, cachingOptions);
   }
 

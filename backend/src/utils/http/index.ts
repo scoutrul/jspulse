@@ -1,9 +1,9 @@
-export * from "./HttpClient";
-export * from "./KyHttpClient";
-export * from "./LoggingHttpClient";
-export * from "./CachingHttpClient";
-export * from "./httpClientFactory";
-export * from "./adapters/HeadHunterClient";
+export * from "./HttpClient.js";
+export * from "./KyHttpClient.js";
+export * from "./LoggingHttpClient.js";
+export * from "./CachingHttpClient.js";
+export * from "./httpClientFactory.js";
+export * from "./adapters/HeadHunterClient.js";
 
-// Реэкспортируем defaultHttpClient как httpClient для обратной совместимости
-export { defaultHttpClient as httpClient } from "./httpClientFactory"; 
+// Реэкспортируем httpClient для упрощения импорта
+export { defaultHttpClient as httpClient } from "./httpClientFactory.js"; 

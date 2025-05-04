@@ -1,4 +1,4 @@
-import { ApiError } from "./errorHandler";
+import { ApiError } from "./errorHandler.js";
 
 /**
  * Класс для создания стандартизированных API ошибок

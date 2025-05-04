@@ -20,6 +20,21 @@ async function processTypeScriptFile(filePath, destPath) {
     const dtsPath = destPath.replace('.ts', '.d.ts');
     const jsPath = destPath.replace('.ts', '.js');
     
+    // Особая обработка для index.ts файлов, которые содержат только экспорты
+    const isIndexFile = path.basename(filePath) === 'index.ts';
+    const containsOnlyExports = content.split('\n')
+      .filter(line => line.trim() && !line.trim().startsWith('//') && !line.trim().startsWith('/*'))
+      .every(line => line.trim().startsWith('export'));
+      
+    if (isIndexFile && containsOnlyExports) {
+      console.log(`  ➤ Прямое копирование index файла: ${path.relative(rootDir, filePath)}`);
+      
+      // Для index.ts файлов, которые только реэкспортируют, копируем как есть
+      await fs.writeFile(dtsPath, content);
+      await fs.writeFile(jsPath, content);
+      return;
+    }
+    
     // Проверяем, есть ли импорт zod
     const hasZodImport = content.includes('import { z } from "zod"') || content.includes("from 'zod'");
     
@@ -45,7 +60,15 @@ async function processTypeScriptFile(filePath, destPath) {
       let jsContent = content
         // Преобразуем импорты типов в импорты значений
         .replace(/import\s+type\s+/g, 'import ')
-        // Удаляем аннотации типов
+        // Сохраняем свойства объектов в формате ключ-значение
+        .replace(/(\w+):\s*([^,}]+),/g, (match, key, value) => {
+          // Не изменяем определения типов объектов внутри z.object
+          if (match.includes('z.object') || match.includes('z.string') || match.includes('z.number')) {
+            return match;
+          }
+          return `${key}: ${value},`;
+        })
+        // Удаляем аннотации типов, но сохраняем выражения с ===, !==, typeof и instanceof
         .replace(/:\s*[A-Za-z_][A-Za-z0-9_<>[\].|,\s]*(?=(\s*[=;,)]|\s*\{))/g, '')
         // Удаляем generic параметры
         .replace(/<[^>]+>/g, '')
@@ -64,10 +87,271 @@ async function processTypeScriptFile(filePath, destPath) {
           .replace(/(\w+)(,\s*[\r\n])/g, '$1: z.any()$2');
       }
       
-      // Специальная обработка для полей дат
+      // Исправляем случаи с обрезанными оператором ===
+      jsContent = jsContent
+        .replace(/(\w+)===\s*([^,}:]+)([,}])/g, '$1: val === $2$3')
+        .replace(/(\w+)!==\s*([^,}:]+)([,}])/g, '$1: val !== $2$3')
+        .replace(/typeof\s+val\s*===\s*/g, 'typeof val === ');
+      
+      // Специальная обработка для файла date.schema.ts
+      if (path.basename(filePath) === 'date.schema.ts') {
+        console.log(`  ➤ Специальная обработка date.schema.ts`);
+        jsContent = `import { z } from "zod";
+
+/**
+ * Универсальная схема для валидации дат с предобработкой.
+ * Обрабатывает различные форматы входных данных и преобразует их в Date.
+ */
+export const DateSchema = z.preprocess(
+  (val) => {
+    // Debug-логирование входного значения
+    console.log(\`[DateSchema] Валидация даты, входные данные:\`, {
+      value: val,
+      type: typeof val,
+      isNull: val === null,
+      isUndefined: val === undefined,
+      isDate: val instanceof Date,
+      isObject: typeof val === 'object' && val !== null
+    });
+    
+    if (val === undefined || val === null) {
+      console.log(\`[DateSchema] Получено null/undefined, возвращаем null\`);
+      return null;
+    }
+    
+    if (val instanceof Date) {
+      const isValid = !isNaN(val.getTime());
+      console.log(\`[DateSchema] Получен Date, валидность:\`, isValid);
+      return isValid ? val : null;
+    }
+    
+    if (typeof val === "string") {
+      console.log(\`[DateSchema] Получена строка:\`, val);
+      
+      if (val.trim() === '') {
+        console.log(\`[DateSchema] Пустая строка, возвращаем null\`);
+        return null;
+      }
+      
+      const date = new Date(val);
+      const isValid = !isNaN(date.getTime());
+      console.log(\`[DateSchema] Валидность строки как даты:\`, isValid);
+      return isValid ? date : null;
+    }
+    
+    if (typeof val === "number") {
+      console.log(\`[DateSchema] Получено число:\`, val);
+      
+      if (val < 0 || val > 4102444800000) {
+        console.log(\`[DateSchema] Число вне разумного диапазона, возвращаем null\`);
+        return null;
+      }
+      
+      const date = new Date(val);
+      const isValid = !isNaN(date.getTime());
+      console.log(\`[DateSchema] Валидность числа как timestamp:\`, isValid);
+      return isValid ? date : null;
+    }
+    
+    if (typeof val === "object" && val !== null && "getTime" in val) {
+      console.log(\`[DateSchema] Получен объект с методом getTime\`);
+      
+      try {
+        if (typeof val.getTime === "function") {
+          const timestamp = val.getTime();
+          
+          if (typeof timestamp === "number" && !isNaN(timestamp)) {
+            const date = new Date(timestamp);
+            const isValid = !isNaN(date.getTime());
+            console.log(\`[DateSchema] Валидность объекта с getTime:\`, isValid);
+            return isValid ? date : null;
+          }
+        }
+      } catch (error) {
+        console.log(\`[DateSchema] Ошибка при вызове getTime:\`, error);
+        return null;
+      }
+    }
+    
+    console.log(\`[DateSchema] Неподдерживаемый формат даты:\`, val);
+    return null;
+  },
+  z.date({
+    invalid_type_error: "Некорректный формат даты",
+    required_error: "Дата обязательна",
+  })
+);
+
+/**
+ * Схема для опциональной даты
+ */
+export const OptionalDateSchema = DateSchema.optional().nullable();
+
+/**
+ * Схема для строго обязательной даты
+ */
+export const RequiredDateSchema = DateSchema.refine(
+  (date) => date !== null && date !== undefined && !isNaN(date.getTime()),
+  {
+    message: "Дата обязательна и должна быть корректной",
+  }
+);`;
+      }
+      
+      // Специальная обработка для файла api.schema.ts
+      if (path.basename(filePath) === 'api.schema.ts') {
+        console.log(`  ➤ Специальная обработка api.schema.ts`);
+        jsContent = `import { z } from "zod";
+import { VacancyDTOSchema } from "./vacancy.schema.js";
+
+/**
+ * Схема для ошибки API
+ */
+export const ApiErrorSchema = z.object({
+  code: z.number(),
+  message: z.string(),
+  details: z.any().optional(),
+});
+
+/**
+ * Схема для метаданных пагинации
+ */
+export const PaginationSchema = z.object({
+  page: z.number().int().nonnegative(),
+  limit: z.number().int().positive(),
+  totalItems: z.number().int().nonnegative(),
+  totalPages: z.number().int().nonnegative(),
+  hasNextPage: z.boolean(),
+  hasPrevPage: z.boolean(),
+});
+
+/**
+ * Общая схема успешного API-ответа
+ */
+export const ApiSuccessSchema = z.object({
+  success: z.literal(true),
+  data: z.any(),
+  meta: z.any().optional(),
+});
+
+/**
+ * Общая схема неуспешного API-ответа
+ */
+export const ApiErrorResponseSchema = z.object({
+  success: z.literal(false),
+  error: ApiErrorSchema,
+});
+
+/**
+ * Схема для API-ответа со списком вакансий и пагинацией
+ */
+export const VacancyListResponseSchema = ApiSuccessSchema.extend({
+  data: z.array(VacancyDTOSchema),
+  meta: PaginationSchema,
+});
+
+/**
+ * Схема для API-ответа с одной вакансией
+ */
+export const SingleVacancyResponseSchema = ApiSuccessSchema.extend({
+  data: VacancyDTOSchema,
+});
+
+/**
+ * Объединенная схема для любого API-ответа
+ */
+export const ApiResponseSchema = z.union([
+  ApiSuccessSchema,
+  ApiErrorResponseSchema,
+]);
+
+// Экспортируем типы из схем Zod
+export const ApiError = ApiErrorSchema;
+export const Pagination = PaginationSchema;
+export const ApiSuccess = ApiSuccessSchema;
+export const ApiErrorResponse = ApiErrorResponseSchema;
+export const VacancyListResponse = VacancyListResponseSchema;
+export const SingleVacancyResponse = SingleVacancyResponseSchema;
+export const ApiResponse = ApiResponseSchema;`;
+      }
+      
+      // Специальная обработка для файла vacancy.schema.ts
       if (path.basename(filePath) === 'vacancy.schema.ts') {
-        // Заменяем publishedAt: z.any() на publishedAt: DateSchema
-        jsContent = jsContent.replace(/publishedAt: z\.any\(\)/g, 'publishedAt: DateSchema');
+        console.log(`  ➤ Специальная обработка vacancy.schema.ts`);
+        jsContent = `import { z } from "zod";
+import { DateSchema, OptionalDateSchema } from "./date.schema.js";
+
+/**
+ * Базовая схема вакансии с общими полями для всех источников.
+ */
+export const BaseVacancySchema = z.object({
+  externalId: z.string({
+    required_error: "ID вакансии во внешней системе обязателен",
+  }),
+  title: z.string({
+    required_error: "Название вакансии обязательно",
+  }).min(1, "Название вакансии не может быть пустым"),
+  company: z.string({
+    required_error: "Название компании обязательно",
+  }).min(1, "Название компании не может быть пустым"),
+  location: z.string({
+    required_error: "Местоположение обязательно",
+  }).min(1, "Местоположение не может быть пустым"),
+  url: z.string({
+    required_error: "URL вакансии обязателен",
+  }).url("Некорректный URL вакансии"),
+  publishedAt: DateSchema,
+  source: z.string({
+    required_error: "Источник вакансии обязателен",
+  }).min(1, "Источник вакансии не может быть пустым"),
+});
+
+/**
+ * Схема DTO вакансии для передачи между бэкендом и фронтендом
+ */
+export const VacancyDTOSchema = BaseVacancySchema.extend({
+  _id: z.string().optional(),
+  description: z.string().optional(),
+  schedule: z.string().optional(),
+  skills: z.array(z.string()).default([]),
+  salaryFrom: z.number().optional().nullable(),
+  salaryTo: z.number().optional().nullable(),
+  salaryCurrency: z.string().optional().nullable(),
+  experience: z.string().optional().nullable(),
+  employment: z.string().optional().nullable(),
+  address: z.string().optional().nullable(),
+  htmlDescription: z.string().optional().nullable(),
+});
+
+/**
+ * Схема для создания новой вакансии (без _id)
+ */
+export const CreateVacancySchema = VacancyDTOSchema.omit({ _id: true });
+
+/**
+ * Схема для обновления существующей вакансии (все поля опциональны)
+ */
+export const UpdateVacancySchema = VacancyDTOSchema.partial();
+
+/**
+ * Схема для поиска вакансий
+ */
+export const VacancySearchSchema = z.object({
+  query: z.string().optional(),
+  location: z.string().optional(),
+  source: z.string().optional(),
+  page: z.coerce.number().int().positive().default(1),
+  limit: z.coerce.number().int().positive().default(20),
+  sortBy: z.enum(["relevance", "date", "salary"]).default("relevance"),
+  sortDirection: z.enum(["asc", "desc"]).default("desc"),
+});
+
+// Экспортируем типы из схем Zod
+export const BaseVacancy = BaseVacancySchema;
+export const VacancyDTO = VacancyDTOSchema;
+export const CreateVacancy = CreateVacancySchema;
+export const UpdateVacancy = UpdateVacancySchema;
+export const VacancySearch = VacancySearchSchema;`;
       }
       
       // Удаляем финальные пустые строки в конце файла
@@ -82,7 +366,7 @@ async function processTypeScriptFile(filePath, destPath) {
       await fs.writeFile(dtsPath, content);
       
       // Создаем .js файл с пустыми экспортами или с экспортами типов-заглушек
-      const jsContent = generateJSStubsForTypes(content);
+      const jsContent = generateJSStubsForTypes(content, filePath);
       await fs.writeFile(jsPath, jsContent);
     }
   } catch (error) {
@@ -94,9 +378,18 @@ async function processTypeScriptFile(filePath, destPath) {
 /**
  * Генерирует JavaScript-заглушки для экспортов типов
  * @param {string} content - Содержимое TypeScript файла
+ * @param {string} filePath - Путь к файлу (для особой обработки определенных файлов)
  * @return {string} JavaScript-код с заглушками
  */
-function generateJSStubsForTypes(content) {
+function generateJSStubsForTypes(content, filePath = '') {
+  // Специальная обработка для schemas/index.ts
+  if (filePath.includes('schemas/index.ts') || filePath.includes('schemas\\index.ts')) {
+    return `// Экспортируем все схемы
+export * from "./date.schema.js";
+export * from "./vacancy.schema.js";
+export * from "./api.schema.js";`;
+  }
+
   let jsContent = '// Автоматически сгенерированный файл\n';
   jsContent += '// Содержит заглушки для TypeScript типов\n\n';
   

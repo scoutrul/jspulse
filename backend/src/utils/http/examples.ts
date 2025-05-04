@@ -1,9 +1,10 @@
 // Примеры использования HTTP-адаптера
-import { 
-  createHttpClient, 
-  httpClient, 
-  HeadHunterClient 
-} from "./index";
+import {
+  httpClient,
+  HttpClient,
+  createHttpClient,
+  HeadHunterClient
+} from "./index.js";
 
 // Пример 1: Использование HTTP-клиента по умолчанию
 async function exampleDefaultClient() {
@@ -11,11 +12,11 @@ async function exampleDefaultClient() {
     // Простой GET-запрос
     const data = await httpClient.get("https://api.example.com/data");
     console.log("Получены данные:", data);
-    
+
     // POST-запрос с телом
-    const result = await httpClient.post("https://api.example.com/submit", { 
-      name: "Тестовый пользователь", 
-      email: "test@example.com" 
+    const result = await httpClient.post("https://api.example.com/submit", {
+      name: "Тестовый пользователь",
+      email: "test@example.com"
     });
     console.log("Результат отправки:", result);
   } catch (error) {
@@ -38,12 +39,12 @@ async function exampleCustomClient() {
       "Content-Type": "application/json"
     }
   });
-  
+
   try {
     // Этот запрос будет кэшироваться
     const users = await client.get<any[]>("users");
     console.log(`Получено ${users.length} пользователей`);
-    
+
     // Повторный запрос возьмется из кэша (и будет логироваться)
     const cachedUsers = await client.get<any[]>("users");
     console.log(`Получено из кэша: ${cachedUsers.length} пользователей`);
@@ -58,7 +59,7 @@ async function exampleHeadHunterApi() {
   const hhClient = new HeadHunterClient({
     logging: true
   });
-  
+
   try {
     // Поиск вакансий
     const searchResult = await hhClient.searchVacancies({
@@ -68,27 +69,27 @@ async function exampleHeadHunterApi() {
       page: 0,
       only_with_salary: true
     });
-    
+
     console.log(`Найдено ${searchResult.found} вакансий. Показано ${searchResult.items.length}`);
-    
+
     // Вывод краткой информации о первой вакансии
     if (searchResult.items.length > 0) {
       const firstVacancy = searchResult.items[0];
       console.log(`Вакансия: ${firstVacancy.name}`);
       console.log(`Компания: ${firstVacancy.employer.name}`);
-      
+
       if (firstVacancy.salary) {
         const { from, to, currency } = firstVacancy.salary;
         const salaryText = from && to
           ? `${from} - ${to} ${currency}`
-          : from 
+          : from
             ? `от ${from} ${currency}`
             : to
               ? `до ${to} ${currency}`
               : 'не указана';
         console.log(`Зарплата: ${salaryText}`);
       }
-      
+
       // Получение подробной информации о вакансии
       const detailedVacancy = await hhClient.getVacancy(firstVacancy.id);
       console.log(`Подробная информация получена: ${detailedVacancy.alternate_url}`);

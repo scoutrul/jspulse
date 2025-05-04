@@ -2,6 +2,7 @@
   "name": "@jspulse/backend",
   "version": "0.1.0",
   "description": "Backend для JS Пульс - агрегатора вакансий по фронтенду",
+  "type": "module",
   "main": "./dist/index.js",
   "scripts": {
     "start": "node dist/index.js",

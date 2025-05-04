@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { AppError } from "./ApiError";
+import { AppError } from "./ApiError.js";
 
 // Расширяем интерфейс Request чтобы добавить поле user для аутентифицированных запросов
 declare global {
@@ -25,33 +25,33 @@ declare global {
 export const authGuard = (req: Request, res: Response, next: NextFunction): void => {
   try {
     const authHeader = req.headers.authorization;
-    
+
     // Если заголовок отсутствует, считаем запрос неавторизованным
     if (!authHeader) {
       // Для открытых эндпоинтов можно просто пропустить дальше
       // без добавления пользователя в request
       return next();
     }
-    
+
     // Формат: "Bearer <token>"
     const [type, token] = authHeader.split(' ');
-    
+
     if (type !== 'Bearer' || !token) {
       return next();
     }
-    
+
     // ЗАГЛУШКА: в реальном приложении здесь будет проверка и декодирование JWT
     // В данной реализации просто проверяем, что токен имеет минимальную длину
     if (token.length < 10) {
       return next();
     }
-    
+
     // В реальном приложении здесь будет реальная информация о пользователе из токена
     req.user = {
       id: "demo-user-id",
       role: "user"
     };
-    
+
     next();
   } catch (error) {
     // В случае ошибки проверки авторизации просто пропускаем запрос дальше
@@ -68,7 +68,7 @@ export const requireAuth = (req: Request, res: Response, next: NextFunction): vo
   if (!req.user) {
     throw AppError.unauthorized("Для доступа к этому ресурсу требуется авторизация");
   }
-  
+
   next();
 };
 
@@ -82,12 +82,12 @@ export const requireRole = (roles: string[]) => {
     if (!req.user) {
       throw AppError.unauthorized("Для доступа к этому ресурсу требуется авторизация");
     }
-    
+
     // Затем проверяем роль
     if (!roles.includes(req.user.role)) {
       throw AppError.forbidden("У вас недостаточно прав для доступа к этому ресурсу");
     }
-    
+
     next();
   };
 }; 

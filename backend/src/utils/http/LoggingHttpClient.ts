@@ -1,4 +1,4 @@
-import { HttpClient, HttpRequestOptions } from "./HttpClient";
+import { HttpClient, HttpRequestOptions } from "./HttpClient.js";
 
 /**
  * Декоратор для логирования HTTP запросов
@@ -14,7 +14,7 @@ export class LoggingHttpClient implements HttpClient {
   async get<T>(url: string, options?: HttpRequestOptions): Promise<T> {
     console.log(`[HTTP GET] ${url}`, options?.params || "");
     const startTime = Date.now();
-    
+
     try {
       const response = await this.httpClient.get<T>(url, options);
       const duration = Date.now() - startTime;
@@ -30,7 +30,7 @@ export class LoggingHttpClient implements HttpClient {
   async post<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
     console.log(`[HTTP POST] ${url}`, body || "");
     const startTime = Date.now();
-    
+
     try {
       const response = await this.httpClient.post<T>(url, body, options);
       const duration = Date.now() - startTime;
@@ -46,7 +46,7 @@ export class LoggingHttpClient implements HttpClient {
   async put<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
     console.log(`[HTTP PUT] ${url}`, body || "");
     const startTime = Date.now();
-    
+
     try {
       const response = await this.httpClient.put<T>(url, body, options);
       const duration = Date.now() - startTime;
@@ -62,7 +62,7 @@ export class LoggingHttpClient implements HttpClient {
   async patch<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
     console.log(`[HTTP PATCH] ${url}`, body || "");
     const startTime = Date.now();
-    
+
     try {
       const response = await this.httpClient.patch<T>(url, body, options);
       const duration = Date.now() - startTime;
@@ -78,7 +78,7 @@ export class LoggingHttpClient implements HttpClient {
   async delete<T>(url: string, options?: HttpRequestOptions): Promise<T> {
     console.log(`[HTTP DELETE] ${url}`);
     const startTime = Date.now();
-    
+
     try {
       const response = await this.httpClient.delete<T>(url, options);
       const duration = Date.now() - startTime;
