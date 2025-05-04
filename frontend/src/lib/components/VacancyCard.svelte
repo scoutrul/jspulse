@@ -1,6 +1,28 @@
 <script lang="ts">
-  import { VacancyDTOSchema, type VacancyDTO } from "@jspulse/shared";
+  import type { VacancyDTO } from "@jspulse/shared";
+  import { z } from "zod";
   import { formatDate } from "$lib/utils/date.utils";
+
+  // Определяем VacancyDTOSchema локально для валидации
+  const VacancyDTOSchema = z.object({
+    _id: z.string(),
+    title: z.string(),
+    company: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    skills: z.array(z.string()).default([]),
+    url: z.string().nullable().optional(),
+    source: z.string(),
+    publishedAt: z.date().nullable().optional(),
+    salaryFrom: z.number().nullable().optional(),
+    salaryTo: z.number().nullable().optional(),
+    salaryCurrency: z.string().nullable().optional(),
+    experience: z.string().nullable().optional(),
+    employment: z.string().nullable().optional(),
+    schedule: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
+    htmlDescription: z.string().nullable().optional()
+  });
 
   type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
   export let vacancy: VacancyWithHtml;
@@ -68,6 +90,22 @@
     </div>
   {/if}
   {#if validVacancy.publishedAt}
+    <!-- Добавляем диагностический вывод в консоль -->
+    {@const publishedAtDiag = (function() {
+      console.log('[VacancyCard] ДИАГНОСТИКА publishedAt:', {
+        raw: validVacancy.publishedAt,
+        type: typeof validVacancy.publishedAt,
+        valueOf: validVacancy.publishedAt && typeof validVacancy.publishedAt === 'object' 
+          ? validVacancy.publishedAt.valueOf() 
+          : null,
+        instanceOf: validVacancy.publishedAt instanceof Date,
+        isValidDate: validVacancy.publishedAt instanceof Date 
+          ? !isNaN(validVacancy.publishedAt.getTime()) 
+          : false,
+        toString: String(validVacancy.publishedAt)
+      });
+      return true;
+    })()}
     <p class="published-at">
       Опубликовано: {formatDate(validVacancy.publishedAt)}
     </p>

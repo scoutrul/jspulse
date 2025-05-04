@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from "express";
-import { z } from "@jspulse/shared";
+import { Request, Response, NextFunction, RequestHandler } from "express";
+import { z } from "zod";
 
 /**
  * Типы расположения схемы в запросе
@@ -18,20 +18,20 @@ export enum SchemaLocation {
 export const validate = (
   schema: z.ZodSchema,
   location: SchemaLocation = SchemaLocation.BODY
-) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+): RequestHandler => {
+  return (req: Request, res: Response, next: NextFunction): void => {
     try {
       // Получаем данные из запроса в зависимости от расположения
       const data = req[location];
-      
+
       // Валидируем данные
       const result = schema.safeParse(data);
-      
+
       if (!result.success) {
         // Форматируем ошибки валидации
         const formattedErrors = result.error.format();
-        
-        return res.status(400).json({
+
+        res.status(400).json({
           success: false,
           error: {
             code: 400,
@@ -39,16 +39,17 @@ export const validate = (
             details: formattedErrors,
           },
         });
+        return;
       }
-      
+
       // Обновляем данные запроса валидированным результатом
       req[location] = result.data;
-      
+
       next();
     } catch (error) {
       console.error("Ошибка валидации:", error);
-      
-      return res.status(500).json({
+
+      res.status(500).json({
         success: false,
         error: {
           code: 500,
@@ -63,11 +64,11 @@ export const validate = (
 /**
  * Упрощённые хелперы для валидации разных частей запроса
  */
-export const validateBody = (schema: z.ZodSchema) => 
+export const validateBody = (schema: z.ZodSchema): RequestHandler =>
   validate(schema, SchemaLocation.BODY);
 
-export const validateQuery = (schema: z.ZodSchema) => 
+export const validateQuery = (schema: z.ZodSchema): RequestHandler =>
   validate(schema, SchemaLocation.QUERY);
 
-export const validateParams = (schema: z.ZodSchema) => 
+export const validateParams = (schema: z.ZodSchema): RequestHandler =>
   validate(schema, SchemaLocation.PARAMS); 

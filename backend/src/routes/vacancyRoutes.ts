@@ -1,13 +1,13 @@
-import express, { Request, Response, Router, RequestHandler } from "express";
+import express, { Request, Response, Router, RequestHandler, NextFunction } from "express";
 import { Vacancy } from "../models/Vacancy.js";
 import { isValidObjectId } from "mongoose";
-import { 
-  VacancyDTOSchema, 
-  VacancySearchSchema, 
+import {
+  VacancyDTOSchema,
+  VacancySearchSchema,
   ApiResponseSchema,
-  VacancyDTO,
-  z
+  VacancyDTO
 } from "@jspulse/shared";
+import { z } from "zod";
 import { validateBody, validateQuery, validateParams } from "../middleware/validation.middleware.js";
 
 const router: Router = express.Router();
@@ -27,7 +27,7 @@ const SkillsQuerySchema = z.object({
 });
 
 // Эндпоинт для получения списка всех доступных навыков
-router.get("/skills", (async (req: Request, res: Response) => {
+router.get("/skills", async (req: Request, res: Response) => {
   console.log("[GET /api/vacancies/skills] Запрос на получение всех навыков");
   try {
     // Используем агрегацию MongoDB для получения уникальных навыков
@@ -40,7 +40,7 @@ router.get("/skills", (async (req: Request, res: Response) => {
     const skills = skillsAggregation.map((item) => item._id);
     console.log(`[GET /api/vacancies/skills] Найдено ${skills.length} уникальных навыков`);
 
-    return res.json({
+    res.json({
       success: true,
       data: skills,
       meta: {
@@ -49,7 +49,7 @@ router.get("/skills", (async (req: Request, res: Response) => {
     });
   } catch (error) {
     console.error("[GET /api/vacancies/skills] Ошибка:", error);
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: {
         code: 500,
@@ -58,13 +58,13 @@ router.get("/skills", (async (req: Request, res: Response) => {
       }
     });
   }
-}) as unknown as RequestHandler);
+});
 
-// Используем RequestHandler для правильной типизации обработчиков маршрутов
-router.get("/", validateQuery(SkillsQuerySchema), (async (req: Request, res: Response) => {
+// Используем правильную типизацию для Express
+router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Response) => {
   console.log("[GET /api/vacancies] Запрос получен");
   // Здесь query уже валидирована благодаря middleware
-  const { limit, page, skills } = req.query as z.infer<typeof SkillsQuerySchema>;
+  const { limit, page, skills } = req.query as unknown as z.infer<typeof SkillsQuerySchema>;
 
   const query: any = {};
   if (skills) {
@@ -87,12 +87,12 @@ router.get("/", validateQuery(SkillsQuerySchema), (async (req: Request, res: Res
       // Преобразуем ObjectId в строку
       const vacancyWithStringId = {
         ...vacancy,
-        _id: vacancy._id.toString()
+        _id: vacancy._id ? vacancy._id.toString() : ''
       };
-      
+
       // Валидируем через схему
       const result = VacancyDTOSchema.safeParse(vacancyWithStringId);
-      
+
       // Если невалидно, логируем и возвращаем исправленную версию
       if (!result.success) {
         console.warn(`[GET /api/vacancies] Невалидная вакансия ${vacancy._id}:`, result.error);
@@ -103,11 +103,11 @@ router.get("/", validateQuery(SkillsQuerySchema), (async (req: Request, res: Res
           publishedAt: new Date()
         };
       }
-      
+
       return result.data;
     });
 
-    return res.json({
+    res.json({
       success: true,
       data: validatedVacancies,
       meta: {
@@ -122,8 +122,8 @@ router.get("/", validateQuery(SkillsQuerySchema), (async (req: Request, res: Res
   } catch (error) {
     console.error("[GET /api/vacancies] Ошибка в блоке try/catch:", error);
     console.log("[GET /api/vacancies] Отправка ответа 500...");
-    return res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: {
         code: 500,
         message: "Ошибка сервера при получении вакансий",
@@ -131,9 +131,9 @@ router.get("/", validateQuery(SkillsQuerySchema), (async (req: Request, res: Res
       }
     });
   }
-}) as unknown as RequestHandler);
+});
 
-router.get("/:id", validateParams(IdParamSchema), (async (req: Request, res: Response) => {
+router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
@@ -141,47 +141,49 @@ router.get("/:id", validateParams(IdParamSchema), (async (req: Request, res: Res
 
     if (!vacancy) {
       console.log(`[GET /vacancies/${id}] Вакансия не найдена`);
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         error: {
           code: 404,
           message: "Вакансия не найдена"
         }
       });
+      return;
     }
 
     // Преобразуем _id из ObjectId в строку
     const vacancyWithStringId = {
       ...vacancy,
-      _id: vacancy._id.toString()
+      _id: vacancy._id ? vacancy._id.toString() : ''
     };
-    
+
     // Валидируем вакансию через Zod
     const result = VacancyDTOSchema.safeParse(vacancyWithStringId);
-    
+
     if (!result.success) {
       console.warn(`[GET /vacancies/${id}] Невалидная вакансия:`, result.error);
       // В случае проблем с форматом данных пытаемся исправить их
-      return res.json({
+      res.json({
         success: true,
         data: {
           ...vacancyWithStringId,
           skills: Array.isArray(vacancy.skills) ? vacancy.skills : [],
-          publishedAt: vacancy.publishedAt instanceof Date ? 
+          publishedAt: vacancy.publishedAt instanceof Date ?
             vacancy.publishedAt : new Date(vacancy.publishedAt || Date.now())
         }
       });
+      return;
     }
-    
+
     console.log(`[GET /vacancies/${id}] Вакансия найдена:`, result.data.title);
-    return res.json({
+    res.json({
       success: true,
       data: result.data
     });
   } catch (error) {
     console.error(`Ошибка при получении вакансии ${id}:`, error);
-    return res.status(500).json({ 
-      success: false, 
+    res.status(500).json({
+      success: false,
       error: {
         code: 500,
         message: `Ошибка сервера при получении вакансии ${id}`,
@@ -189,6 +191,6 @@ router.get("/:id", validateParams(IdParamSchema), (async (req: Request, res: Res
       }
     });
   }
-}) as unknown as RequestHandler);
+});
 
 export default router;

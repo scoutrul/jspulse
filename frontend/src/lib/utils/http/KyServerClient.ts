@@ -1,8 +1,8 @@
-import ky from "ky-universal";
+import ky from "ky";
 import type { HttpClient, HttpRequestOptions } from "./HttpClient";
 
 /**
- * Реализация HttpClient с использованием ky-universal для серверного рендеринга
+ * Реализация HttpClient с использованием ky для серверного рендеринга
  */
 export class KyServerClient implements HttpClient {
   private baseUrl: string;

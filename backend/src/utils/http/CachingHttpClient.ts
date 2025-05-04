@@ -48,11 +48,12 @@ export class CachingHttpClient implements HttpClient {
   
   constructor(httpClient: HttpClient, options: CacheOptions) {
     this.httpClient = httpClient;
-    this.options = {
+    // Устанавливаем параметры по умолчанию и затем объединяем с пользовательскими
+    const defaultOptions: CacheOptions = {
       ttl: 60000, // По умолчанию 1 минута
       maxSize: 100,
-      ...options
     };
+    this.options = { ...defaultOptions, ...options };
     this.cache = new Map();
   }
   

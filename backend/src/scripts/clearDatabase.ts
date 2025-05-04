@@ -12,7 +12,7 @@ if (!mongoUrl) {
 
 async function clearDatabase() {
   try {
-    await mongoose.connect(mongoUrl);
+    await mongoose.connect(mongoUrl as string);
     console.log("Connected to MongoDB");
 
     console.log("Clearing database...");

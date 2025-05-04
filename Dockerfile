@@ -24,6 +24,7 @@ COPY frontend/ ./frontend/
 # Build packages in correct order
 RUN pnpm --filter @jspulse/shared build
 RUN pnpm --filter @jspulse/backend build
+RUN pnpm --filter @jspulse/frontend install ky
 RUN pnpm --filter @jspulse/frontend build
 
 # Backend stage

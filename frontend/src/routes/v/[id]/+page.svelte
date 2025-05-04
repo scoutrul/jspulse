@@ -2,7 +2,41 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import VacancyCard from "$lib/components/VacancyCard.svelte";
-  import { VacancyDTOSchema, type VacancyDTO } from "@jspulse/shared";
+  import type { VacancyDTO } from "@jspulse/shared";
+  import { z } from "zod";
+  
+  // Локальное определение схем, так как в shared возникли проблемы с экспортом
+  const DateSchema = z.preprocess((val) => {
+    if (val instanceof Date) return val;
+    if (typeof val === 'string' || typeof val === 'number') return new Date(val);
+    return null;
+  }, z.date().nullable().optional());
+
+  // Базовая схема вакансии
+  const BaseVacancySchema = z.object({
+    externalId: z.string(),
+    title: z.string(),
+    company: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    url: z.string().nullable().optional(),
+    publishedAt: DateSchema,
+    source: z.string()
+  });
+
+  // Схема DTO вакансии
+  const VacancyDTOSchema = BaseVacancySchema.extend({
+    _id: z.string().optional(),
+    description: z.string().nullable().optional(),
+    schedule: z.string().nullable().optional(),
+    skills: z.array(z.string()).default([]),
+    salaryFrom: z.number().nullable().optional(),
+    salaryTo: z.number().nullable().optional(),
+    salaryCurrency: z.string().nullable().optional(),
+    experience: z.string().nullable().optional(),
+    employment: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
+    htmlDescription: z.string().nullable().optional()
+  });
   
   // Определяем тип локально
   type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
@@ -32,6 +66,24 @@
   
   // Используем реальные данные, если они есть, иначе моковые
   const rawVacancy = data.vacancy || mockVacancy;
+  
+  // Выводим детальную информацию для диагностики
+  console.log(`[+page.svelte] ДИАГНОСТИКА ДАННЫХ ВАКАНСИИ:`, {
+    source: rawVacancy ? 'API' : 'Mock',
+    _id: rawVacancy._id,
+    title: rawVacancy.title,
+    publishedAt: {
+      raw: rawVacancy.publishedAt,
+      type: typeof rawVacancy.publishedAt,
+      instanceOf: rawVacancy.publishedAt instanceof Date,
+      isString: typeof rawVacancy.publishedAt === 'string', 
+      isValid: rawVacancy.publishedAt instanceof Date 
+        ? !isNaN(rawVacancy.publishedAt.getTime())
+        : typeof rawVacancy.publishedAt === 'string'
+          ? !isNaN(new Date(rawVacancy.publishedAt).getTime())
+          : false
+    }
+  });
   
   // Преобразуем null в undefined для совместимости типов
   const vacancy = {
