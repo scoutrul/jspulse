@@ -1,5 +1,6 @@
 import mongoose from "mongoose";
 import "dotenv/config";
+import { Vacancy } from "../models/Vacancy.js";
 
 const mongoUrl =
   process.env.NODE_ENV === "development" ? process.env.MONGO_URI_LOCALHOST : process.env.MONGO_URI;
@@ -14,10 +15,11 @@ async function clearDatabase() {
     await mongoose.connect(mongoUrl);
     console.log("Connected to MongoDB");
 
-    // Add your logic to clear the database here
     console.log("Clearing database...");
-
-    // Example: await SomeModel.deleteMany({});
+    
+    // Удаляем все вакансии из базы данных
+    const result = await Vacancy.deleteMany({});
+    console.log(`Удалено вакансий: ${result.deletedCount}`);
 
     console.log("Database cleared successfully.");
   } catch (error) {
