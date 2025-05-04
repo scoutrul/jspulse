@@ -12,7 +12,8 @@
     "db:hh": "tsx src/scripts/fetchAndSaveFromHH.ts",
     "db:clear": "tsx src/scripts/clearDatabase.ts",
     "db": "pnpm run db:seed && pnpm run db:hh",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@jspulse/shared": "workspace:*",

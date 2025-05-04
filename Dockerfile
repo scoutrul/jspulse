@@ -48,6 +48,9 @@ COPY --from=builder /app/shared/node_modules ./shared/node_modules
 COPY --from=builder /app/backend/dist ./backend/dist
 COPY --from=builder /app/shared/dist ./shared/dist
 
+# Копируем исправленный файл date.schema.js вручную
+COPY shared/dist/schemas/date.schema.js ./shared/dist/schemas/date.schema.js
+
 # Set working directory to backend
 WORKDIR /app/backend
 
@@ -77,6 +80,9 @@ COPY --from=builder /app/frontend/node_modules ./frontend/node_modules
 COPY --from=builder /app/shared/node_modules ./shared/node_modules
 COPY --from=builder /app/frontend/build ./frontend/build
 COPY --from=builder /app/shared/dist ./shared/dist
+
+# Копируем исправленный файл date.schema.js вручную
+COPY shared/dist/schemas/date.schema.js ./shared/dist/schemas/date.schema.js
 
 # Set working directory to frontend
 WORKDIR /app/frontend

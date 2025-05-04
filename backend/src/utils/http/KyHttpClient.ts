@@ -59,6 +59,27 @@ export class KyHttpClient implements HttpClient {
   }
 
   /**
+   * Безопасно объединяет базовый URL и путь запроса
+   * Обрабатывает случаи, когда url уже содержит протокол
+   */
+  private buildFullUrl(url: string): string {
+    // Если url содержит протокол, возвращаем его как есть
+    if (url.match(/^https?:\/\//)) {
+      return url;
+    }
+
+    // Если есть baseUrl, объединяем с ним
+    if (this.baseUrl) {
+      // Убираем лишний слеш между baseUrl и url
+      const base = this.baseUrl.endsWith('/') ? this.baseUrl.slice(0, -1) : this.baseUrl;
+      const path = url.startsWith('/') ? url : `/${url}`;
+      return `${base}${path}`;
+    }
+
+    return url;
+  }
+
+  /**
    * Выполняет HTTP-запрос через ky
    */
   private async request<T>(
@@ -67,7 +88,7 @@ export class KyHttpClient implements HttpClient {
     options?: KyOptions
   ): Promise<T> {
     try {
-      const fullUrl = this.baseUrl ? new URL(url, this.baseUrl).toString() : url;
+      const fullUrl = this.buildFullUrl(url);
       const response = await ky(fullUrl, {
         method,
         ...options,

@@ -20,10 +20,10 @@ export class KyServerClient implements HttpClient {
       },
       ...defaultOptions,
     };
-    
+
     // Создаем экземпляр ky с нужным fetch
-    this.kyInstance = fetchInstance 
-      ? ky.create({ fetch: fetchInstance }) 
+    this.kyInstance = fetchInstance
+      ? ky.create({ fetch: fetchInstance })
       : ky;
   }
 
@@ -62,20 +62,26 @@ export class KyServerClient implements HttpClient {
   ): Promise<T> {
     try {
       let fullUrl = url;
-      
+
       // Проверяем, является ли URL абсолютным
       if (!url.startsWith('http://') && !url.startsWith('https://')) {
         // Если baseUrl указан, используем его как основу
         if (this.baseUrl) {
           fullUrl = new URL(url, this.baseUrl).toString();
         } else {
-          // Без baseUrl нужно добавить абсолютный путь
-          fullUrl = `http://localhost:3001/${url.startsWith('/') ? url.substring(1) : url}`;
+          // Проверяем наличие переменной окружения для внутреннего URL в Docker
+          const internalUrl = process.env.INTERNAL_BACKEND_URL;
+          if (internalUrl) {
+            fullUrl = new URL(url, internalUrl).toString();
+          } else {
+            // Без baseUrl используем localhost (для локальной разработки)
+            fullUrl = `http://localhost:3001/${url.startsWith('/') ? url.substring(1) : url}`;
+          }
         }
       }
-      
+
       console.log(`[KyServerClient] Выполняем запрос к: ${fullUrl}`);
-      
+
       const response = await this.kyInstance(fullUrl, {
         method,
         ...options,
@@ -84,7 +90,7 @@ export class KyServerClient implements HttpClient {
       return await response.json();
     } catch (error: any) {
       console.error(`[HTTP SERVER ${method}] Ошибка запроса ${url}:`, error);
-      
+
       // Проверяем, имеет ли ошибка response (для ky ошибки HTTP могут иметь response)
       if (error.response) {
         try {
@@ -96,7 +102,7 @@ export class KyServerClient implements HttpClient {
           throw error;
         }
       }
-      
+
       throw error;
     }
   }

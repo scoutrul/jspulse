@@ -16,9 +16,24 @@ function createApiClient() {
 
   console.log(`Backend Base URL: ${baseUrl}`);
 
+  /**
+   * Безопасно объединяет базовый URL и путь запроса
+   */
+  const buildUrl = (path: string) => {
+    // Если путь уже содержит протокол, возвращаем его как есть
+    if (path.match(/^https?:\/\//)) {
+      return path;
+    }
+
+    // Объединяем baseUrl с путем
+    const base = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanPath = path.startsWith('/') ? path : `/${path}`;
+    return `${base}${cleanPath}`;
+  };
+
   // Базовые настройки для всех запросов
   const baseOptions = {
-    prefixUrl: baseUrl,
+    // Убираем prefixUrl, т.к. будем вручную строить URL
     headers: {
       "Content-Type": "application/json"
     },
@@ -58,7 +73,15 @@ function createApiClient() {
     },
   });
 
-  return client;
+  // Обертка над клиентом для правильного построения URL
+  return {
+    get: (path: string, options?: any) => client.get(buildUrl(path), options),
+    post: (path: string, options?: any) => client.post(buildUrl(path), options),
+    put: (path: string, options?: any) => client.put(buildUrl(path), options),
+    patch: (path: string, options?: any) => client.patch(buildUrl(path), options),
+    delete: (path: string, options?: any) => client.delete(buildUrl(path), options),
+    extend: (options?: any) => client.extend(options),
+  };
 }
 
 // Экспортируем настроенный экземпляр клиента для использования в приложении

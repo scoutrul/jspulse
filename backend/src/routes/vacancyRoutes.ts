@@ -63,12 +63,12 @@ router.get("/skills", async (req: Request, res: Response) => {
 // Используем правильную типизацию для Express
 router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Response) => {
   console.log("[GET /api/vacancies] Запрос получен");
-  // Здесь query уже валидирована благодаря middleware
-  const { limit, page, skills } = req.query as unknown as z.infer<typeof SkillsQuerySchema>;
+  // Используем validatedQuery вместо query (проверка на существование для совместимости)
+  const { limit, page, skills } = req.validatedQuery || req.query;
 
   const query: any = {};
   if (skills) {
-    query.skills = { $in: skills.split(",").map((s) => s.trim()) };
+    query.skills = { $in: skills.split(",").map((s: string) => s.trim()) };
   }
 
   try {

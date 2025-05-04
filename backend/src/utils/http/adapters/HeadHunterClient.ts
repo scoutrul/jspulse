@@ -62,7 +62,7 @@ export class HeadHunterClient {
     // Создаем базовый HTTP-клиент
     let client: HttpClient = new KyHttpClient("https://api.hh.ru/", {
       headers: {
-        "User-Agent": options.userAgent || "JS-Pulse/1.0 (https://jspulse.ru)",
+        "User-Agent": options.userAgent || "JS-Pulse/1.0 (jspulse.ru)",
         "Accept": "application/json"
       },
       retry: 2,

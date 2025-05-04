@@ -1,8 +1,8 @@
 import type { VacancyDTO } from "@jspulse/shared";
 import { z } from "zod";
-import { transformVacancies, extractSkillsFromVacancies } from "$lib/utils/vacancyTransformations";
-import { createHttpClient } from "$lib/utils/http";
-import type { VacanciesOptions, VacanciesResponse } from "./vacancy.service";
+import { transformVacancies, extractSkillsFromVacancies } from "$lib/utils/vacancyTransformations.js";
+import { createHttpClient } from "$lib/utils/http/index.js";
+import type { VacanciesOptions, VacanciesResponse } from "./vacancy.service.js";
 
 // Локальное определение схем, так как в shared возникли проблемы с экспортом
 const DateSchema = z.preprocess((val) => {
@@ -118,8 +118,8 @@ export const fetchVacanciesServer = async (
 
     const { data: vacancies, meta: pagination } = parseResult.data;
 
-    // Преобразуем вакансии
-    const transformedVacancies = transformVacancies(vacancies, sanitizeHtml);
+    // Преобразуем вакансии - согласованно используем тип VacancyDTO с явным приведением типа
+    const transformedVacancies = transformVacancies(vacancies as unknown as VacancyDTO[], sanitizeHtml);
 
     return {
       vacancies: transformedVacancies,
@@ -151,9 +151,10 @@ export const fetchSkillsServer = async (
     console.log("[vacancy.server] Запрос доступных навыков через API");
     const response = await httpClient.get("api/vacancies/skills");
 
-    // Проверяем структуру ответа
-    if (response.success && Array.isArray(response.data)) {
-      return response.data;
+    // Проверяем структуру ответа с безопасным приведением типов
+    const responseObj = response as any;
+    if (responseObj.success && Array.isArray(responseObj.data)) {
+      return responseObj.data;
     } else if (fallbackVacancies && fallbackVacancies.length > 0) {
       // Если API не сработал, собираем навыки из полученных вакансий
       return extractSkillsFromVacancies(fallbackVacancies);
@@ -193,16 +194,19 @@ export const fetchVacancyByIdServer = async (
     console.log(`[vacancy.server] Запрос вакансии с ID: ${id}`);
     const response = await httpClient.get(`api/vacancies/${id}`);
 
+    // Безопасное приведение типа для логирования
+    const responseObj = response as Record<string, any>;
+
     // Добавляем подробное логирование ответа для диагностики
-    console.log(`[vacancy.server] ДЕТАЛЬНАЯ СТРУКТУРА ОТВЕТА ДЛЯ ID ${id}:`, JSON.stringify(response, null, 2));
+    console.log(`[vacancy.server] ДЕТАЛЬНАЯ СТРУКТУРА ОТВЕТА ДЛЯ ID ${id}:`, JSON.stringify(responseObj, null, 2));
 
     // Если есть дата публикации, выводим её особо для диагностики
-    if (response && response.data && response.data.publishedAt) {
+    if (responseObj && responseObj.data && responseObj.data.publishedAt) {
       console.log(`[vacancy.server] ДАТА ПУБЛИКАЦИИ:`, {
-        raw: response.data.publishedAt,
-        type: typeof response.data.publishedAt,
-        asDate: new Date(response.data.publishedAt),
-        isValid: !isNaN(new Date(response.data.publishedAt).getTime())
+        raw: responseObj.data.publishedAt,
+        type: typeof responseObj.data.publishedAt,
+        asDate: new Date(responseObj.data.publishedAt),
+        isValid: !isNaN(new Date(responseObj.data.publishedAt).getTime())
       });
     }
 
@@ -239,7 +243,8 @@ export const fetchVacancyByIdServer = async (
 
     console.log(`[vacancy.server] Вакансия ${id} успешно загружена и валидирована`);
 
-    return vacancy;
+    // Возвращаем вакансию с приведением типа для удовлетворения интерфейса VacancyDTO
+    return vacancy as unknown as VacancyDTO;
   } catch (error) {
     console.error(`[vacancy.server] Ошибка при загрузке вакансии ${id}:`, error);
     return null;

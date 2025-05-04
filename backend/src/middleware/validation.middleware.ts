@@ -1,6 +1,15 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
 import { z } from "zod";
 
+// Расширяем типы Express для поддержки validatedQuery
+declare global {
+  namespace Express {
+    interface Request {
+      validatedQuery: Record<string, any>;
+    }
+  }
+}
+
 /**
  * Типы расположения схемы в запросе
  */
@@ -43,7 +52,11 @@ export const validate = (
       }
 
       // Обновляем данные запроса валидированным результатом
-      req[location] = result.data;
+      if (location === SchemaLocation.QUERY) {
+        req.validatedQuery = result.data;
+      } else {
+        req[location] = result.data;
+      }
 
       next();
     } catch (error) {

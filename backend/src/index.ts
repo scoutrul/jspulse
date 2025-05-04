@@ -24,12 +24,15 @@ app.get("/", (req: Request, res: Response) => {
   res.send("Backend is running!");
 });
 
-// API роуты
+// API роуты - используем конкретный путь для решения проблемы с path-to-regexp
 app.use("/api/vacancies", vacancyRoutes);
 
-// Обработка несуществующих роутов (404)
-app.use("*", (req: Request, res: Response, next: NextFunction) => {
-  next(AppError.notFound(`Путь ${req.originalUrl} не найден на сервере`));
+// Обработка ошибок 404 - используем обработчик, который не конфликтует с path-to-regexp
+// Избегаем использования динамических параметров в маршрутах со звездочкой
+app.use(function (req: Request, res: Response, next: NextFunction) {
+  // Создаем безопасную версию URL для сообщения об ошибке
+  const safeUrl = req.originalUrl.replace(/:/g, '%3A');
+  next(AppError.notFound(`Путь ${safeUrl} не найден на сервере`));
 });
 
 // Middleware для обработки ошибок всегда должен быть последним

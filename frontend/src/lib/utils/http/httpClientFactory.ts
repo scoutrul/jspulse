@@ -19,8 +19,24 @@ interface HttpClientOptions {
  * @param options Настройки клиента
  */
 export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
+  // Определяем правильный baseUrl в зависимости от окружения
+  let defaultBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+
+  // Отладочная информация о переменных окружения
+  if (!browser) {
+    console.log('[httpClientFactory] Env vars debug:');
+    console.log('- VITE_PUBLIC_BACKEND_URL:', process.env.VITE_PUBLIC_BACKEND_URL);
+    console.log('- INTERNAL_BACKEND_URL:', process.env.INTERNAL_BACKEND_URL);
+  }
+
+  // В серверной среде проверяем наличие INTERNAL_BACKEND_URL (для Docker)
+  if (!browser && process.env.INTERNAL_BACKEND_URL) {
+    defaultBaseUrl = process.env.INTERNAL_BACKEND_URL;
+    console.log(`[httpClientFactory] Using internal backend URL: ${defaultBaseUrl}`);
+  }
+
   const {
-    baseUrl = import.meta.env.VITE_API_URL || "http://localhost:3001",
+    baseUrl = defaultBaseUrl,
     defaultHeaders = {},
     timeout = 30000,
     retry = 1,
@@ -28,7 +44,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
   } = options;
 
   console.log(`[httpClientFactory] Creating client with baseUrl: ${baseUrl}`);
-  
+
   // В зависимости от окружения создаем разные клиенты
   if (browser) {
     // Клиент для браузера
@@ -42,7 +58,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
   } else {
     // Клиент для SSR
     return new KyServerClient(
-      baseUrl, 
+      baseUrl,
       {
         headers: {
           ...defaultHeaders,

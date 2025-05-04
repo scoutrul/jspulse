@@ -18,11 +18,11 @@
   "scripts": {
     "prebuild": "rm -rf dist && mkdir -p dist/types/core dist/types/db dist/types/dto dist/types/sources",
     "dev": "concurrently \"pnpm --filter @jspulse/shared run dev\" \"pnpm --filter @jspulse/backend run dev\" \"pnpm --filter @jspulse/frontend run dev\"",
-    "build": "pnpm --filter @jspulse/shared run build && pnpm --filter @jspulse/backend build && pnpm --filter @jspulse/frontend build"
+    "build": "pnpm --filter @jspulse/shared run build && pnpm --filter @jspulse/backend build && pnpm --filter @jspulse/frontend build",
+    "lint": "pnpm --filter @jspulse/backend run lint && pnpm --filter @jspulse/frontend run check"
   },
-  "dependencies": {},
   "devDependencies": {
-    "typescript": "^5.3.3",
-    "@types/node": "^20.11.19"
+    "@types/node": "^20.11.19",
+    "typescript": "^5.3.3"
   }
 }

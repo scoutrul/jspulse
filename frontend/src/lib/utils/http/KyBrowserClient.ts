@@ -51,27 +51,40 @@ export class KyBrowserClient implements HttpClient {
     return kyOptions;
   }
 
+  /**
+   * Безопасно объединяет базовый URL и путь запроса
+   * Обрабатывает случаи, когда url уже содержит протокол
+   */
+  private buildFullUrl(url: string): string {
+    // Если url содержит протокол, возвращаем его как есть
+    if (url.match(/^https?:\/\//)) {
+      return url;
+    }
+
+    // Если есть baseUrl, объединяем с ним
+    if (this.baseUrl) {
+      // Убираем лишний слеш между baseUrl и url
+      const base = this.baseUrl.endsWith('/') ? this.baseUrl.slice(0, -1) : this.baseUrl;
+      const path = url.startsWith('/') ? url : `/${url}`;
+      return `${base}${path}`;
+    }
+
+    // Без baseUrl используем текущий домен
+    const origin = window.location.origin;
+    const path = url.startsWith('/') ? url.substring(1) : url;
+    return `${origin}/${path}`;
+  }
+
   private async request<T>(
     method: string,
     url: string,
     options?: KyOptions
   ): Promise<T> {
     try {
-      let fullUrl = url;
-      
-      // Проверяем, является ли URL абсолютным
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        // Если baseUrl указан, используем его как основу
-        if (this.baseUrl) {
-          fullUrl = new URL(url, this.baseUrl).toString();
-        } else {
-          // Без baseUrl используем текущий домен
-          fullUrl = `${window.location.origin}/${url.startsWith('/') ? url.substring(1) : url}`;
-        }
-      }
-      
+      const fullUrl = this.buildFullUrl(url);
+
       console.log(`[KyBrowserClient] Выполняем запрос к: ${fullUrl}`);
-      
+
       const response = await ky(fullUrl, {
         method,
         ...options,
