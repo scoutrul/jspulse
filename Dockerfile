@@ -14,7 +14,7 @@ COPY frontend/package.json ./frontend/
 COPY shared/package.json ./shared/
 
 # Install dependencies using pnpm
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 # Copy all source code
 COPY shared/ ./shared/

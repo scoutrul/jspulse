@@ -1,5 +1,5 @@
 {
-  "name": "@jspulse/shared",
+  "name": "jspulse",
   "version": "1.0.0",
   "private": true,
   "type": "module",
