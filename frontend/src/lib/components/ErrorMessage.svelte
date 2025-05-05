@@ -1,10 +1,14 @@
 <script lang="ts">
+  import { ExclamationTriangle } from 'svelte-heros-v2';
   export let message: string | null = null;
 </script>
 
 {#if message}
   <div class="error-container">
-    <p class="error-message">⚠️ {message}</p>
+    <p class="error-message">
+      <ExclamationTriangle size="20" />
+      {message}
+    </p>
   </div>
 {/if}
 
@@ -21,5 +25,8 @@
   .error-message {
     margin: 0;
     font-weight: bold;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 </style>

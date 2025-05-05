@@ -1,15 +1,21 @@
 <script lang="ts">
+  import { AdjustmentsHorizontal, Tag } from 'svelte-heros-v2';
+  
   export let availableSkills: string[] = [];
   export let selectedSkills: string[] = [];
 </script>
 
 <section class="filters">
-  <h2>Фильтр по навыкам ({availableSkills?.length ?? 0})</h2>
+  <h2>
+    <AdjustmentsHorizontal size="20" />
+    Фильтр по навыкам ({availableSkills?.length ?? 0})
+  </h2>
   {#if availableSkills && availableSkills.length > 0}
     <div class="skills-list">
       {#each availableSkills as skill (skill)}
         <label>
           <input type="checkbox" bind:group={selectedSkills} value={skill} />
+          <Tag size="16" />
           {skill}
         </label>
       {/each}
@@ -33,6 +39,9 @@
     margin-bottom: 1rem;
     font-size: 1.3rem;
     color: #495057;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
   .skills-list {
     display: flex;
@@ -51,12 +60,13 @@
     transition:
       background-color 0.2s,
       border-color 0.2s;
+    gap: 0.3rem;
   }
   .skills-list label:hover {
     background-color: #f1f3f5;
   }
   .skills-list input[type="checkbox"] {
-    margin-right: 0.5rem;
+    margin-right: 0.3rem;
     accent-color: #007bff;
   }
 

@@ -1,6 +1,8 @@
 <script lang="ts">
   import type { VacancyDTO } from "@jspulse/shared";
   import VacancyCard from "$lib/components/VacancyCard.svelte";
+  import Briefcase from 'svelte-heros-v2/Briefcase.svelte';
+  import MagnifyingGlass from 'svelte-heros-v2/MagnifyingGlass.svelte';
 
   type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
 
@@ -23,12 +25,16 @@
 <div class="vacancies" class:loading={loadingFilter}>
   {#if !loadingFilter}
     <h2>
+      <Briefcase size="24" />
       {vacancies?.length ?? 0}
       {vacanciesCountText} (из {totalVacancies} всего)
     </h2>
 
     {#if showNoVacanciesMessage}
-      <p class="no-vacancies">Вакансий по выбранным фильтрам не найдено</p>
+      <p class="no-vacancies">
+        <MagnifyingGlass size="36" />
+        Вакансий по выбранным фильтрам не найдено
+      </p>
     {:else if showVacancyList}
       <ul>
         {#each vacancies as vacancy (vacancy._id)}
@@ -56,12 +62,19 @@
     margin-bottom: 1.5rem;
     font-size: 1.4rem;
     color: #333;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
   .no-vacancies {
     text-align: center;
     color: #777;
     margin-top: 2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
   }
 
   ul {
