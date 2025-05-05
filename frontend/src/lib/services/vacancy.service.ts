@@ -1,80 +1,35 @@
-import type { PaginatedVacanciesResponse, VacancyDTO } from "@jspulse/shared";
-import { transformVacancies } from "$lib/utils/vacancyTransformations";
-import { httpClient } from "$lib/utils/http";
+import type { VacancyDTO } from "@jspulse/shared";
+import { vacancyApi, type VacanciesOptions, type VacanciesResponse } from "$lib/api/vacancy.api";
 
-export interface VacanciesOptions {
-  limit?: number;
-  page?: number;
-  skills?: string[];
-}
-
-export interface VacanciesResponse {
-  vacancies: (VacancyDTO & { htmlDescription?: string })[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-  error?: string;
-}
+// Экспортируем типы для использования в других модулях
+export { type VacanciesOptions, type VacanciesResponse } from "$lib/api/vacancy.api";
 
 /**
- * Получение вакансий на клиенте
+ * Получение вакансий на клиенте.
+ * Просто прокси-метод для вызова адаптера API для обратной совместимости.
  */
 export const fetchVacanciesClient = async (
   options: VacanciesOptions = {}
 ): Promise<VacanciesResponse> => {
-  const { limit = 10, page = 0, skills = [] } = options;
-  
-  const params: Record<string, string> = {
-    limit: String(limit),
-    page: String(page),
-  };
-  
-  if (skills.length > 0) {
-    params.skills = skills.join(",");
-  }
+  return vacancyApi.fetchVacancies(options);
+};
 
-  try {
-    const response = await httpClient.get<PaginatedVacanciesResponse>("api/vacancies", { 
-      params 
-    });
+/**
+ * Получение списка навыков на клиенте.
+ * Просто прокси-метод для вызова адаптера API для обратной совместимости.
+ */
+export const fetchSkillsClient = async (
+  fallbackVacancies?: VacancyDTO[]
+): Promise<string[]> => {
+  return vacancyApi.fetchSkills(fallbackVacancies);
+};
 
-    if (response.status === "OK" && response.data) {
-      const transformedVacancies = transformVacancies(response.data.items);
-      
-      return {
-        vacancies: transformedVacancies,
-        total: response.data.total,
-        page: response.data.page,
-        limit: response.data.limit,
-        totalPages: response.data.totalPages,
-      };
-    } else {
-      console.error("Client-side API Error (Non-OK status or no data):", response);
-      return {
-        vacancies: [],
-        total: 0,
-        page: page,
-        limit: limit,
-        totalPages: 0,
-        error: `Ошибка API: ${response.message || "Не удалось получить данные"}`,
-      };
-    }
-  } catch (err) {
-    console.error("Client-side API Error:", err);
-    let errorMessage = "Произошла неизвестная ошибка при загрузке вакансий";
-    
-    if (err instanceof Error) {
-      errorMessage = "Ошибка загрузки вакансий: " + err.message;
-    }
-    
-    return {
-      vacancies: [],
-      total: 0,
-      page: page,
-      limit: limit,
-      totalPages: 0,
-      error: errorMessage,
-    };
-  }
+/**
+ * Получение детальной информации о вакансии на клиенте.
+ * Просто прокси-метод для вызова адаптера API для обратной совместимости.
+ */
+export const fetchVacancyByIdClient = async (
+  id: string
+): Promise<VacancyDTO | null> => {
+  return vacancyApi.fetchVacancyById(id);
 }; 

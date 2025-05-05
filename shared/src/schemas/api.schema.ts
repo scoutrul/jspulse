@@ -14,7 +14,7 @@ export const ApiErrorSchema = z.object({
  * Схема для метаданных пагинации
  */
 export const PaginationSchema = z.object({
-  page: z.number().int().positive(),
+  page: z.number().int().nonnegative(),
   limit: z.number().int().positive(),
   totalItems: z.number().int().nonnegative(),
   totalPages: z.number().int().nonnegative(),

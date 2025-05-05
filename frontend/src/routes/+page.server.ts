@@ -2,6 +2,7 @@ import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import type { VacancyDTO } from "@jspulse/shared";
 import { fetchVacanciesServer, fetchSkillsServer } from "$lib/services/vacancy.server";
+import { logger } from "$lib/utils/logger.js";
 
 interface HomePageData {
   initialVacancies: (VacancyDTO & { htmlDescription?: string })[];
@@ -13,12 +14,14 @@ interface HomePageData {
   error?: string;
 }
 
+const CONTEXT = '+page.server.ts';
+
 export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
   const initialLimit = 10;
   const initialPage = 0;
 
   try {
-    console.log("[+page.server.ts] Загружаем вакансии и навыки...");
+    logger.info(CONTEXT, "Загружаем вакансии и навыки...");
 
     // Инициализируем DOMPurify для санитизации HTML
     const { JSDOM } = await import("jsdom");
@@ -36,11 +39,11 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
       sanitizeHtml
     );
 
-    console.log(`[+page.server.ts] Извлечено вакансий: ${vacancies.length}, всего: ${total}`);
+    logger.debug(CONTEXT, `Извлечено вакансий: ${vacancies.length}, всего: ${total}`);
 
     // Загружаем навыки через сервис, используя полученные вакансии как fallback
     const availableSkills = await fetchSkillsServer(_fetch, vacancies);
-    console.log(`[+page.server.ts] Получено ${availableSkills.length} навыков`);
+    logger.debug(CONTEXT, `Получено ${availableSkills.length} навыков`);
 
     return {
       initialVacancies: vacancies,
@@ -51,7 +54,7 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
       availableSkills: availableSkills,
     };
   } catch (err) {
-    console.error("[+page.server.ts] Общая ошибка загрузки данных:", err);
+    logger.error(CONTEXT, "Общая ошибка загрузки данных:", err);
 
     const message =
       err && typeof err === "object" && "message" in err

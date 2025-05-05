@@ -1,9 +1,8 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import type { VacancyDTO } from "@jspulse/shared";
 import { z } from "zod";
 import { fetchVacancyByIdServer } from "$lib/services/vacancy.server";
-import { sanitizeHtml } from "$lib/utils/sanitizeHtml";
+import { logger } from "$lib/utils/logger.js";
 
 // Локальное определение схем, так как в shared возникли проблемы с экспортом
 const DateSchema = z.preprocess((val) => {
@@ -38,10 +37,12 @@ const VacancyDTOSchema = BaseVacancySchema.extend({
   htmlDescription: z.string().nullable().optional()
 });
 
+const CONTEXT = 'vacancy.detail';
+
 export const load: PageServerLoad = async ({ params, fetch }) => {
   const id = params.id;
 
-  console.log(`[+page.server.ts load] Запрос вакансии с ID: ${id}`);
+  logger.info(CONTEXT, `Запрос вакансии с ID: ${id}`);
 
   try {
     // Инициализируем DOMPurify для санитизации HTML
@@ -59,7 +60,7 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
 
     // Проверяем статус ответа
     if (!vacancy) {
-      console.error(`[+page.server.ts load] Вакансия с ID ${id} не найдена`);
+      logger.error(CONTEXT, `Вакансия с ID ${id} не найдена`);
       throw error(404, "Вакансия не найдена");
     }
 
@@ -67,52 +68,21 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
     const validationResult = VacancyDTOSchema.safeParse(vacancy);
 
     if (!validationResult.success) {
-      console.error(`[+page.server.ts] Ошибка валидации вакансии ${id}:`, validationResult.error);
+      logger.error(CONTEXT, `Ошибка валидации вакансии ${id}:`, validationResult.error);
       throw error(500, "Получены некорректные данные вакансии");
     }
 
-    // Печатаем детальную информацию об объекте вакансии
-    console.log(`[+page.server.ts] ДЕТАЛЬНАЯ ДИАГНОСТИКА ВАКАНСИИ:`, {
-      _id: vacancy._id,
-      title: vacancy.title,
-      publishedAt: {
-        raw: vacancy.publishedAt,
-        type: typeof vacancy.publishedAt,
-        instanceOf: vacancy.publishedAt instanceof Date,
-        isString: typeof vacancy.publishedAt === 'string',
-        isDate: vacancy.publishedAt instanceof Date,
-        isValid: vacancy.publishedAt instanceof Date
-          ? !isNaN(vacancy.publishedAt.getTime())
-          : typeof vacancy.publishedAt === 'string'
-            ? !isNaN(new Date(vacancy.publishedAt).getTime())
-            : false,
-        asDate: new Date(vacancy.publishedAt instanceof Date
-          ? vacancy.publishedAt
-          : typeof vacancy.publishedAt === 'string'
-            ? vacancy.publishedAt
-            : 0)
-      }
-    });
-
-    console.log(`[+page.server.ts] ПОСЛЕ ВАЛИДАЦИИ ДАННЫЕ:`, {
-      _id: validationResult.data._id,
-      title: validationResult.data.title,
-      publishedAt: {
-        raw: validationResult.data.publishedAt,
-        type: typeof validationResult.data.publishedAt,
-        instanceOf: validationResult.data.publishedAt instanceof Date,
-        isValid: validationResult.data.publishedAt instanceof Date
-          ? !isNaN(validationResult.data.publishedAt.getTime())
-          : false,
-      }
-    });
+    // Только в режиме разработки печатаем детальную информацию для отладки
+    if (logger.isEnabled()) {
+      logger.debug(CONTEXT, `Вакансия прошла валидацию: ${vacancy.title}`);
+    }
 
     return {
       vacancy: validationResult.data
     };
   } catch (err) {
     if (err instanceof Error) {
-      console.error(`[+page.server.ts load] Ошибка при загрузке вакансии ${id}:`, err);
+      logger.error(CONTEXT, `Ошибка при загрузке вакансии ${id}:`, err);
       throw error(500, err.message || "Ошибка при загрузке вакансии");
     }
     throw err;

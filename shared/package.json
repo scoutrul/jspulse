@@ -11,19 +11,43 @@
   "exports": {
     ".": {
       "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.js"
+      "import": "./dist/index.js"
+    },
+    "./schemas/*": {
+      "types": "./dist/schemas/*.d.ts",
+      "import": "./dist/schemas/*.js"
+    },
+    "./types/*": {
+      "types": "./dist/types/*.d.ts",
+      "import": "./dist/types/*.js"
+    },
+    "./types/core/*": {
+      "types": "./dist/types/core/*.d.ts",
+      "import": "./dist/types/core/*.js"
+    },
+    "./types/db/*": {
+      "types": "./dist/types/db/*.d.ts",
+      "import": "./dist/types/db/*.js"
+    },
+    "./types/dto/*": {
+      "types": "./dist/types/dto/*.d.ts",
+      "import": "./dist/types/dto/*.js"
+    },
+    "./types/sources/*": {
+      "types": "./dist/types/sources/*.d.ts",
+      "import": "./dist/types/sources/*.js"
     }
   },
   "scripts": {
-    "build": "node scripts/build.js",
-    "dev": "node scripts/build.js && tsc --noEmit --watch"
+    "build": "tsup",
+    "dev": "tsup --watch"
   },
   "dependencies": {
     "zod": "^3.24.3"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
+    "tsup": "^8.4.0",
     "typescript": "^5.3.3"
   }
 }

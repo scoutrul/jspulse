@@ -7,8 +7,11 @@
   import LoadingIndicator from "$lib/components/LoadingIndicator.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import { fetchVacanciesClient } from "$lib/services/vacancy.service";
+  import { logger } from "$lib/utils/logger.js";
 
   export let data: PageData;
+
+  const CONTEXT = '+page.svelte';
 
   let displayedVacancies: (VacancyDTO & { htmlDescription?: string })[] =
     data.initialVacancies || [];
@@ -29,6 +32,8 @@
     loadingMore = true;
     
     const nextPage = currentPage + 1;
+    logger.debug(CONTEXT, `Загрузка страницы ${nextPage} с фильтрами`, { selectedSkills });
+    
     const response = await fetchVacanciesClient({
       page: nextPage,
       limit,
@@ -37,12 +42,14 @@
     
     if (response.error) {
       clientError = response.error;
+      logger.error(CONTEXT, `Ошибка при загрузке дополнительных вакансий: ${response.error}`);
     } else {
       displayedVacancies = [...displayedVacancies, ...response.vacancies];
       currentPage = nextPage;
       totalVacancies = response.total;
       totalPages = response.totalPages;
       clientError = null;
+      logger.debug(CONTEXT, `Загружено ${response.vacancies.length} дополнительных вакансий`);
     }
     
     loadingMore = false;
@@ -51,7 +58,7 @@
   // Реактивный блок для перезагрузки при изменении фильтров
   $: {
     if (selectedSkills) {
-      console.log("[+page.svelte] Фильтры изменились, перезагрузка:", selectedSkills);
+      logger.info(CONTEXT, "Фильтры изменились, перезагрузка:", selectedSkills);
       loadingFilter = true;
       displayedVacancies = [];
       currentPage = -1; // Сброс на первую страницу
@@ -67,12 +74,14 @@
         if (response.error) {
           clientError = response.error;
           displayedVacancies = [];
+          logger.error(CONTEXT, `Ошибка при применении фильтров: ${response.error}`);
         } else {
           displayedVacancies = response.vacancies;
           currentPage = response.page;
           totalVacancies = response.total;
           totalPages = response.totalPages;
           clientError = null;
+          logger.debug(CONTEXT, `Отфильтровано ${response.vacancies.length} вакансий из ${response.total}`);
         }
         
         loadingFilter = false;
