@@ -1,129 +1,148 @@
-import ky from "ky";
+import ky, { type Options as KyOptions } from "ky-universal";
 import type { HttpClient, HttpRequestOptions } from "./HttpClient";
+import { logger } from "$lib/utils/logger.js";
 
 /**
  * Реализация HttpClient с использованием ky для серверного рендеринга
  */
 export class KyServerClient implements HttpClient {
-  private baseUrl: string;
-  private defaultOptions: any; // Используем any для опций, так как типы могут отличаться от клиентской версии
   private kyInstance: typeof ky;
+  private readonly CONTEXT = 'KyServerClient';
 
-  constructor(baseUrl: string = "", defaultOptions: any = {}, fetchInstance?: typeof globalThis.fetch) {
-    this.baseUrl = baseUrl;
-    this.defaultOptions = {
-      retry: 1,
-      timeout: 30000,
-      hooks: {
-        beforeRequest: [],
-        afterResponse: [],
-      },
-      ...defaultOptions,
-    };
-
-    // Создаем экземпляр ky с нужным fetch
-    this.kyInstance = fetchInstance
-      ? ky.create({ fetch: fetchInstance })
-      : ky;
+  constructor(
+    private baseUrl: string,
+    private options: KyOptions = {},
+    private customFetch?: typeof globalThis.fetch
+  ) {
+    this.kyInstance = ky.create({
+      prefixUrl: baseUrl,
+      ...options,
+      fetch: customFetch,
+    });
   }
 
-  private mapOptions(options?: HttpRequestOptions, body?: unknown): any {
-    if (!options && !body) return this.defaultOptions;
-
-    const kyOptions: any = { ...this.defaultOptions };
-
-    if (options?.headers) {
-      kyOptions.headers = { ...kyOptions.headers, ...options.headers };
-    }
-
-    if (options?.params) {
-      kyOptions.searchParams = options.params;
-    }
-
-    if (options?.timeout) {
-      kyOptions.timeout = options.timeout;
-    }
-
-    if (options?.retry !== undefined) {
-      kyOptions.retry = options.retry;
-    }
-
-    if (body !== undefined) {
-      kyOptions.json = body;
-    }
-
-    return kyOptions;
-  }
-
-  private async request<T>(
-    method: string,
-    url: string,
-    options?: any
-  ): Promise<T> {
+  async get<T = any>(url: string, options: HttpRequestOptions = {}): Promise<T> {
     try {
-      let fullUrl = url;
+      const { headers = {}, params = {} } = options;
 
-      // Проверяем, является ли URL абсолютным
-      if (!url.startsWith('http://') && !url.startsWith('https://')) {
-        // Если baseUrl указан, используем его как основу
-        if (this.baseUrl) {
-          fullUrl = new URL(url, this.baseUrl).toString();
-        } else {
-          // Проверяем наличие переменной окружения для внутреннего URL в Docker
-          const internalUrl = process.env.INTERNAL_BACKEND_URL;
-          if (internalUrl) {
-            fullUrl = new URL(url, internalUrl).toString();
-          } else {
-            // Без baseUrl используем localhost (для локальной разработки)
-            fullUrl = `http://localhost:3001/${url.startsWith('/') ? url.substring(1) : url}`;
-          }
-        }
-      }
+      // Формируем URL с параметрами, если они есть
+      const urlWithParams = this.buildUrlWithParams(url, params);
 
-      console.log(`[KyServerClient] Выполняем запрос к: ${fullUrl}`);
+      logger.debug(this.CONTEXT, `Выполняем запрос к: ${this.baseUrl}${urlWithParams}`);
 
-      const response = await this.kyInstance(fullUrl, {
-        method,
-        ...options,
-      });
+      const response = await this.kyInstance(urlWithParams, {
+        method: "GET",
+        headers,
+      }).json<T>();
 
-      return await response.json();
-    } catch (error: any) {
-      console.error(`[HTTP SERVER ${method}] Ошибка запроса ${url}:`, error);
-
-      // Проверяем, имеет ли ошибка response (для ky ошибки HTTP могут иметь response)
-      if (error.response) {
-        try {
-          // Пытаемся получить JSON из ответа ошибки
-          const errorData = await error.response.json();
-          return errorData as T; // Возвращаем ответ с ошибкой как структуру API
-        } catch (jsonError) {
-          // Если нельзя распарсить JSON, создаем ошибочный ответ
-          throw error;
-        }
-      }
-
+      return response;
+    } catch (error) {
+      logger.error(this.CONTEXT, `Ошибка GET запроса к ${url}:`, error);
       throw error;
     }
   }
 
-  async get<T>(url: string, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>("GET", url, this.mapOptions(options));
+  async post<T = any>(url: string, options: HttpRequestOptions = {}): Promise<T> {
+    try {
+      const { headers = {}, params = {}, data } = options;
+
+      // Формируем URL с параметрами, если они есть
+      const urlWithParams = this.buildUrlWithParams(url, params);
+
+      logger.debug(this.CONTEXT, `Выполняем POST запрос к: ${this.baseUrl}${urlWithParams}`);
+
+      const response = await this.kyInstance(urlWithParams, {
+        method: "POST",
+        headers,
+        json: data,
+      }).json<T>();
+
+      return response;
+    } catch (error) {
+      logger.error(this.CONTEXT, `Ошибка POST запроса к ${url}:`, error);
+      throw error;
+    }
   }
 
-  async post<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>("POST", url, this.mapOptions(options, body));
+  // Вспомогательный метод для добавления параметров к URL
+  private buildUrlWithParams(url: string, params: Record<string, string> = {}): string {
+    const searchParams = new URLSearchParams();
+
+    // Добавляем параметры в URLSearchParams
+    Object.entries(params).forEach(([key, value]) => {
+      searchParams.append(key, value);
+    });
+
+    const queryString = searchParams.toString();
+
+    // Если параметры есть, добавляем их к URL
+    if (queryString) {
+      // Проверяем, содержит ли URL уже параметры
+      return url.includes('?')
+        ? `${url}&${queryString}`
+        : `${url}?${queryString}`;
+    }
+
+    return url;
   }
 
-  async put<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>("PUT", url, this.mapOptions(options, body));
+  // Реализация оставшихся методов интерфейса HttpClient:
+  async put<T = any>(url: string, options: HttpRequestOptions = {}): Promise<T> {
+    try {
+      const { headers = {}, params = {}, data } = options;
+      const urlWithParams = this.buildUrlWithParams(url, params);
+
+      logger.debug(this.CONTEXT, `Выполняем PUT запрос к: ${this.baseUrl}${urlWithParams}`);
+
+      const response = await this.kyInstance(urlWithParams, {
+        method: "PUT",
+        headers,
+        json: data,
+      }).json<T>();
+
+      return response;
+    } catch (error) {
+      logger.error(this.CONTEXT, `Ошибка PUT запроса к ${url}:`, error);
+      throw error;
+    }
   }
 
-  async patch<T>(url: string, body?: unknown, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>("PATCH", url, this.mapOptions(options, body));
+  async patch<T = any>(url: string, options: HttpRequestOptions = {}): Promise<T> {
+    try {
+      const { headers = {}, params = {}, data } = options;
+      const urlWithParams = this.buildUrlWithParams(url, params);
+
+      logger.debug(this.CONTEXT, `Выполняем PATCH запрос к: ${this.baseUrl}${urlWithParams}`);
+
+      const response = await this.kyInstance(urlWithParams, {
+        method: "PATCH",
+        headers,
+        json: data,
+      }).json<T>();
+
+      return response;
+    } catch (error) {
+      logger.error(this.CONTEXT, `Ошибка PATCH запроса к ${url}:`, error);
+      throw error;
+    }
   }
 
-  async delete<T>(url: string, options?: HttpRequestOptions): Promise<T> {
-    return this.request<T>("DELETE", url, this.mapOptions(options));
+  async delete<T = any>(url: string, options: HttpRequestOptions = {}): Promise<T> {
+    try {
+      const { headers = {}, params = {} } = options;
+      const urlWithParams = this.buildUrlWithParams(url, params);
+
+      logger.debug(this.CONTEXT, `Выполняем DELETE запрос к: ${this.baseUrl}${urlWithParams}`);
+
+      const response = await this.kyInstance(urlWithParams, {
+        method: "DELETE",
+        headers,
+      }).json<T>();
+
+      return response;
+    } catch (error) {
+      logger.error(this.CONTEXT, `Ошибка DELETE запроса к ${url}:`, error);
+      throw error;
+    }
   }
 } 

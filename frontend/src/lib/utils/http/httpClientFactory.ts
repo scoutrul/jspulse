@@ -19,20 +19,48 @@ interface HttpClientOptions {
  * @param options Настройки клиента
  */
 export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
-  // Определяем правильный baseUrl в зависимости от окружения
-  let defaultBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:3001";
+  // Определяем базовый URL в зависимости от окружения и доступных переменных
+  let publicBackendUrl = browser
+    ? import.meta.env.VITE_PUBLIC_BACKEND_URL
+    : process.env.VITE_PUBLIC_BACKEND_URL;
 
-  // Отладочная информация о переменных окружения
-  if (!browser) {
+  let internalBackendUrl = !browser ? process.env.INTERNAL_BACKEND_URL : undefined;
+
+  // Логгируем переменные окружения только в серверном окружении и только в режиме разработки
+  if (!browser && process.env.NODE_ENV !== 'production') {
     console.log('[httpClientFactory] Env vars debug:');
-    console.log('- VITE_PUBLIC_BACKEND_URL:', process.env.VITE_PUBLIC_BACKEND_URL);
-    console.log('- INTERNAL_BACKEND_URL:', process.env.INTERNAL_BACKEND_URL);
+    console.log('- VITE_PUBLIC_BACKEND_URL:', publicBackendUrl);
+    console.log('- INTERNAL_BACKEND_URL:', internalBackendUrl);
   }
 
-  // В серверной среде проверяем наличие INTERNAL_BACKEND_URL (для Docker)
-  if (!browser && process.env.INTERNAL_BACKEND_URL) {
-    defaultBaseUrl = process.env.INTERNAL_BACKEND_URL;
-    console.log(`[httpClientFactory] Using internal backend URL: ${defaultBaseUrl}`);
+  // Определяем приоритет URL:
+  // 1. Явно заданный в options.baseUrl
+  // 2. Внутренний URL для Docker (INTERNAL_BACKEND_URL) в серверной среде
+  // 3. Публичный URL (VITE_PUBLIC_BACKEND_URL)
+  // 4. Резервный локальный адрес
+  let defaultBaseUrl: string;
+
+  // В Docker контейнере используем внутренний URL, если он задан
+  if (!browser && internalBackendUrl) {
+    defaultBaseUrl = internalBackendUrl;
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[httpClientFactory] Using internal backend URL: ${defaultBaseUrl}`);
+    }
+  }
+  // Для браузера или когда внутренний URL не задан, используем публичный
+  else if (publicBackendUrl) {
+    defaultBaseUrl = publicBackendUrl;
+    if (!browser && process.env.NODE_ENV !== 'production') {
+      console.log(`[httpClientFactory] Using public backend URL: ${defaultBaseUrl}`);
+    }
+  }
+  // Резервный вариант при отсутствии переменных окружения
+  else {
+    // В Docker контейнере бэкенд должен быть доступен по имени сервиса
+    defaultBaseUrl = browser ? "http://localhost:3001" : "http://backend:3001";
+    if (!browser && process.env.NODE_ENV !== 'production') {
+      console.log(`[httpClientFactory] Using fallback backend URL: ${defaultBaseUrl}`);
+    }
   }
 
   const {
@@ -43,7 +71,9 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     fetch = undefined  // Опциональный fetch из SvelteKit
   } = options;
 
-  console.log(`[httpClientFactory] Creating client with baseUrl: ${baseUrl}`);
+  if (process.env.NODE_ENV !== 'production') {
+    console.log(`[httpClientFactory] Creating client with baseUrl: ${baseUrl}`);
+  }
 
   // В зависимости от окружения создаем разные клиенты
   if (browser) {
