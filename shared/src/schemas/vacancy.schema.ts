@@ -68,7 +68,20 @@ export const VacancySearchSchema = z.object({
 
 // Экспортируем типы, выведенные из схем
 export type BaseVacancy = z.infer<typeof BaseVacancySchema>;
-export type VacancyDTO = z.infer<typeof VacancyDTOSchema>;
+export type VacancyDTO = Omit<z.infer<typeof BaseVacancySchema>, 'publishedAt'> & {
+  _id?: string;
+  description?: string;
+  schedule?: string;
+  skills: string[];
+  salaryFrom?: number | null;
+  salaryTo?: number | null;
+  salaryCurrency?: string | null;
+  experience?: string | null;
+  employment?: string | null;
+  address?: string | null;
+  htmlDescription?: string | null;
+  publishedAt: Date;
+};
 export type CreateVacancy = z.infer<typeof CreateVacancySchema>;
 export type UpdateVacancy = z.infer<typeof UpdateVacancySchema>;
 export type VacancySearch = z.infer<typeof VacancySearchSchema>; 

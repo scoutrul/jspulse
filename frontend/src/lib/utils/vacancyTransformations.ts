@@ -10,10 +10,13 @@ export const transformVacancies = (
   return vacancies.map((vacancy) => ({
     ...vacancy,
     publishedAt: new Date(vacancy.publishedAt),
+    // Преобразуем null значения в undefined для совместимости с типом VacancyDTO
+    salaryFrom: vacancy.salaryFrom === null ? undefined : vacancy.salaryFrom,
+    salaryTo: vacancy.salaryTo === null ? undefined : vacancy.salaryTo,
     // Если передан санитайзер, используем его, иначе просто копируем description
-    htmlDescription: vacancy.description 
-      ? sanitizeHtml 
-        ? sanitizeHtml(vacancy.description) 
+    htmlDescription: vacancy.description
+      ? sanitizeHtml
+        ? sanitizeHtml(vacancy.description)
         : vacancy.description
       : "",
     // Гарантируем, что skills всегда будет массивом
@@ -26,7 +29,7 @@ export const transformVacancies = (
  */
 export const extractSkillsFromVacancies = (vacancies: VacancyDTO[]): string[] => {
   const allSkills = new Set<string>();
-  
+
   vacancies.forEach((vacancy) => {
     vacancy.skills?.forEach((skill: string) => {
       if (skill && typeof skill === "string") {
@@ -34,6 +37,6 @@ export const extractSkillsFromVacancies = (vacancies: VacancyDTO[]): string[] =>
       }
     });
   });
-  
+
   return Array.from(allSkills).sort();
 }; 
