@@ -1,4 +1,4 @@
-import ky, { type Options as KyOptions } from "ky-universal";
+import ky, { type Options as KyOptions } from "ky";
 import type { HttpClient, HttpRequestOptions } from "./HttpClient";
 import { logger } from "$lib/utils/logger.js";
 
@@ -66,6 +66,9 @@ export class KyServerClient implements HttpClient {
 
   // Вспомогательный метод для добавления параметров к URL
   private buildUrlWithParams(url: string, params: Record<string, string> = {}): string {
+    // Удаляем начальный слеш, если он есть (требование библиотеки ky при использовании prefixUrl)
+    const normalizedUrl = url.startsWith('/') ? url.substring(1) : url;
+
     const searchParams = new URLSearchParams();
 
     // Добавляем параметры в URLSearchParams
@@ -78,12 +81,12 @@ export class KyServerClient implements HttpClient {
     // Если параметры есть, добавляем их к URL
     if (queryString) {
       // Проверяем, содержит ли URL уже параметры
-      return url.includes('?')
-        ? `${url}&${queryString}`
-        : `${url}?${queryString}`;
+      return normalizedUrl.includes('?')
+        ? `${normalizedUrl}&${queryString}`
+        : `${normalizedUrl}?${queryString}`;
     }
 
-    return url;
+    return normalizedUrl;
   }
 
   // Реализация оставшихся методов интерфейса HttpClient:

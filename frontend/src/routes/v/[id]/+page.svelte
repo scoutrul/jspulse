@@ -67,24 +67,6 @@
   // Используем реальные данные, если они есть, иначе моковые
   const rawVacancy = data.vacancy || mockVacancy;
   
-  // Выводим детальную информацию для диагностики
-  console.log(`[+page.svelte] ДИАГНОСТИКА ДАННЫХ ВАКАНСИИ:`, {
-    source: rawVacancy ? 'API' : 'Mock',
-    _id: rawVacancy._id,
-    title: rawVacancy.title,
-    publishedAt: {
-      raw: rawVacancy.publishedAt,
-      type: typeof rawVacancy.publishedAt,
-      instanceOf: rawVacancy.publishedAt instanceof Date,
-      isString: typeof rawVacancy.publishedAt === 'string', 
-      isValid: rawVacancy.publishedAt instanceof Date 
-        ? !isNaN(rawVacancy.publishedAt.getTime())
-        : typeof rawVacancy.publishedAt === 'string'
-          ? !isNaN(new Date(rawVacancy.publishedAt).getTime())
-          : false
-    }
-  });
-  
   // Преобразуем null в undefined для совместимости типов
   const vacancy = {
     ...rawVacancy,

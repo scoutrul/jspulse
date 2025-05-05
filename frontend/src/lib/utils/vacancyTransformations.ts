@@ -13,12 +13,14 @@ export const transformVacancies = (
     // Преобразуем null значения в undefined для совместимости с типом VacancyDTO
     salaryFrom: vacancy.salaryFrom === null ? undefined : vacancy.salaryFrom,
     salaryTo: vacancy.salaryTo === null ? undefined : vacancy.salaryTo,
-    // Если передан санитайзер, используем его, иначе просто копируем description
-    htmlDescription: vacancy.description
-      ? sanitizeHtml
-        ? sanitizeHtml(vacancy.description)
-        : vacancy.description
-      : "",
+    // Приоритизируем существующее htmlDescription, если оно есть
+    htmlDescription: vacancy.htmlDescription
+      ? vacancy.htmlDescription
+      : vacancy.description
+        ? sanitizeHtml
+          ? sanitizeHtml(vacancy.description)
+          : vacancy.description
+        : "",
     // Гарантируем, что skills всегда будет массивом
     skills: vacancy.skills && Array.isArray(vacancy.skills) ? vacancy.skills : [],
   }));
