@@ -6,23 +6,25 @@
   import LoadMoreButton from "$lib/components/LoadMoreButton.svelte";
   import LoadingIndicator from "$lib/components/LoadingIndicator.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
-  import { fetchVacanciesClient } from "$lib/services/vacancy.service";
-  import { logger } from "$lib/utils/logger.js";
+  import { vacancyService } from "$lib/services/vacancy.service";
 
   export let data: PageData;
 
-  const CONTEXT = '+page.svelte';
+  // Определяем тип для внутреннего использования с совместимостью с данными из data
+  type VacancyEntry = VacancyDTO & { htmlDescription?: string | null };
 
-  let displayedVacancies: (VacancyDTO & { htmlDescription?: string })[] =
-    data.initialVacancies || [];
+  // Состояние данных
+  let displayedVacancies = data.initialVacancies as VacancyEntry[];
   let totalVacancies: number = data.totalCount || 0;
   let currentPage: number = data.page ?? 0;
   let totalPages: number = data.totalPages ?? 0;
   let limit: number = data.limit ?? 10;
 
+  // Состояние фильтров
   let availableSkills: string[] = data.availableSkills || [];
   let selectedSkills: string[] = [];
 
+  // Состояние UI
   let loadingMore = false;
   let loadingFilter = false;
   let clientError: string | null = data.error || null;
@@ -32,9 +34,8 @@
     loadingMore = true;
     
     const nextPage = currentPage + 1;
-    logger.debug(CONTEXT, `Загрузка страницы ${nextPage} с фильтрами`, { selectedSkills });
     
-    const response = await fetchVacanciesClient({
+    const response = await vacancyService.fetchVacanciesClient({
       page: nextPage,
       limit,
       skills: selectedSkills
@@ -42,14 +43,12 @@
     
     if (response.error) {
       clientError = response.error;
-      logger.error(CONTEXT, `Ошибка при загрузке дополнительных вакансий: ${response.error}`);
     } else {
-      displayedVacancies = [...displayedVacancies, ...response.vacancies];
+      displayedVacancies = [...displayedVacancies, ...response.vacancies] as VacancyEntry[];
       currentPage = nextPage;
       totalVacancies = response.total;
       totalPages = response.totalPages;
       clientError = null;
-      logger.debug(CONTEXT, `Загружено ${response.vacancies.length} дополнительных вакансий`);
     }
     
     loadingMore = false;
@@ -58,14 +57,13 @@
   // Реактивный блок для перезагрузки при изменении фильтров
   $: {
     if (selectedSkills) {
-      logger.info(CONTEXT, "Фильтры изменились, перезагрузка:", selectedSkills);
       loadingFilter = true;
       displayedVacancies = [];
       currentPage = -1; // Сброс на первую страницу
       
       // Небольшая задержка для обновления UI перед запросом
       setTimeout(async () => {
-        const response = await fetchVacanciesClient({
+        const response = await vacancyService.fetchVacanciesClient({
           page: 0,
           limit,
           skills: selectedSkills
@@ -74,14 +72,12 @@
         if (response.error) {
           clientError = response.error;
           displayedVacancies = [];
-          logger.error(CONTEXT, `Ошибка при применении фильтров: ${response.error}`);
         } else {
-          displayedVacancies = response.vacancies;
+          displayedVacancies = response.vacancies as VacancyEntry[];
           currentPage = response.page;
           totalVacancies = response.total;
           totalPages = response.totalPages;
           clientError = null;
-          logger.debug(CONTEXT, `Отфильтровано ${response.vacancies.length} вакансий из ${response.total}`);
         }
         
         loadingFilter = false;
