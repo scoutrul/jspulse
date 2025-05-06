@@ -1,4 +1,3 @@
-// @ts-ignore // eslint-disable-line @typescript-eslint/ban-ts-comment
 import type {
   VacancyDTO,
   HHVacancyRaw,
@@ -131,7 +130,7 @@ class VacancyService {
   transformHHVacancy(hhVacancy: HHVacancyRaw): TransformedVacancy {
     const salaryInfo = this.parseSalary(hhVacancy.salary);
 
-    let description = hhVacancy.description || hhVacancy.branded_description || "";
+    let description = hhVacancy.description || "";
     if (!description) {
       description = [hhVacancy.snippet?.requirement, hhVacancy.snippet?.responsibility]
         .filter(Boolean)

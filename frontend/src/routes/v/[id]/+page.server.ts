@@ -1,41 +1,8 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import { z } from "zod";
+import { VacancyDTOSchema } from "@jspulse/shared";
 import { fetchVacancyByIdServer } from "$lib/services/vacancy.server";
 import { logger } from "$lib/utils/logger.js";
-
-// Локальное определение схем, так как в shared возникли проблемы с экспортом
-const DateSchema = z.preprocess((val) => {
-  if (val instanceof Date) return val;
-  if (typeof val === 'string' || typeof val === 'number') return new Date(val);
-  return null;
-}, z.date().nullable().optional());
-
-// Базовая схема вакансии
-const BaseVacancySchema = z.object({
-  externalId: z.string(),
-  title: z.string(),
-  company: z.string().nullable().optional(),
-  location: z.string().nullable().optional(),
-  url: z.string().nullable().optional(),
-  publishedAt: DateSchema,
-  source: z.string()
-});
-
-// Схема DTO вакансии
-const VacancyDTOSchema = BaseVacancySchema.extend({
-  _id: z.string().optional(),
-  description: z.string().nullable().optional(),
-  schedule: z.string().nullable().optional(),
-  skills: z.array(z.string()).default([]),
-  salaryFrom: z.number().nullable().optional(),
-  salaryTo: z.number().nullable().optional(),
-  salaryCurrency: z.string().nullable().optional(),
-  experience: z.string().nullable().optional(),
-  employment: z.string().nullable().optional(),
-  address: z.string().nullable().optional(),
-  htmlDescription: z.string().nullable().optional()
-});
 
 const CONTEXT = 'vacancy.detail';
 

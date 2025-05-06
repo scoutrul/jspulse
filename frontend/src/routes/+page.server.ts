@@ -1,11 +1,11 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
-import type { VacancyDTO } from "@jspulse/shared";
+import type { VacancyDTO, VacancyWithHtml } from "@jspulse/shared";
 import { fetchVacanciesServer, fetchSkillsServer } from "$lib/services/vacancy.server";
 import { logger } from "$lib/utils/logger.js";
 
 interface HomePageData {
-  initialVacancies: (VacancyDTO & { htmlDescription?: string })[];
+  initialVacancies: VacancyWithHtml[];
   totalCount: number;
   page: number;
   limit: number;
@@ -45,8 +45,14 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
     const availableSkills = await fetchSkillsServer(_fetch, vacancies);
     logger.debug(CONTEXT, `Получено ${availableSkills.length} навыков`);
 
+    // Явно приводим типы, чтобы соответствовать VacancyWithHtml
+    const vacanciesWithHtml: VacancyWithHtml[] = vacancies.map(vacancy => ({
+      ...vacancy,
+      htmlDescription: vacancy.htmlDescription || null
+    }));
+
     return {
-      initialVacancies: vacancies,
+      initialVacancies: vacanciesWithHtml,
       totalCount: total,
       page: page,
       limit: limit,
