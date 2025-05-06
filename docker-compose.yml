@@ -49,7 +49,7 @@ services:
         condition: service_healthy
     environment:
       - PORT=3000
-      - NODE_ENV=production
+      - NODE_ENV=development
       - ORIGIN=http://localhost:3000
       - VITE_PUBLIC_BACKEND_URL=http://localhost:3001
       - INTERNAL_BACKEND_URL=http://backend:3001

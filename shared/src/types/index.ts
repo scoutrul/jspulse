@@ -11,14 +11,5 @@ export * from "./sources/hh.types.js";
 export * from "./dto/vacancy.dto.js";
 export * from "./dto/api.dto.js";
 
-// Экспорт дополнительных типов вакансий
-export { 
-  VacancyArea,
-  VacancyEmployer,
-  VacancySalary,
-  VacancySnippet,
-  Vacancy,
-  VacanciesResponse,
-  HHVacancy,
-  HHResponse
-} from "./vacancy.types.js"; 
+// Экспорт всех типов вакансий из vacancy.types.js
+export * from "./vacancy.types.js"; 

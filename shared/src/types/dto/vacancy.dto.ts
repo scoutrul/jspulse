@@ -1,18 +1,5 @@
-import type { BaseVacancy } from "../core/vacancy.base.js";
+// Импортируем тип из схемы Zod
+import type { VacancyDTO as ZodVacancyDTO } from "../../schemas/vacancy.schema.js";
 
-export interface VacancyDTO extends BaseVacancy {
-  _id?: string; // MongoDB ID становится опциональным, т.к. при создании его может не быть
-  source: string;
-
-  description?: string;
-  schedule?: string;
-  skills: string[];
-  salaryFrom?: number;
-  salaryTo?: number;
-  salaryCurrency?: string;
-  experience?: string;
-  employment?: string;
-  address?: string;
-  publishedAt: Date;
-  htmlDescription?: string; // Поле для очищенного HTML описания
-} 
+// Единый источник истины для DTO вакансии - тип из Zod-схемы
+export type VacancyDTO = ZodVacancyDTO;

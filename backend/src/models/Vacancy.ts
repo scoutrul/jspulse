@@ -1,13 +1,9 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { type BaseVacancy, type IVacancy } from "@jspulse/shared";
+import { type IVacancy } from "@jspulse/shared";
 
-// Интерфейс документа Mongoose для вакансии, расширяет IVacancy из shared
+// Интерфейс документа Mongoose для вакансии
 export interface IVacancyDocument extends IVacancy, Document {
-  // Все поля уже определены в IVacancy
-  // publishedAt определен в IVacancy как Date
-
-  // Сырые данные из источника
-  rawData?: any;
+  // Все базовые поля уже определены в IVacancy
 }
 
 // Схема для MongoDB
