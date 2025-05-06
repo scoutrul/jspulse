@@ -4,10 +4,15 @@ import type {
   HHSalary,
   PaginatedVacanciesResponse,
   HHResponseRaw,
+  VacancyWithHtml,
 } from "@jspulse/shared";
 import { apiClient } from "$lib/api/http.client.js";
 import { API_CONFIG } from "../config/api.config.js";
 import { createHttpClient } from "$lib/utils/http/index.js";
+import { logger } from "$lib/utils/logger.js";
+
+// Константа для контекста логирования
+const CONTEXT = 'VacancyService';
 
 // HTTP клиент для запросов к HeadHunter API
 const hhClient = createHttpClient({
@@ -45,6 +50,16 @@ interface ApiResponse {
   };
 }
 
+// Тип для результата запроса клиента на фронтенде
+export interface VacanciesClientResponse {
+  vacancies: VacancyWithHtml[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  error?: string;
+}
+
 class VacancyService {
   async getVacancies(params: {
     page?: number;
@@ -65,14 +80,14 @@ class VacancyService {
 
       // Формируем URL с параметрами
       const url = `${API_CONFIG.ENDPOINTS.VACANCIES}?${searchParams.toString()}`;
-      console.log(`[VacancyService] Запрос вакансий: ${url}`);
+      logger.debug(CONTEXT, `Запрос вакансий с параметрами`, params);
 
       // Выполняем запрос через API клиент и приводим к типу ответа
       const response = await apiClient.get(url) as unknown as ApiResponse;
 
       // Проверяем и обрабатываем ответ
       if (!response || !response.success || !response.data) {
-        console.error("Ошибка при получении вакансий:", response);
+        logger.error(CONTEXT, "Ошибка при получении вакансий", response);
         return { items: [], total: 0, page: 0, limit: 0, totalPages: 0 };
       }
 
@@ -81,6 +96,8 @@ class VacancyService {
         ...vacancy,
         publishedAt: new Date(vacancy.publishedAt),
       }));
+
+      logger.debug(CONTEXT, `Получено ${vacanciesWithDates.length} вакансий из ${response.meta?.totalItems || 0} всего`);
 
       // Формируем ответ с пагинацией
       return {
@@ -91,7 +108,7 @@ class VacancyService {
         totalPages: response.meta?.totalPages || 0
       };
     } catch (error) {
-      console.error("Ошибка при получении вакансий:", error);
+      logger.error(CONTEXT, "Ошибка при получении вакансий", error);
       // В случае ошибки возвращаем пустой результат
       return { items: [], total: 0, page: 0, limit: 0, totalPages: 0 };
     }
@@ -118,12 +135,63 @@ class VacancyService {
       if (hhResponse && Array.isArray(hhResponse.items)) {
         return hhResponse.items.map((hhVacancy: HHVacancyRaw) => this.transformHHVacancy(hhVacancy));
       } else {
-        console.error("Unexpected response structure from HH API:", hhResponse);
+        logger.error(CONTEXT, "Некорректная структура ответа от HH API", hhResponse);
         return [];
       }
     } catch (error) {
-      console.error("Error fetching vacancies from HH API:", error);
+      logger.error(CONTEXT, "Ошибка при получении вакансий из HH API", error);
       return [];
+    }
+  }
+
+  /**
+   * Клиентский метод для загрузки вакансий с пагинацией и фильтрацией.
+   * Используется на фронтенде в компонентах.
+   */
+  async fetchVacanciesClient(options: {
+    page?: number;
+    limit?: number;
+    skills?: string[];
+  } = {}): Promise<VacanciesClientResponse> {
+    try {
+      logger.debug(CONTEXT, 'Клиентский запрос вакансий', options);
+
+      // Используем метод получения вакансий
+      const result = await this.getVacancies({
+        page: options.page,
+        limit: options.limit,
+        skills: options.skills
+      });
+
+      if (!result) {
+        throw new Error('Не удалось получить данные вакансий');
+      }
+
+      // Преобразуем результат в клиентский формат ответа
+      return {
+        vacancies: result.items as VacancyWithHtml[],
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      };
+    } catch (error) {
+      // Обрабатываем и логируем ошибку
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Неизвестная ошибка при загрузке вакансий';
+
+      logger.error(CONTEXT, 'Ошибка при клиентском запросе вакансий', errorMessage);
+
+      // Возвращаем объект с ошибкой
+      return {
+        vacancies: [],
+        total: 0,
+        page: 0,
+        limit: 10,
+        totalPages: 0,
+        error: errorMessage
+      };
     }
   }
 
