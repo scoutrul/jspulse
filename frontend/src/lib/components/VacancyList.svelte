@@ -1,10 +1,8 @@
 <script lang="ts">
-  import type { VacancyDTO } from "@jspulse/shared";
+  import type { VacancyDTO, VacancyWithHtml } from "@jspulse/shared";
   import VacancyCard from "$lib/components/VacancyCard.svelte";
   import Briefcase from 'svelte-heros-v2/Briefcase.svelte';
   import MagnifyingGlass from 'svelte-heros-v2/MagnifyingGlass.svelte';
-
-  type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
 
   export let vacancies: VacancyWithHtml[] = [];
   export let totalVacancies: number = 0;

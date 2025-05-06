@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { VacancyDTO } from "@jspulse/shared";
+  import type { VacancyDTO, VacancyWithHtml } from "@jspulse/shared";
   import type { PageData } from "./$types";
   import Filters from "$lib/components/Filters.svelte";
   import VacancyList from "$lib/components/VacancyList.svelte";
@@ -10,11 +10,16 @@
 
   export let data: PageData;
 
-  // Определяем тип для внутреннего использования с совместимостью с данными из data
-  type VacancyEntry = VacancyDTO & { htmlDescription?: string | null };
+  // Функция приведения данных к ожидаемому формату
+  function convertVacancy(v: any): VacancyWithHtml {
+    return {
+      ...v,
+      htmlDescription: v.htmlDescription === null ? undefined : v.htmlDescription
+    };
+  }
 
   // Состояние данных
-  let displayedVacancies = data.initialVacancies as VacancyEntry[];
+  let displayedVacancies = (data.initialVacancies || []).map(convertVacancy);
   let totalVacancies: number = data.totalCount || 0;
   let currentPage: number = data.page ?? 0;
   let totalPages: number = data.totalPages ?? 0;
@@ -44,7 +49,7 @@
     if (response.error) {
       clientError = response.error;
     } else {
-      displayedVacancies = [...displayedVacancies, ...response.vacancies] as VacancyEntry[];
+      displayedVacancies = [...displayedVacancies, ...response.vacancies.map(convertVacancy)];
       currentPage = nextPage;
       totalVacancies = response.total;
       totalPages = response.totalPages;
@@ -73,7 +78,7 @@
           clientError = response.error;
           displayedVacancies = [];
         } else {
-          displayedVacancies = response.vacancies as VacancyEntry[];
+          displayedVacancies = response.vacancies.map(convertVacancy);
           currentPage = response.page;
           totalVacancies = response.total;
           totalPages = response.totalPages;
