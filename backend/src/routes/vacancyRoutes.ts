@@ -22,8 +22,7 @@ const IdParamSchema = z.object({
 // Схема поиска по навыкам
 const SkillsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().default(10),
-  page: z.coerce.number().int().nonnegative().default(0),
-  skills: z.string().optional()
+  page: z.coerce.number().int().nonnegative().default(0)
 });
 
 // Эндпоинт для получения списка всех доступных навыков
@@ -63,12 +62,22 @@ router.get("/skills", async (req: Request, res: Response) => {
 // Используем правильную типизацию для Express
 router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Response) => {
   console.log("[GET /api/vacancies] Запрос получен");
-  // Используем validatedQuery вместо query (проверка на существование для совместимости)
-  const { limit, page, skills } = req.validatedQuery || req.query;
+
+  // Используем validatedQuery для проверенных параметров, а skills берем напрямую из query
+  const { limit, page } = req.validatedQuery || req.query;
+  const skills = req.query.skills;
 
   const query: any = {};
   if (skills) {
-    query.skills = { $in: skills.split(",").map((s: string) => s.trim()) };
+    // Обрабатываем любой формат skills - как строку, так и массив
+    const skillsArray = Array.isArray(skills)
+      ? skills
+      : (typeof skills === 'string' ? skills.split(',').map(s => s.trim()) : []);
+
+    if (skillsArray.length > 0) {
+      console.log("[GET /api/vacancies] Фильтрация по навыкам:", skillsArray);
+      query.skills = { $in: skillsArray };
+    }
   }
 
   try {
