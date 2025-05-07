@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { VacancyDTO } from "@jspulse/shared";
   import { z } from "zod";
-  import { formatDate } from "$lib/utils/date.utils";
+  import { formatDate } from "$lib/utils/dayjs.utils";
 
   // Определяем VacancyDTOSchema локально для валидации
   const VacancyDTOSchema = z.object({
