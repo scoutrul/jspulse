@@ -2,7 +2,6 @@
   import type { VacancyDTO } from "@jspulse/shared";
   import { z } from "zod";
   import { formatDate } from "$lib/utils/dayjs.utils";
-  // Импортируем иконки напрямую из .svelte файлов
   import BuildingOffice from 'svelte-heros-v2/BuildingOffice.svelte';
   import MapPin from 'svelte-heros-v2/MapPin.svelte';
   import CurrencyDollar from 'svelte-heros-v2/CurrencyDollar.svelte';

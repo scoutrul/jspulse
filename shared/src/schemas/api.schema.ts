@@ -62,7 +62,6 @@ export const ApiResponseSchema = z.union([
   ApiErrorResponseSchema,
 ]);
 
-// Экспортируем типы, выведенные из схем
 export type ApiError = z.infer<typeof ApiErrorSchema>;
 export type Pagination = z.infer<typeof PaginationSchema>;
 export type ApiSuccess<T = any, M = any> = z.infer<typeof ApiSuccessSchema> & { data: T; meta?: M };

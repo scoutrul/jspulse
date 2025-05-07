@@ -66,7 +66,6 @@ export const VacancySearchSchema = z.object({
   sortDirection: z.enum(["asc", "desc"]).default("desc"),
 });
 
-// Экспортируем типы, выведенные из схем
 export type BaseVacancy = z.infer<typeof BaseVacancySchema>;
 export type VacancyDTO = Omit<z.infer<typeof BaseVacancySchema>, 'publishedAt'> & {
   _id?: string;

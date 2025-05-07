@@ -14,12 +14,10 @@ dayjs.locale('ru');
  */
 export function formatDate(dateInput: unknown): string {
   try {
-    // Проверка на пустые значения
     if (dateInput === null || dateInput === undefined) {
       return "Дата не указана";
     }
 
-    // Создаем dayjs инстанс в зависимости от типа входных данных
     let date;
     if (dateInput instanceof Date) {
       date = dayjs(dateInput);
@@ -38,12 +36,10 @@ export function formatDate(dateInput: unknown): string {
       return "Дата не указана";
     }
 
-    // Проверка валидности даты
     if (!date.isValid()) {
       return "Дата не указана";
     }
 
-    // Форматируем в локализованный формат с временем
     return date.format('DD.MM.YYYY HH:mm');
   } catch (error) {
     console.error(`[formatDate] Ошибка форматирования:`, error);
@@ -59,12 +55,10 @@ export function formatDate(dateInput: unknown): string {
  */
 export function formatDateSafe(dateInput: any): string {
   try {
-    // Проверка на пустые значения
     if (dateInput === null || dateInput === undefined) {
       return "Не указана";
     }
 
-    // Создаем dayjs инстанс в зависимости от типа входных данных
     let date;
     if (dateInput instanceof Date) {
       date = dayjs(dateInput);
@@ -83,12 +77,10 @@ export function formatDateSafe(dateInput: any): string {
       return "Не указана";
     }
 
-    // Проверка валидности даты
     if (!date.isValid()) {
       return "Не указана";
     }
 
-    // Форматируем в локализованный формат без времени
     return date.format('DD.MM.YYYY');
   } catch (error) {
     console.error("Ошибка форматирования даты:", error);
