@@ -64,9 +64,7 @@ export class VacancyApi {
       }
 
       if (options.skills && options.skills.length > 0) {
-        options.skills.forEach((skill) => {
-          queryParams.append('skills', skill);
-        });
+        queryParams.append('skills', options.skills.join(','));
       }
 
       const url = `/api/vacancies${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
