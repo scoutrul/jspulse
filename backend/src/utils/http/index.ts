@@ -1,14 +1,9 @@
-// Интерфейсы и типы
-export type { HttpClient, HttpRequestOptions } from "./HttpClient.js";
+/**
+ * Экспорты HTTP утилит
+ */
 
-// Основные классы и фабрики
-export { KyHttpClient } from "./KyHttpClient.js";
-export { LoggingHttpClient } from "./LoggingHttpClient.js";
-export { CachingHttpClient } from "./CachingHttpClient.js";
-export {
-  createHttpClient,
-  defaultHttpClient as httpClient
-} from "./httpClientFactory.js";
+// Экспортируем весь функционал из нового объединенного файла
+export * from "./HttpClient.js";
 
-// Адаптеры для внешних API
+// Адаптеры для внешних API оставляем
 export { HeadHunterClient } from "./adapters/HeadHunterClient.js"; 
