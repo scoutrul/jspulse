@@ -25,6 +25,9 @@ services:
     depends_on:
       mongodb:
         condition: service_healthy
+    volumes:
+      # Монтируем локальную сборку бэкенда в контейнер
+      - ./backend/dist:/app/backend/dist:ro
     environment:
       - PORT=3001
       - MONGO_URI=mongodb://mongodb:27017/jspulse
@@ -47,6 +50,9 @@ services:
     depends_on:
       backend:
         condition: service_healthy
+    volumes:
+      # Монтируем локальную сборку фронтенда в контейнер
+      - ./frontend/build:/app/frontend/build:ro
     environment:
       - PORT=3000
       - NODE_ENV=development

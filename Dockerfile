@@ -16,16 +16,30 @@ COPY shared/package.json ./shared/
 # Install dependencies using pnpm
 RUN pnpm install
 
-# Copy all source code
+# Копируем все исходники
 COPY shared/ ./shared/
 COPY backend/ ./backend/
 COPY frontend/ ./frontend/
 
-# Build packages in correct order
+# Всегда собираем shared пакет
 RUN pnpm --filter @jspulse/shared build
-RUN pnpm --filter @jspulse/backend build
-RUN pnpm --filter @jspulse/frontend install ky
-RUN pnpm --filter @jspulse/frontend build
+
+# Проверяем и собираем бэкенд только если локальная сборка не существует
+RUN if [ ! -d "./backend/dist" ] || [ -z "$(ls -A ./backend/dist)" ]; then \
+      echo "Building backend..." && \
+      pnpm --filter @jspulse/backend build; \
+    else \
+      echo "Using local backend build"; \
+    fi
+
+# Проверяем и собираем фронтенд только если локальная сборка не существует
+RUN if [ ! -d "./frontend/build" ] || [ -z "$(ls -A ./frontend/build)" ]; then \
+      echo "Building frontend..." && \
+      pnpm --filter @jspulse/frontend install ky && \
+      pnpm --filter @jspulse/frontend build; \
+    else \
+      echo "Using local frontend build"; \
+    fi
 
 # Backend stage
 FROM node:20-alpine AS backend-stage
