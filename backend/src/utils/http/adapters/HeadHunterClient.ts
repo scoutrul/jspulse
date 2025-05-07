@@ -1,6 +1,4 @@
-import { HttpClient, HttpRequestOptions } from "../HttpClient.js";
-import { KyHttpClient } from "../KyHttpClient.js";
-import { LoggingHttpClient } from "../LoggingHttpClient.js";
+import { HttpClient, createHttpClient } from "../HttpClient.js";
 
 // Интерфейсы для типов данных HeadHunter API
 export interface HHVacancy {
@@ -59,22 +57,17 @@ export class HeadHunterClient {
     userAgent?: string;
     logging?: boolean;
   } = {}) {
-    // Создаем базовый HTTP-клиент
-    let client: HttpClient = new KyHttpClient("https://api.hh.ru/", {
-      headers: {
+    // Создаем HTTP-клиент с нужными настройками
+    this.httpClient = createHttpClient({
+      baseUrl: "https://api.hh.ru/",
+      logging: options.logging,
+      defaultHeaders: {
         "User-Agent": options.userAgent || "JS-Pulse/1.0 (jspulse.ru)",
         "Accept": "application/json"
       },
       retry: 2,
       timeout: 15000
     });
-
-    // Если нужно логирование, оборачиваем в декоратор
-    if (options.logging) {
-      client = new LoggingHttpClient(client);
-    }
-
-    this.httpClient = client;
   }
 
   /**

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { VacancyWithHtml } from "@jspulse/shared";
-  import { VacancyDTOSchema } from "@jspulse/shared";
-  import { formatDate } from "$lib/utils/date.utils";
+  import type { VacancyDTO } from "@jspulse/shared";
+  import { z } from "zod";
+  import { formatDate } from "$lib/utils/dayjs.utils";
   // Импортируем иконки напрямую из .svelte файлов
   import BuildingOffice from 'svelte-heros-v2/BuildingOffice.svelte';
   import MapPin from 'svelte-heros-v2/MapPin.svelte';
@@ -14,6 +14,28 @@
   import CalendarDays from 'svelte-heros-v2/CalendarDays.svelte';
   import ArrowTopRightOnSquare from 'svelte-heros-v2/ArrowTopRightOnSquare.svelte';
 
+  // Определяем VacancyDTOSchema локально для валидации
+  const VacancyDTOSchema = z.object({
+    _id: z.string(),
+    title: z.string(),
+    company: z.string().nullable().optional(),
+    description: z.string().nullable().optional(),
+    location: z.string().nullable().optional(),
+    skills: z.array(z.string()).default([]),
+    url: z.string().nullable().optional(),
+    source: z.string(),
+    publishedAt: z.date().nullable().optional(),
+    salaryFrom: z.number().nullable().optional(),
+    salaryTo: z.number().nullable().optional(),
+    salaryCurrency: z.string().nullable().optional(),
+    experience: z.string().nullable().optional(),
+    employment: z.string().nullable().optional(),
+    schedule: z.string().nullable().optional(),
+    address: z.string().nullable().optional(),
+    htmlDescription: z.string().nullable().optional()
+  });
+
+  type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
   export let vacancy: VacancyWithHtml;
   // Параметр для автоматического раскрытия описания
   export let expandDescription = false;
