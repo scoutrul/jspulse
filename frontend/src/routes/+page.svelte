@@ -7,10 +7,11 @@
   import LoadingIndicator from "$lib/components/LoadingIndicator.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import { vacancyService } from "$lib/services/vacancy.service";
+  import { vacancyStore } from "$lib/stores/vacancyStore";
+  import { get } from 'svelte/store';
 
   export let data: PageData;
 
-  // Функция приведения данных к ожидаемому формату
   function convertVacancy(v: any): VacancyWithHtml {
     return {
       ...v,
@@ -18,34 +19,96 @@
     };
   }
 
-  // Состояние данных
-  let displayedVacancies = (data.initialVacancies || []).map(convertVacancy);
+  // Инициализация store начальными данными
+  vacancyStore.init({
+    vacancies: (data.initialVacancies || []).map(convertVacancy),
+    total: data.totalCount || 0,
+    page: data.page ?? 0,
+    totalPages: data.totalPages ?? 0,
+    limit: data.limit ?? 10,
+    selectedSkills: [],
+    loading: false,
+    error: data.error || null
+  });
+
+  let availableSkills: string[] = data.availableSkills || [];
+
+  // Подписка на store
+  $: store = $vacancyStore;
+
+  let selectedSkills: string[] = [];
+  let displayedVacancies: VacancyWithHtml[] = (data.initialVacancies || []).map(convertVacancy);
   let totalVacancies: number = data.totalCount || 0;
   let currentPage: number = data.page ?? 0;
   let totalPages: number = data.totalPages ?? 0;
-  let limit: number = data.limit ?? 10;
-
-  // Состояние фильтров
-  let availableSkills: string[] = data.availableSkills || [];
-  let selectedSkills: string[] = [];
-
-  // Состояние UI
-  let loadingMore = false;
-  let loadingFilter = false;
+  let loading = false;
   let clientError: string | null = data.error || null;
 
-  const loadMoreVacancies = async () => {
-    if (loadingMore || currentPage + 1 >= totalPages) return;
-    loadingMore = true;
-    
-    const nextPage = currentPage + 1;
-    
+  // Фильтрация
+  async function handleSkillsChange(skills: string[]) {
+    selectedSkills = skills;
+    loading = true;
     const response = await vacancyService.fetchVacanciesClient({
-      page: nextPage,
-      limit,
+      page: 0,
+      limit: store.limit,
       skills: selectedSkills
     });
-    
+    if (response.error) {
+      displayedVacancies = [];
+      totalVacancies = 0;
+      totalPages = 0;
+      currentPage = 0;
+      clientError = response.error;
+    } else {
+      displayedVacancies = response.vacancies.map(convertVacancy);
+      totalVacancies = response.total;
+      totalPages = response.totalPages;
+      currentPage = response.page;
+      clientError = null;
+    }
+    loading = false;
+  }
+
+  // Сброс фильтра
+  async function handleReset() {
+    selectedSkills = [];
+    loading = true;
+    const response = await vacancyService.fetchVacanciesClient({
+      page: 0,
+      limit: store.limit,
+      skills: []
+    });
+    if (response.error) {
+      displayedVacancies = [];
+      totalVacancies = 0;
+      totalPages = 0;
+      currentPage = 0;
+      clientError = response.error;
+    } else {
+      displayedVacancies = response.vacancies.map(convertVacancy);
+      totalVacancies = response.total;
+      totalPages = response.totalPages;
+      currentPage = response.page;
+      clientError = null;
+    }
+    loading = false;
+  }
+
+  // Клик по тегу-навыку
+  function handleSkillClick(event: CustomEvent<string>) {
+    handleSkillsChange([event.detail]);
+  }
+
+  // Пагинация
+  async function loadMoreVacancies() {
+    if (loading || currentPage + 1 >= totalPages) return;
+    loading = true;
+    const nextPage = currentPage + 1;
+    const response = await vacancyService.fetchVacanciesClient({
+      page: nextPage,
+      limit: store.limit,
+      skills: selectedSkills
+    });
     if (response.error) {
       clientError = response.error;
     } else {
@@ -55,39 +118,7 @@
       totalPages = response.totalPages;
       clientError = null;
     }
-    
-    loadingMore = false;
-  };
-
-  // Реактивный блок для перезагрузки при изменении фильтров
-  $: {
-    if (selectedSkills) {
-      loadingFilter = true;
-      displayedVacancies = [];
-      currentPage = -1; // Сброс на первую страницу
-      
-      // Небольшая задержка для обновления UI перед запросом
-      setTimeout(async () => {
-        const response = await vacancyService.fetchVacanciesClient({
-          page: 0,
-          limit,
-          skills: selectedSkills
-        });
-        
-        if (response.error) {
-          clientError = response.error;
-          displayedVacancies = [];
-        } else {
-          displayedVacancies = response.vacancies.map(convertVacancy);
-          currentPage = response.page;
-          totalVacancies = response.total;
-          totalPages = response.totalPages;
-          clientError = null;
-        }
-        
-        loadingFilter = false;
-      }, 0);
-    }
+    loading = false;
   }
 </script>
 
@@ -96,21 +127,21 @@
 </svelte:head>
 
 <main>
-  <Filters bind:selectedSkills {availableSkills} />
+  <Filters {availableSkills} {selectedSkills} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
 
-  {#if loadingFilter}
+  {#if loading}
     <LoadingIndicator text="Применение фильтров..." />
   {/if}
 
   <ErrorMessage message={clientError} />
 
-  <VacancyList vacancies={displayedVacancies} {totalVacancies} {loadingFilter} {clientError} />
+  <VacancyList {displayedVacancies} totalVacancies={totalVacancies} loadingFilter={loading} clientError={clientError} on:skillClick={handleSkillClick} />
 
-  {#if !loadingFilter && currentPage + 1 < totalPages}
+  {#if !loading && currentPage + 1 < totalPages}
     <LoadMoreButton
-      loading={loadingMore}
-      disabled={loadingMore}
-      {limit}
+      loading={loading}
+      disabled={loading}
+      {store.limit}
       on:click={loadMoreVacancies}
     />
   {/if}

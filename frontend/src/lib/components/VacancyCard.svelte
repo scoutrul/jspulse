@@ -14,6 +14,8 @@
   import ArrowTopRightOnSquare from 'svelte-heros-v2/ArrowTopRightOnSquare.svelte';
   import { VacancyDTOSchema } from '@jspulse/shared';
   import type { VacancyWithHtml } from "@jspulse/shared";
+  import { vacancyStore } from '../stores/vacancyStore';
+  import { createEventDispatcher } from 'svelte';
 
   // type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
   export let vacancy: VacancyWithHtml;
@@ -33,6 +35,12 @@
   $: hasSalary = validVacancy.salaryFrom || validVacancy.salaryTo || validVacancy.salaryCurrency;
   $: hasDetails = validVacancy.experience || validVacancy.employment || validVacancy.schedule || validVacancy.address;
   $: hasSkills = validVacancy.skills && validVacancy.skills.length > 0;
+
+  const dispatch = createEventDispatcher();
+
+  function handleSkillClick(skill: string) {
+    dispatch('skillClick', skill);
+  }
 </script>
 
 <li>
@@ -95,7 +103,9 @@
     <div class="skills">
       <Tag size="18" /><strong>Навыки:</strong>
       {#each validVacancy.skills as skill}
-        <span class="skill-tag">{skill}</span>
+        <button type="button" class="skill-tag" on:click={() => handleSkillClick(skill)}>
+          {skill}
+        </button>
       {/each}
     </div>
   {/if}

@@ -1,13 +1,16 @@
 <script lang="ts">
-  import type { VacancyDTO, VacancyWithHtml } from "@jspulse/shared";
+  import type { VacancyWithHtml } from "@jspulse/shared";
   import VacancyCard from "$lib/components/VacancyCard.svelte";
   import Briefcase from 'svelte-heros-v2/Briefcase.svelte';
   import MagnifyingGlass from 'svelte-heros-v2/MagnifyingGlass.svelte';
+  import { createEventDispatcher } from 'svelte';
 
   export let vacancies: VacancyWithHtml[] = [];
   export let totalVacancies: number = 0;
   export let loadingFilter: boolean = false;
   export let clientError: string | null = null;
+
+  const dispatch = createEventDispatcher();
 
   $: vacanciesCountText = (() => {
     const count = vacancies?.length ?? 0;
@@ -18,6 +21,10 @@
 
   $: showNoVacanciesMessage = !loadingFilter && !clientError && vacancies && vacancies.length === 0;
   $: showVacancyList = !loadingFilter && vacancies && vacancies.length > 0;
+
+  function handleSkillClick(event: CustomEvent<string>) {
+    dispatch('skillClick', event.detail);
+  }
 </script>
 
 <div class="vacancies" class:loading={loadingFilter}>
@@ -36,11 +43,10 @@
     {:else if showVacancyList}
       <ul>
         {#each vacancies as vacancy (vacancy._id)}
-          <VacancyCard {vacancy} />
+          <VacancyCard {vacancy} on:skillClick={handleSkillClick} />
         {/each}
       </ul>
     {/if}
-    <!-- Кнопка LoadMore будет добавлена позже как отдельный компонент или слот -->
   {/if}
 </div>
 

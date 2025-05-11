@@ -1,8 +1,19 @@
 <script lang="ts">
   import { AdjustmentsHorizontal, Tag } from 'svelte-heros-v2';
-  
+  import { createEventDispatcher } from 'svelte';
   export let availableSkills: string[] = [];
   export let selectedSkills: string[] = [];
+  const dispatch = createEventDispatcher();
+
+  function handleChange(skill: string) {
+    let newSkills = selectedSkills.includes(skill)
+      ? selectedSkills.filter(s => s !== skill)
+      : [...selectedSkills, skill];
+    dispatch('change', newSkills);
+  }
+  function handleReset() {
+    dispatch('reset');
+  }
 </script>
 
 <section class="filters">
@@ -14,12 +25,13 @@
     <div class="skills-list">
       {#each availableSkills as skill (skill)}
         <label>
-          <input type="checkbox" bind:group={selectedSkills} value={skill} />
+          <input type="checkbox" checked={selectedSkills.includes(skill)} on:change={() => handleChange(skill)} />
           <Tag size="16" />
           {skill}
         </label>
       {/each}
     </div>
+    <button type="button" class="reset-btn" on:click={handleReset}>Сбросить фильтр</button>
   {:else}
     <p>Нет доступных навыков для фильтрации.</p>
   {/if}
@@ -75,5 +87,18 @@
     background-color: #e7f3ff;
     border-color: #007bff;
     font-weight: 500;
+  }
+  .reset-btn {
+    margin-top: 1rem;
+    padding: 0.5rem 1.2rem;
+    background: #eee;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 1rem;
+  }
+  .reset-btn:hover {
+    background: #e7f3ff;
+    border-color: #007bff;
   }
 </style>
