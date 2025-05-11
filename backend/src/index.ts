@@ -3,6 +3,7 @@ import "dotenv/config";
 import cors from "cors";
 import { connectDB } from "./config/db.js";
 import vacancyRoutes from "./routes/vacancyRoutes.js";
+import testRoutes from "./routes/testRoutes.js";
 import { logger, errorHandler, authGuard, AppError } from "./middleware/index.js";
 
 const app: Express = express();
@@ -23,6 +24,7 @@ app.get("/", (req: Request, res: Response) => {
 });
 
 app.use("/api/vacancies", vacancyRoutes);
+app.use("/api/test", testRoutes);
 
 // Обработка ошибок 404 - используем обработчик, который не конфликтует с path-to-regexp
 // Избегаем использования динамических параметров в маршрутах со звездочкой
