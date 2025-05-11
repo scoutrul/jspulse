@@ -51,8 +51,6 @@ export class VacancyApi {
    */
   async fetchVacancies(options: VacanciesOptions = {}): Promise<VacanciesResponse> {
     try {
-      logger.debug(this.CONTEXT, 'Запрос вакансий с параметрами', options);
-
       const queryParams = new URLSearchParams();
 
       if (options.limit) {
@@ -67,9 +65,15 @@ export class VacancyApi {
         queryParams.append('skills', options.skills.join(','));
       }
 
-      const url = `/api/vacancies${queryParams.toString() ? `?${queryParams.toString()}` : ''}`;
+      // Конструируем URL с параметрами пагинации и фильтрации
+      const baseApiUrl = `/api/vacancies`;
+      const url = baseApiUrl + (queryParams.toString() ? `?${queryParams.toString()}` : '');
 
-      const response = await this.httpClient.get(url);
+      // Делаем прямой запрос к API с обходом middleware (для отладки)
+      const response = typeof window !== 'undefined'
+        ? await fetch(`http://localhost:3001${url}`)
+          .then(res => res.json())
+        : await this.httpClient.get(url);
 
       // Валидируем данные через схему
       const validationResult = VacancyListResponseSchema.safeParse(response);
@@ -84,11 +88,6 @@ export class VacancyApi {
       // Трансформируем данные в нужный формат
       // @ts-ignore: salaryFrom и salaryTo преобразуются из null в undefined в функции transformVacancies
       const transformedVacancies = transformVacancies(validData.data) as VacancyDTO[];
-
-      logger.debug(this.CONTEXT, 'Получено вакансий', {
-        count: transformedVacancies.length,
-        total: validData.meta.totalItems
-      });
 
       return {
         vacancies: transformedVacancies,
@@ -108,11 +107,8 @@ export class VacancyApi {
    */
   async fetchSkills(fallbackVacancies?: VacancyDTO[]): Promise<string[]> {
     try {
-      logger.debug(this.CONTEXT, 'Запрос доступных навыков');
-
       // Если переданы вакансии, извлекаем навыки из них без запроса к API
       if (fallbackVacancies && fallbackVacancies.length > 0) {
-        logger.debug(this.CONTEXT, 'Используем локальные вакансии для получения навыков');
         return extractSkillsFromVacancies(fallbackVacancies);
       }
 
@@ -125,7 +121,6 @@ export class VacancyApi {
         return [];
       }
 
-      logger.debug(this.CONTEXT, `Получено ${typedResponse.data.length} навыков`);
       return typedResponse.data as string[];
     } catch (error) {
       logger.error(this.CONTEXT, 'Ошибка при загрузке навыков', error);
@@ -138,8 +133,6 @@ export class VacancyApi {
    */
   async fetchVacancyById(id: string, sanitizeHtml?: (html: string) => string): Promise<VacancyDTO | null> {
     try {
-      logger.debug(this.CONTEXT, `Запрос вакансии с ID: ${id}`);
-
       const response = await this.httpClient.get(`/api/vacancies/${id}`);
 
       // Валидируем данные через схему
@@ -161,7 +154,6 @@ export class VacancyApi {
         } as VacancyDTO;
       }
 
-      logger.debug(this.CONTEXT, `Вакансия получена: ${vacancy.title}`);
       return vacancy;
     } catch (error) {
       logger.error(this.CONTEXT, `Ошибка при загрузке вакансии ${id}`, error);
