@@ -8,7 +8,6 @@
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import { vacancyService } from "$lib/services/vacancy.service";
   import { vacancyStore } from "$lib/stores/vacancyStore";
-  import { get } from 'svelte/store';
 
   export let data: PageData;
 
@@ -36,62 +35,52 @@
   // Подписка на store
   $: store = $vacancyStore;
 
-  let selectedSkills: string[] = [];
-  let displayedVacancies: VacancyWithHtml[] = (data.initialVacancies || []).map(convertVacancy);
-  let totalVacancies: number = data.totalCount || 0;
-  let currentPage: number = data.page ?? 0;
-  let totalPages: number = data.totalPages ?? 0;
-  let loading = false;
-  let clientError: string | null = data.error || null;
-
   // Фильтрация
   async function handleSkillsChange(skills: string[]) {
-    selectedSkills = skills;
-    loading = true;
+    vacancyStore.setSkills(skills);
+    vacancyStore.setLoading(true);
     const response = await vacancyService.fetchVacanciesClient({
       page: 0,
       limit: store.limit,
-      skills: selectedSkills
+      skills
     });
     if (response.error) {
-      displayedVacancies = [];
-      totalVacancies = 0;
-      totalPages = 0;
-      currentPage = 0;
-      clientError = response.error;
+      vacancyStore.setVacancies([], 0, 0, 0);
+      vacancyStore.setError(response.error);
     } else {
-      displayedVacancies = response.vacancies.map(convertVacancy);
-      totalVacancies = response.total;
-      totalPages = response.totalPages;
-      currentPage = response.page;
-      clientError = null;
+      vacancyStore.setVacancies(
+        response.vacancies.map(convertVacancy),
+        response.total,
+        response.totalPages,
+        response.page
+      );
+      vacancyStore.setError(null);
     }
-    loading = false;
+    vacancyStore.setLoading(false);
   }
 
   // Сброс фильтра
   async function handleReset() {
-    selectedSkills = [];
-    loading = true;
+    vacancyStore.setSkills([]);
+    vacancyStore.setLoading(true);
     const response = await vacancyService.fetchVacanciesClient({
       page: 0,
       limit: store.limit,
       skills: []
     });
     if (response.error) {
-      displayedVacancies = [];
-      totalVacancies = 0;
-      totalPages = 0;
-      currentPage = 0;
-      clientError = response.error;
+      vacancyStore.setVacancies([], 0, 0, 0);
+      vacancyStore.setError(response.error);
     } else {
-      displayedVacancies = response.vacancies.map(convertVacancy);
-      totalVacancies = response.total;
-      totalPages = response.totalPages;
-      currentPage = response.page;
-      clientError = null;
+      vacancyStore.setVacancies(
+        response.vacancies.map(convertVacancy),
+        response.total,
+        response.totalPages,
+        response.page
+      );
+      vacancyStore.setError(null);
     }
-    loading = false;
+    vacancyStore.setLoading(false);
   }
 
   // Клик по тегу-навыку
@@ -101,24 +90,44 @@
 
   // Пагинация
   async function loadMoreVacancies() {
-    if (loading || currentPage + 1 >= totalPages) return;
-    loading = true;
-    const nextPage = currentPage + 1;
-    const response = await vacancyService.fetchVacanciesClient({
-      page: nextPage,
-      limit: store.limit,
-      skills: selectedSkills
-    });
-    if (response.error) {
-      clientError = response.error;
-    } else {
-      displayedVacancies = [...displayedVacancies, ...response.vacancies.map(convertVacancy)];
-      currentPage = nextPage;
-      totalVacancies = response.total;
-      totalPages = response.totalPages;
-      clientError = null;
+    if (store.loading || store.page + 1 >= store.totalPages) return;
+    
+    vacancyStore.setLoading(true);
+    const nextPage = store.page + 1;
+    
+    console.log(`Загружаем дополнительные вакансии: страница ${nextPage}, текущая страница ${store.page}, limit=${store.limit}`);
+    
+    try {
+      // Прямой запрос к API с обходом клиента
+      const url = `http://localhost:3001/api/vacancies?page=${nextPage}&limit=${store.limit}${store.selectedSkills.length ? '&skills=' + store.selectedSkills.join(',') : ''}`;
+      console.log('Прямой запрос к URL:', url);
+      
+      const fetchResponse = await fetch(url);
+      const response = await fetchResponse.json();
+      
+      console.log('Ответ API при пагинации:', response);
+      
+      if (!response.success) {
+        vacancyStore.setError('Ошибка при получении данных');
+      } else if (response.data && response.data.length > 0) {
+        const newVacancies = response.data.map(convertVacancy);
+        vacancyStore.appendVacancies(
+          newVacancies,
+          response.meta.totalItems,
+          response.meta.totalPages,
+          response.meta.page
+        );
+        vacancyStore.setError(null);
+      } else {
+        console.warn('Получен пустой список вакансий при пагинации');
+        vacancyStore.setError('Не удалось загрузить дополнительные вакансии');
+      }
+    } catch (err) {
+      console.error('Ошибка при загрузке дополнительных вакансий:', err);
+      vacancyStore.setError('Не удалось загрузить дополнительные вакансии');
+    } finally {
+      vacancyStore.setLoading(false);
     }
-    loading = false;
   }
 </script>
 
@@ -127,21 +136,28 @@
 </svelte:head>
 
 <main>
-  <Filters {availableSkills} {selectedSkills} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
+  <Filters {availableSkills} selectedSkills={store.selectedSkills} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
 
-  {#if loading}
+  {#if store.loading && store.vacancies.length === 0}
     <LoadingIndicator text="Применение фильтров..." />
   {/if}
 
-  <ErrorMessage message={clientError} />
+  <ErrorMessage message={store.error} />
 
-  <VacancyList {displayedVacancies} totalVacancies={totalVacancies} loadingFilter={loading} clientError={clientError} on:skillClick={handleSkillClick} />
+  <VacancyList 
+    vacancies={store.vacancies} 
+    totalVacancies={store.total} 
+    loadingFilter={store.loading && store.vacancies.length === 0} 
+    loadingMore={store.loading && store.vacancies.length > 0}
+    clientError={store.error} 
+    on:skillClick={handleSkillClick} 
+  />
 
-  {#if !loading && currentPage + 1 < totalPages}
+  {#if !store.loading && store.page + 1 < store.totalPages}
     <LoadMoreButton
-      loading={loading}
-      disabled={loading}
-      {store.limit}
+      loading={store.loading}
+      disabled={store.loading}
+      limit={store.limit}
       on:click={loadMoreVacancies}
     />
   {/if}

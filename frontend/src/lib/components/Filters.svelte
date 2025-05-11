@@ -3,7 +3,10 @@
   import { createEventDispatcher } from 'svelte';
   export let availableSkills: string[] = [];
   export let selectedSkills: string[] = [];
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    change: string[];
+    reset: void;
+  }>();
 
   function handleChange(skill: string) {
     let newSkills = selectedSkills.includes(skill)

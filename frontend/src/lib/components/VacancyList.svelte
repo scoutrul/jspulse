@@ -9,8 +9,11 @@
   export let totalVacancies: number = 0;
   export let loadingFilter: boolean = false;
   export let clientError: string | null = null;
+  export let loadingMore: boolean = false;
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    skillClick: string;
+  }>();
 
   $: vacanciesCountText = (() => {
     const count = vacancies?.length ?? 0;
@@ -41,7 +44,7 @@
         Вакансий по выбранным фильтрам не найдено
       </p>
     {:else if showVacancyList}
-      <ul>
+      <ul class:loading-more={loadingMore}>
         {#each vacancies as vacancy (vacancy._id)}
           <VacancyCard {vacancy} on:skillClick={handleSkillClick} />
         {/each}
@@ -58,6 +61,10 @@
   .vacancies.loading {
     opacity: 0.5;
     pointer-events: none;
+  }
+
+  ul.loading-more {
+    opacity: 0.8;
   }
 
   .vacancies h2 {

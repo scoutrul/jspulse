@@ -6,7 +6,9 @@
   export let disabled: boolean = false;
   export let limit: number = 10;
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    click: void;
+  }>();
 
   function handleClick() {
     dispatch("click");

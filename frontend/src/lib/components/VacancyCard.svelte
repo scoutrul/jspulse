@@ -36,7 +36,9 @@
   $: hasDetails = validVacancy.experience || validVacancy.employment || validVacancy.schedule || validVacancy.address;
   $: hasSkills = validVacancy.skills && validVacancy.skills.length > 0;
 
-  const dispatch = createEventDispatcher();
+  const dispatch = createEventDispatcher<{
+    skillClick: string;
+  }>();
 
   function handleSkillClick(skill: string) {
     dispatch('skillClick', skill);
