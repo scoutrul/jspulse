@@ -62,9 +62,18 @@ router.get("/skills", async (req: Request, res: Response) => {
 // Используем правильную типизацию для Express
 router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Response) => {
   console.log("[GET /api/vacancies] Запрос получен");
+  console.log("[GET /api/vacancies] Query параметры:", req.query);
+  console.log("[GET /api/vacancies] Сырые параметры req.query.page:", req.query.page, "типа:", typeof req.query.page);
 
-  // Используем validatedQuery для проверенных параметров, а skills берем напрямую из query
-  const { limit, page } = req.validatedQuery || req.query;
+  // Проверяем, что происходит с validatedQuery
+  console.log("[GET /api/vacancies] validatedQuery:", req.validatedQuery);
+
+  // Получаем параметры из validatedQuery после валидации 
+  const page = req.validatedQuery.page;
+  const limit = req.validatedQuery.limit;
+
+  console.log(`[GET /api/vacancies] Обработанные параметры: page=${page}, limit=${limit}`);
+
   const skills = req.query.skills;
 
   const query: any = {};
@@ -84,9 +93,14 @@ router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Resp
     console.log("[GET /api/vacancies] Начинаем запрос к БД с query:", query);
     const total = await Vacancy.countDocuments(query);
     console.log(`[GET /api/vacancies] Найдено total: ${total}`);
+
+    // Рассчитываем offset для пропуска записей вместо использования page
+    const offset = page * limit;
+    console.log(`[GET /api/vacancies] Используем offset=${offset} (page=${page} * limit=${limit})`);
+
     const vacancies = await Vacancy.find(query)
       .limit(limit)
-      .skip(page * limit)
+      .skip(offset)
       .sort({ publishedAt: -1 })
       .lean<VacancyDTO[]>();
     console.log(`[GET /api/vacancies] Получено вакансий из БД: ${vacancies.length}`);
@@ -120,8 +134,8 @@ router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Resp
       success: true,
       data: validatedVacancies,
       meta: {
-        page,
-        limit,
+        page: page,
+        limit: limit,
         totalItems: total,
         totalPages: Math.ceil(total / limit),
         hasNextPage: page < Math.ceil(total / limit) - 1,
