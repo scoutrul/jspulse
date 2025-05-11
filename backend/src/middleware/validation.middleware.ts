@@ -51,19 +51,14 @@ export const validate = (
         return;
       }
 
-      // Отладочный вывод
-      console.log(`[validation.middleware] Прошли валидацию: location=${location}, данные:`, result.data);
-
       // Обновляем данные запроса валидированным результатом
       if (location === SchemaLocation.QUERY) {
         // Создаем validatedQuery и также обновляем оригинальные параметры в query
         req.validatedQuery = result.data;
 
-        // ИСПРАВЛЕНО: Также обновляем оригинальные параметры запроса
-        // для методов, которые не используют validatedQuery
+        // Важно: обновляем оригинальные параметры запроса в req.query
+        // для методов, которые не используют validatedQuery напрямую
         Object.assign(req.query, result.data);
-
-        console.log('[validation.middleware] После валидации req.query:', req.query);
       } else {
         req[location] = result.data;
       }

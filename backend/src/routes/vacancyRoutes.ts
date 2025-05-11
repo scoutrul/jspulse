@@ -27,7 +27,6 @@ const SkillsQuerySchema = z.object({
 
 // Эндпоинт для получения списка всех доступных навыков
 router.get("/skills", async (req: Request, res: Response) => {
-  console.log("[GET /api/vacancies/skills] Запрос на получение всех навыков");
   try {
     // Используем агрегацию MongoDB для получения уникальных навыков
     const skillsAggregation = await Vacancy.aggregate([
@@ -37,7 +36,6 @@ router.get("/skills", async (req: Request, res: Response) => {
     ]);
 
     const skills = skillsAggregation.map((item) => item._id);
-    console.log(`[GET /api/vacancies/skills] Найдено ${skills.length} уникальных навыков`);
 
     res.json({
       success: true,
@@ -59,21 +57,11 @@ router.get("/skills", async (req: Request, res: Response) => {
   }
 });
 
-// Используем правильную типизацию для Express
+// Получение списка вакансий с пагинацией и фильтрацией
 router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Response) => {
-  console.log("[GET /api/vacancies] Запрос получен");
-  console.log("[GET /api/vacancies] Query параметры:", req.query);
-  console.log("[GET /api/vacancies] Сырые параметры req.query.page:", req.query.page, "типа:", typeof req.query.page);
-
-  // Проверяем, что происходит с validatedQuery
-  console.log("[GET /api/vacancies] validatedQuery:", req.validatedQuery);
-
   // Получаем параметры из validatedQuery после валидации 
   const page = req.validatedQuery.page;
   const limit = req.validatedQuery.limit;
-
-  console.log(`[GET /api/vacancies] Обработанные параметры: page=${page}, limit=${limit}`);
-
   const skills = req.query.skills;
 
   const query: any = {};
@@ -84,26 +72,21 @@ router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Resp
       : (typeof skills === 'string' ? skills.split(',').map(s => s.trim()) : []);
 
     if (skillsArray.length > 0) {
-      console.log("[GET /api/vacancies] Фильтрация по навыкам:", skillsArray);
       query.skills = { $in: skillsArray };
     }
   }
 
   try {
-    console.log("[GET /api/vacancies] Начинаем запрос к БД с query:", query);
     const total = await Vacancy.countDocuments(query);
-    console.log(`[GET /api/vacancies] Найдено total: ${total}`);
 
-    // Рассчитываем offset для пропуска записей вместо использования page
+    // Рассчитываем offset для пропуска записей
     const offset = page * limit;
-    console.log(`[GET /api/vacancies] Используем offset=${offset} (page=${page} * limit=${limit})`);
 
     const vacancies = await Vacancy.find(query)
       .limit(limit)
       .skip(offset)
       .sort({ publishedAt: -1 })
       .lean<VacancyDTO[]>();
-    console.log(`[GET /api/vacancies] Получено вакансий из БД: ${vacancies.length}`);
 
     // Валидируем вакансии через Zod
     const validatedVacancies = vacancies.map(vacancy => {
@@ -143,8 +126,7 @@ router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Resp
       }
     });
   } catch (error) {
-    console.error("[GET /api/vacancies] Ошибка в блоке try/catch:", error);
-    console.log("[GET /api/vacancies] Отправка ответа 500...");
+    console.error("[GET /api/vacancies] Ошибка:", error);
     res.status(500).json({
       success: false,
       error: {
@@ -156,6 +138,7 @@ router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Resp
   }
 });
 
+// Получение одной вакансии по ID
 router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Response) => {
   const { id } = req.params;
 
@@ -163,7 +146,6 @@ router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Resp
     const vacancy = await Vacancy.findById(id).lean<VacancyDTO>();
 
     if (!vacancy) {
-      console.log(`[GET /vacancies/${id}] Вакансия не найдена`);
       res.status(404).json({
         success: false,
         error: {
@@ -198,7 +180,6 @@ router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Resp
       return;
     }
 
-    console.log(`[GET /vacancies/${id}] Вакансия найдена:`, result.data.title);
     res.json({
       success: true,
       data: result.data
