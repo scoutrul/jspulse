@@ -22,7 +22,7 @@ export interface VacanciesClientResponse {
  * Сервис для работы с вакансиями, объединяющий различные источники данных
  * и предоставляющий удобные методы для клиентского и серверного кода
  */
-class VacancyService {
+export const vacancyService = {
   /**
    * Клиентский метод для загрузки вакансий с пагинацией и фильтрацией.
    * Используется на фронтенде в компонентах.
@@ -33,16 +33,12 @@ class VacancyService {
     skills?: string[];
   } = {}): Promise<VacanciesClientResponse> {
     try {
-      logger.debug(CONTEXT, 'Клиентский запрос вакансий', options);
-
-      // Используем API адаптер для получения вакансий
       const result = await vacancyApi.fetchVacancies({
         page: options.page,
         limit: options.limit,
         skills: options.skills
       });
 
-      // Преобразуем результат в клиентский формат ответа
       return {
         vacancies: result.vacancies as VacancyWithHtml[],
         total: result.total,
@@ -51,14 +47,10 @@ class VacancyService {
         totalPages: result.totalPages
       };
     } catch (error) {
-      // Обрабатываем и логируем ошибку
       const errorMessage = error instanceof Error
         ? error.message
         : 'Неизвестная ошибка при загрузке вакансий';
 
-      logger.error(CONTEXT, 'Ошибка при клиентском запросе вакансий', errorMessage);
-
-      // Возвращаем объект с ошибкой
       return {
         vacancies: [],
         total: 0,
@@ -68,7 +60,7 @@ class VacancyService {
         error: errorMessage
       };
     }
-  }
+  },
 
   /**
    * Получение списка навыков на клиенте.
@@ -83,7 +75,7 @@ class VacancyService {
       logger.error(CONTEXT, 'Ошибка при получении навыков', error);
       return [];
     }
-  }
+  },
 
   /**
    * Получение детальной информации о вакансии на клиенте.
@@ -99,7 +91,4 @@ class VacancyService {
       return null;
     }
   }
-}
-
-// Создаем и экспортируем синглтон
-export const vacancyService = new VacancyService(); 
+}; 

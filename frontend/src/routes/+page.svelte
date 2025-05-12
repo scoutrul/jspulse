@@ -18,17 +18,13 @@
     };
   }
 
-  // Инициализация store начальными данными
-  vacancyStore.init({
-    vacancies: (data.initialVacancies || []).map(convertVacancy),
-    total: data.totalCount || 0,
-    page: data.page ?? 0,
-    totalPages: data.totalPages ?? 0,
-    limit: data.limit ?? 10,
-    selectedSkills: [],
-    loading: false,
-    error: data.error || null
-  });
+  // Инициализация начальными данными с сервера
+  vacancyStore.setVacancies(
+    (data.initialVacancies || []).map(convertVacancy),
+    data.totalCount || 0,
+    data.totalPages || 0,
+    data.page || 0
+  );
 
   let availableSkills: string[] = data.availableSkills || [];
 
