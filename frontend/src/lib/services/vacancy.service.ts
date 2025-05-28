@@ -78,7 +78,7 @@ class VacancyService {
   ): Promise<string[]> {
     try {
       logger.debug(CONTEXT, 'Запрос доступных навыков');
-      return await vacancyApi.fetchSkills(fallbackVacancies);
+      return await vacancyApi.fetchSkills(); // Remove the parameter
     } catch (error) {
       logger.error(CONTEXT, 'Ошибка при получении навыков', error);
       return [];
@@ -102,4 +102,4 @@ class VacancyService {
 }
 
 // Создаем и экспортируем синглтон
-export const vacancyService = new VacancyService(); 
+export const vacancyService = new VacancyService();

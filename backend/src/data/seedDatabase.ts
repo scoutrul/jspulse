@@ -52,6 +52,19 @@ async function seedDatabase() {
     });
     console.log(`Доступно ${uniqueSkills.size} уникальных навыков для фильтрации:`);
     console.log(Array.from(uniqueSkills).join(", "));
+
+    // Дополнительная проверка: получаем все уникальные навыки из ВСЕХ вакансий в БД
+    console.log("\nПроверка всех уникальных навыков в базе данных после сидинга:");
+    const allSkillsAggregation = await Vacancy.aggregate([
+      { $match: { skills: { $exists: true, $ne: [] } } }, // Убедимся, что skills существуют и не пустые
+      { $unwind: "$skills" },
+      { $group: { _id: "$skills" } },
+      { $sort: { _id: 1 } },
+    ]);
+    const allUniqueSkillsFromDB = allSkillsAggregation.map((item) => item._id);
+    console.log(`Найдено всего ${allUniqueSkillsFromDB.length} уникальных навыков во всей коллекции Vacancy:`);
+    console.log(allUniqueSkillsFromDB.join(", "));
+
   } catch (error) {
     if (error instanceof Error) {
       console.error("Ошибка при заполнении базы данных:", error.message);

@@ -6,5 +6,5 @@ export type VacancyDTO = ZodVacancyDTO;
 
 // Расширенный тип вакансии с HTML-описанием для фронтенда
 export type VacancyWithHtml = VacancyDTO & {
-  htmlDescription?: string | null;
+  htmlDescription?: string; // Убираем | null
 };

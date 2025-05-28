@@ -25,15 +25,13 @@ export const fetchVacanciesServer = async (
  * Получение доступных навыков на сервере
  * 
  * @param fetch Функция fetch из SvelteKit
- * @param fallbackVacancies Вакансии для извлечения навыков в случае ошибки API
  */
 export const fetchSkillsServer = async (
-  fetch: typeof globalThis.fetch,
-  fallbackVacancies?: VacancyDTO[]
+  fetch: typeof globalThis.fetch
 ): Promise<string[]> => {
   // Создаем экземпляр API для использования на сервере
   const vacancyApi = new VacancyApi({ fetch });
-  return vacancyApi.fetchSkills(fallbackVacancies);
+  return vacancyApi.fetchSkills();
 };
 
 /**

@@ -106,15 +106,9 @@ export class VacancyApi {
   /**
    * Получение списка навыков на основе существующих вакансий
    */
-  async fetchSkills(fallbackVacancies?: VacancyDTO[]): Promise<string[]> {
+  async fetchSkills(): Promise<string[]> {
     try {
-      logger.debug(this.CONTEXT, 'Запрос доступных навыков');
-
-      // Если переданы вакансии, извлекаем навыки из них без запроса к API
-      if (fallbackVacancies && fallbackVacancies.length > 0) {
-        logger.debug(this.CONTEXT, 'Используем локальные вакансии для получения навыков');
-        return extractSkillsFromVacancies(fallbackVacancies);
-      }
+      logger.debug(this.CONTEXT, 'Запрос доступных навыков с сервера');
 
       const response = await this.httpClient.get('/api/vacancies/skills');
 
