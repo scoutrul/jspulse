@@ -22,44 +22,11 @@ export interface VacanciesClientResponse {
  * Класс для работы с вакансиями, объединяющий различные источники данных
  * и предоставляющий удобные методы для клиентского и серверного кода
  */
-class VacancyService {
-  /**
-   * Клиентский метод для загрузки вакансий с пагинацией и фильтрацией.
-   * Используется на фронтенде в компонентах.
-   */
-  async fetchVacanciesClient(options: {
-    page?: number;
-    limit?: number;
-    skills?: string[];
-  } = {}): Promise<VacanciesClientResponse> {
-    try {
-      const result = await vacancyApi.fetchVacancies({
-        page: options.page,
-        limit: options.limit,
-        skills: options.skills
-      });
-
-      return {
-        vacancies: result.vacancies as VacancyWithHtml[],
-        total: result.total,
-        page: result.page,
-        limit: result.limit,
-        totalPages: result.totalPages
-      };
-    } catch (error) {
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Неизвестная ошибка при загрузке вакансий';
-
-      return {
-        vacancies: [],
-        total: 0,
-        page: 0,
-        limit: 10,
-        totalPages: 0,
-        error: errorMessage
-      };
-    }
+export class VacancyService {
+  // Инициализируем сервис без дополнительной конфигурации
+  // Используем готовый vacancyApi для всех операций
+  constructor() {
+    logger.debug(CONTEXT, 'Инициализация VacancyService');
   }
 
   /**
@@ -89,7 +56,46 @@ class VacancyService {
       return null;
     }
   }
+
+  /**
+   * Получение списка вакансий с поддержкой пагинации
+   * Возвращает типизированный ответ согласно DTO-схеме
+   */
+  async getVacancies(params: VacanciesOptions): Promise<VacanciesClientResponse> {
+    try {
+      logger.debug(CONTEXT, 'Запрос списка вакансий', { params });
+      
+      const result = await vacancyApi.fetchVacancies({
+        page: params.page,
+        limit: params.limit,
+        skills: params.skills
+      });
+
+      return {
+        vacancies: result.vacancies as VacancyWithHtml[],
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Неизвестная ошибка при загрузке вакансий';
+
+      logger.error(CONTEXT, 'Ошибка при получении вакансий', error);
+
+      return {
+        vacancies: [],
+        total: 0,
+        page: params.page || 1,
+        limit: params.limit || 10,
+        totalPages: 0,
+        error: errorMessage
+      };
+    }
+  }
 }
 
-// Создаем и экспортируем синглтон
+// Экспортируем singleton экземпляр для использования в приложении
 export const vacancyService = new VacancyService();
