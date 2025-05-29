@@ -105,12 +105,9 @@ export class VacancyApi {
   /**
    * Получение списка навыков на основе существующих вакансий
    */
-  async fetchSkills(fallbackVacancies?: VacancyDTO[]): Promise<string[]> {
+  async fetchSkills(): Promise<string[]> {
     try {
-      // Если переданы вакансии, извлекаем навыки из них без запроса к API
-      if (fallbackVacancies && fallbackVacancies.length > 0) {
-        return extractSkillsFromVacancies(fallbackVacancies);
-      }
+      logger.debug(this.CONTEXT, 'Запрос доступных навыков с сервера');
 
       const response = await this.httpClient.get('/api/vacancies/skills');
 
@@ -163,4 +160,4 @@ export class VacancyApi {
 }
 
 // Создаем синглтон для использования в клиентском коде
-export const vacancyApi = new VacancyApi(); 
+export const vacancyApi = new VacancyApi();

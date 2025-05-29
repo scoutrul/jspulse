@@ -113,7 +113,13 @@ async function fetchAndSaveHHVacancies() {
             await Vacancy.create(transformedData);
             pageNew++;
           } else {
-            pageExisting++;
+            // Обновляем существующую вакансию
+            // Можно использовать Object.assign и save(), или updateOne()
+            // updateOne() может быть эффективнее, т.к. не требует загрузки всего документа
+            await Vacancy.updateOne({ _id: existingVacancy._id }, transformedData);
+            // Можно добавить логирование, что вакансия была обновлена
+            // console.log(`Вакансия "${existingVacancy.title}" (ID: ${existingVacancy._id}) обновлена.`);
+            pageExisting++; // Считаем ее как "уже существующую", но обновленную
           }
         }
         totalNew += pageNew;

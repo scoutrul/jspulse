@@ -19,7 +19,6 @@ export const connectDB = async () => {
     console.log("MongoDB подключена успешно.");
   } catch (error) {
     console.error("Ошибка подключения к MongoDB:", error);
-    // В случае ошибки при инициализации, обычно лучше завершить приложение
     process.exit(1);
   }
 };

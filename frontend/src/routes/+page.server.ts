@@ -41,14 +41,14 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
 
     logger.debug(CONTEXT, `Извлечено вакансий: ${vacancies.length}, всего: ${total}`);
 
-    // Загружаем навыки через сервис, используя полученные вакансии как fallback
-    const availableSkills = await fetchSkillsServer(_fetch, vacancies);
+    // Загружаем навыки через сервис
+    const availableSkills = await fetchSkillsServer(_fetch);
     logger.debug(CONTEXT, `Получено ${availableSkills.length} навыков`);
 
     // Явно приводим типы, чтобы соответствовать VacancyWithHtml
     const vacanciesWithHtml: VacancyWithHtml[] = vacancies.map(vacancy => ({
       ...vacancy,
-      htmlDescription: vacancy.htmlDescription || null
+      htmlDescription: vacancy.htmlDescription || undefined // Изменяем null на undefined
     }));
 
     return {

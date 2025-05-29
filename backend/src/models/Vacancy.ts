@@ -1,24 +1,38 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { type IVacancy } from "@jspulse/shared";
+import { IVacancy } from "@jspulse/shared";
 
-// Интерфейс документа Mongoose для вакансии
 export interface IVacancyDocument extends IVacancy, Document {
-  // Все базовые поля уже определены в IVacancy
+  externalId: string;
+  title: string;
+  company: string;
+  location: string; // Remove ? to match IVacancy
+  url: string;
+  publishedAt: Date;
+  source: string;
+  description?: string;
+  schedule?: string;
+  skills: string[];
+  salaryFrom?: number;
+  salaryTo?: number;
+  salaryCurrency?: string;
+  experience?: string;
+  employment?: string;
+  address?: string;
+  rawData?: any;
 }
 
-// Схема для MongoDB
 const vacancySchema = new Schema<IVacancyDocument>(
   {
     externalId: { type: String, unique: true, sparse: true },
     title: { type: String, required: true },
     company: { type: String, required: true },
-    location: { type: String, required: true },
+    location: { type: String },
     url: { type: String, required: true },
     publishedAt: { type: Date, required: true },
     source: { type: String, required: true },
     description: { type: String },
     schedule: { type: String },
-    skills: [{ type: String }], // Массив строк для навыков/тегов
+    skills: [{ type: String }],
     salaryFrom: { type: Number },
     salaryTo: { type: Number },
     salaryCurrency: { type: String },
@@ -34,8 +48,6 @@ const vacancySchema = new Schema<IVacancyDocument>(
   }
 );
 
-// Индексы для оптимизации запросов
 vacancySchema.index({ publishedAt: -1 });
-vacancySchema.index({ skills: 1 }); // Индекс для быстрой фильтрации по навыкам
 
 export const Vacancy = mongoose.model<IVacancyDocument>("Vacancy", vacancySchema);

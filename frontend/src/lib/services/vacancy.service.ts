@@ -19,10 +19,10 @@ export interface VacanciesClientResponse {
 }
 
 /**
- * Сервис для работы с вакансиями, объединяющий различные источники данных
+ * Класс для работы с вакансиями, объединяющий различные источники данных
  * и предоставляющий удобные методы для клиентского и серверного кода
  */
-export const vacancyService = {
+class VacancyService {
   /**
    * Клиентский метод для загрузки вакансий с пагинацией и фильтрацией.
    * Используется на фронтенде в компонентах.
@@ -60,22 +60,20 @@ export const vacancyService = {
         error: errorMessage
       };
     }
-  },
+  }
 
   /**
    * Получение списка навыков на клиенте.
    */
-  async fetchSkillsClient(
-    fallbackVacancies?: VacancyDTO[]
-  ): Promise<string[]> {
+  async fetchSkillsClient(): Promise<string[]> {
     try {
       logger.debug(CONTEXT, 'Запрос доступных навыков');
-      return await vacancyApi.fetchSkills(fallbackVacancies);
+      return await vacancyApi.fetchSkills();
     } catch (error) {
       logger.error(CONTEXT, 'Ошибка при получении навыков', error);
       return [];
     }
-  },
+  }
 
   /**
    * Получение детальной информации о вакансии на клиенте.
@@ -91,4 +89,7 @@ export const vacancyService = {
       return null;
     }
   }
-}; 
+}
+
+// Создаем и экспортируем синглтон
+export const vacancyService = new VacancyService();
