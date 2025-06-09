@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
  */
 export async function connectToDatabase(): Promise<void> {
   try {
-    const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/jspulse';
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/jspulse';
 
     await mongoose.connect(mongoUri, {
       maxPoolSize: 10,
