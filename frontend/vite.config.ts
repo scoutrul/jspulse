@@ -9,6 +9,11 @@ export default defineConfig({
       "@jspulse/shared": path.resolve(__dirname, "../shared/src"),
     },
   },
+  build: {
+    rollupOptions: {
+      external: ['jsdom', 'dompurify']
+    }
+  },
   server: {
     host: "0.0.0.0",
     port: 3000,
