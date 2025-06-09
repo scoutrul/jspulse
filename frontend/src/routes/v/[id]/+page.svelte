@@ -1,95 +1,295 @@
 <!-- frontend/src/routes/v/[id]/+page.svelte -->
 <script lang="ts">
   import type { PageData } from "./$types";
-  import VacancyCard from "$lib/components/VacancyCard.svelte";
-  import type { VacancyDTO, VacancyWithHtml } from "@jspulse/shared";
-  import { VacancyDTOSchema } from "@jspulse/shared";
+  import { sanitizeDescription } from "$lib/utils/sanitize";
   
   export let data: PageData;
   
-  // Создаем базовую моковую вакансию для случаев, когда данных нет
-  const mockVacancy = {
-    _id: "mock-123",
-    externalId: "ext-123",
-    title: "Senior JavaScript Developer",
-    company: "JS Pulse Corp",
-    location: "Москва, Россия",
-    description: "Моковая вакансия для использования, когда реальные данные недоступны.",
-    url: "https://example.com/job/123",
-    publishedAt: new Date().toISOString(),
-    source: "Mock",
-    salaryFrom: 200000,
-    salaryTo: 300000,
-    salaryCurrency: "₽",
-    skills: ["JavaScript", "TypeScript", "React", "Node.js", "SvelteKit"],
-    experience: "от 3 лет",
-    employment: "Полная занятость",
-    schedule: "Гибкий график",
-    address: "Москва, ул. Программистов, 42"
-  };
-  
-  // Используем реальные данные, если они есть, иначе моковые
-  const rawVacancy = data.vacancy || mockVacancy;
-  
-  // Преобразуем null в undefined для совместимости типов
-  const vacancy = {
-    ...rawVacancy,
-    salaryFrom: rawVacancy.salaryFrom === null ? undefined : rawVacancy.salaryFrom,
-    salaryTo: rawVacancy.salaryTo === null ? undefined : rawVacancy.salaryTo,
-    salaryCurrency: rawVacancy.salaryCurrency === null ? undefined : rawVacancy.salaryCurrency,
-    experience: rawVacancy.experience === null ? undefined : rawVacancy.experience,
-    employment: rawVacancy.employment === null ? undefined : rawVacancy.employment,
-    address: rawVacancy.address === null ? undefined : rawVacancy.address,
-    htmlDescription: rawVacancy.htmlDescription === null ? undefined : rawVacancy.htmlDescription
-  };
-  
-  // Валидируем данные вакансии через Zod
-  $: validationResult = VacancyDTOSchema.safeParse(vacancy);
-  $: if (!validationResult.success) {
-    console.warn('[+page.svelte] Невалидные данные вакансии:', validationResult.error);
-  }
-  
-  // Используем валидированные данные для мета-тегов с явным приведением типа
-  $: validVacancy = validationResult.success 
-    ? validationResult.data as VacancyWithHtml 
-    : vacancy as VacancyWithHtml;
+  $: vacancy = data.vacancy;
+  $: sanitizedDescription = vacancy?.description ? sanitizeDescription(vacancy.description) : '';
 </script>
 
 <svelte:head>
-  <title>{validVacancy.title || "Вакансия"} - JS Пульс</title>
-  {#if validVacancy.description}
-    <meta name="description" content={validVacancy.description.substring(0, 150)} />
-  {/if}
+  <title>{vacancy?.title ? `${vacancy.title} | JS Пульс` : 'Вакансия | JS Пульс'}</title>
+  <meta name="description" content={vacancy?.description ? 
+    `${vacancy.title} в компании ${vacancy.company}. ${vacancy.description.slice(0, 150)}...` : 
+    'Детали вакансии на JS Пульс'} />
+  
+  <!-- Open Graph метаданные -->
+  <meta property="og:title" content={vacancy?.title || 'Вакансия'} />
+  <meta property="og:description" content={vacancy?.description ? 
+    `${vacancy.title} в компании ${vacancy.company}` : 
+    'Детали вакансии на JS Пульс'} />
+  <meta property="og:type" content="article" />
 </svelte:head>
 
-<main class="vacancy-detail-page">
-  <h1>Детали вакансии</h1>
-  
-  <!-- Используем карточку вакансии с автоматически раскрытым описанием и полным исходным текстом -->
-  <ul class="vacancies-list">
-    <VacancyCard 
-      vacancy={validVacancy} 
-      expandDescription={true} 
-      showFullDescription={true} 
-    />
-  </ul>
-</main>
+<div class="vacancy-detail">
+  <div class="vacancy-header">
+    <h1 class="vacancy-title">{vacancy?.title || 'Загрузка...'}</h1>
+    <div class="vacancy-meta">
+      <span class="company">{vacancy?.company}</span>
+      {#if vacancy?.location}
+        <span class="location">{vacancy.location}</span>
+      {/if}
+      {#if vacancy?.publishedAt}
+        <span class="published">
+          Опубликовано: {new Date(vacancy.publishedAt).toLocaleDateString('ru-RU')}
+        </span>
+      {/if}
+    </div>
+  </div>
+
+  <div class="vacancy-content">
+    {#if vacancy?.experience || vacancy?.employment}
+      <div class="vacancy-requirements">
+        {#if vacancy.experience}
+          <div class="requirement">
+            <strong>Опыт работы:</strong> {vacancy.experience}
+          </div>
+        {/if}
+        {#if vacancy.employment}
+          <div class="requirement">
+            <strong>Тип занятости:</strong> {vacancy.employment}
+          </div>
+        {/if}
+        {#if vacancy.schedule}
+          <div class="requirement">
+            <strong>График работы:</strong> {vacancy.schedule}
+          </div>
+        {/if}
+      </div>
+    {/if}
+
+    {#if vacancy?.skills && vacancy.skills.length > 0}
+      <div class="vacancy-skills">
+        <h3>Требуемые навыки:</h3>
+        <div class="skills-list">
+          {#each vacancy.skills as skill}
+            <span class="skill-tag">{skill}</span>
+          {/each}
+        </div>
+      </div>
+    {/if}
+
+    {#if sanitizedDescription}
+      <div class="vacancy-description">
+        <h3>Описание вакансии:</h3>
+        <div class="description-content">
+          {@html sanitizedDescription}
+        </div>
+      </div>
+    {/if}
+
+    {#if vacancy?.salaryFrom || vacancy?.salaryTo}
+      <div class="vacancy-salary">
+        <h3>Зарплата:</h3>
+        <div class="salary-range">
+          {#if vacancy.salaryFrom && vacancy.salaryTo}
+            от {vacancy.salaryFrom.toLocaleString()} до {vacancy.salaryTo.toLocaleString()}
+          {:else if vacancy.salaryFrom}
+            от {vacancy.salaryFrom.toLocaleString()}
+          {:else if vacancy.salaryTo}
+            до {vacancy.salaryTo.toLocaleString()}
+          {/if}
+          {#if vacancy.salaryCurrency}
+            {vacancy.salaryCurrency}
+          {/if}
+        </div>
+      </div>
+    {/if}
+  </div>
+
+  <div class="vacancy-actions">
+    {#if vacancy?.url}
+      <a 
+        href={vacancy.url} 
+        target="_blank" 
+        rel="noopener noreferrer"
+        class="apply-button"
+      >
+        Посмотреть на {vacancy.source || 'сайте'}
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M7 17L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M7 7H17V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </a>
+    {/if}
+    
+    <a href="/" class="back-button">
+      ← Вернуться к поиску
+    </a>
+  </div>
+</div>
 
 <style>
-  .vacancy-detail-page {
-    max-width: 900px;
+  .vacancy-detail {
+    max-width: 800px;
     margin: 0 auto;
-    padding: 1rem;
+    padding: 2rem;
+    line-height: 1.6;
   }
-  
-  h1 {
-    margin-bottom: 1.5rem;
-    font-size: 1.5rem;
-    color: #333;
+
+  .vacancy-header {
+    border-bottom: 2px solid var(--primary-color, #007acc);
+    padding-bottom: 1.5rem;
+    margin-bottom: 2rem;
   }
-  
-  .vacancies-list {
-    padding: 0;
-    margin: 0;
+
+  .vacancy-title {
+    font-size: 2rem;
+    margin: 0 0 1rem 0;
+    color: var(--text-primary, #333);
+    font-weight: 600;
+  }
+
+  .vacancy-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1rem;
+    font-size: 0.95rem;
+    color: var(--text-secondary, #666);
+  }
+
+  .company {
+    font-weight: 600;
+    color: var(--primary-color, #007acc);
+  }
+
+  .vacancy-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+  }
+
+  .vacancy-requirements {
+    background: var(--background-light, #f8f9fa);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--primary-color, #007acc);
+  }
+
+  .requirement {
+    margin-bottom: 0.5rem;
+  }
+
+  .requirement:last-child {
+    margin-bottom: 0;
+  }
+
+  .vacancy-skills h3,
+  .vacancy-description h3,
+  .vacancy-salary h3 {
+    margin: 0 0 1rem 0;
+    color: var(--text-primary, #333);
+    font-size: 1.2rem;
+  }
+
+  .skills-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+
+  .skill-tag {
+    background: var(--primary-color, #007acc);
+    color: white;
+    padding: 0.3rem 0.8rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .description-content {
+    color: var(--text-primary, #333);
+  }
+
+  .description-content :global(h1),
+  .description-content :global(h2),
+  .description-content :global(h3) {
+    margin: 1.5rem 0 1rem 0;
+    color: var(--text-primary, #333);
+  }
+
+  .description-content :global(ul),
+  .description-content :global(ol) {
+    padding-left: 2rem;
+    margin: 1rem 0;
+  }
+
+  .description-content :global(p) {
+    margin: 1rem 0;
+  }
+
+  .salary-range {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--success-color, #28a745);
+  }
+
+  .vacancy-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 3rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--border-color, #e9ecef);
+  }
+
+  .apply-button {
+    background: var(--primary-color, #007acc);
+    color: white;
+    padding: 0.8rem 1.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    transition: background-color 0.2s ease;
+  }
+
+  .apply-button:hover {
+    background: var(--primary-dark, #005fa3);
+  }
+
+  .back-button {
+    color: var(--text-secondary, #666);
+    text-decoration: none;
+    padding: 0.8rem 1.5rem;
+    border: 1px solid var(--border-color, #e9ecef);
+    border-radius: 6px;
+    transition: all 0.2s ease;
+  }
+
+  .back-button:hover {
+    background: var(--background-light, #f8f9fa);
+    color: var(--text-primary, #333);
+  }
+
+  @media (max-width: 768px) {
+    .vacancy-detail {
+      padding: 1rem;
+    }
+
+    .vacancy-title {
+      font-size: 1.5rem;
+    }
+
+    .vacancy-meta {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .vacancy-actions {
+      flex-direction: column;
+    }
+
+    .skills-list {
+      gap: 0.3rem;
+    }
+
+    .skill-tag {
+      font-size: 0.8rem;
+      padding: 0.2rem 0.6rem;
+    }
   }
 </style>
