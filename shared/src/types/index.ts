@@ -1,4 +1,8 @@
 export * from "./core/vacancy.base.js";
+export * from "./core/repository.interface.js";
+export * from "./core/vacancy-repository.interface.js";
+export * from "./core/cache.interface.js";
+export * from "./core/di-container.interface.js";
 
 export * from "./db/vacancy.model.js";
 
