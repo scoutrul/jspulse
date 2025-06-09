@@ -34,7 +34,7 @@ services:
       - NODE_ENV=production
     restart: unless-stopped
     healthcheck:
-      test: wget --no-verbose --tries=1 --spider http://localhost:3001/ || exit 1
+      test: wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
       interval: 10s
       timeout: 5s
       retries: 5
@@ -51,7 +51,7 @@ services:
       backend:
         condition: service_healthy
     volumes:
-      # Монтируем локальную сборку фронтенда в контейнер
+      # Монтируем локальную сборку фронтенда в контейнер (используется только если существует)
       - ./frontend/build:/app/frontend/build:ro
     environment:
       - PORT=3000
