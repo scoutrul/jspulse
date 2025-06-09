@@ -126,22 +126,35 @@ export class VacancyApi {
   }
 
   /**
-   * Получение одной вакансии по её ID
-   */
+ * Получение одной вакансии по её ID
+ */
   async fetchVacancyById(id: string, sanitizeHtml?: (html: string) => string): Promise<VacancyDTO | null> {
     try {
-      const response = await this.httpClient.get(`/api/vacancies/${id}`);
+      const url = `/api/vacancies/${id}`;
+      const fullUrl = `http://localhost:3001${url}`;
+
+      logger.debug(this.CONTEXT, `Запрос вакансии по ID: ${id}, URL: ${fullUrl}`);
+
+      // Делаем прямой запрос к API с обходом middleware (аналогично fetchVacancies)
+      const response = typeof window !== 'undefined'
+        ? await fetch(fullUrl).then(res => res.json())
+        : await fetch(fullUrl).then(res => res.json());
+
+      logger.debug(this.CONTEXT, `Получен ответ для вакансии ${id}:`, response);
 
       // Валидируем данные через схему
       const validationResult = SingleVacancyResponseSchema.safeParse(response);
 
       if (!validationResult.success) {
-        logger.error(this.CONTEXT, 'Ошибка валидации данных вакансии', validationResult.error);
+        logger.error(this.CONTEXT, `Ошибка валидации данных вакансии ${id}:`, validationResult.error);
+        logger.error(this.CONTEXT, `Полученные данные:`, response);
         return null;
       }
 
       // Получаем валидированные данные
       const vacancy = validationResult.data.data as unknown as VacancyDTO;
+
+      logger.debug(this.CONTEXT, `Вакансия ${id} успешно загружена:`, vacancy.title);
 
       // Если есть HTML-описание и функция санитизации, применяем её
       if (vacancy.description && sanitizeHtml) {
