@@ -131,14 +131,14 @@ export class VacancyApi {
   async fetchVacancyById(id: string, sanitizeHtml?: (html: string) => string): Promise<VacancyDTO | null> {
     try {
       const url = `/api/vacancies/${id}`;
-      const fullUrl = `http://localhost:3001${url}`;
 
-      logger.debug(this.CONTEXT, `Запрос вакансии по ID: ${id}, URL: ${fullUrl}`);
+      logger.debug(this.CONTEXT, `Запрос вакансии по ID: ${id}, URL: ${url}`);
 
       // Делаем прямой запрос к API с обходом middleware (аналогично fetchVacancies)
       const response = typeof window !== 'undefined'
-        ? await fetch(fullUrl).then(res => res.json())
-        : await fetch(fullUrl).then(res => res.json());
+        ? await fetch(`http://localhost:3001${url}`)
+          .then(res => res.json())
+        : await this.httpClient.get(url);
 
       logger.debug(this.CONTEXT, `Получен ответ для вакансии ${id}:`, response);
 

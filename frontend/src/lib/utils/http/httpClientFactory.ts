@@ -27,10 +27,12 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
   let internalBackendUrl = !browser ? process.env.INTERNAL_BACKEND_URL : undefined;
 
   // Логгируем переменные окружения только в серверном окружении и только в режиме разработки
-  if (!browser && process.env.NODE_ENV !== 'production') {
+  if (!browser) {
     console.log('[httpClientFactory] Env vars debug:');
     console.log('- VITE_PUBLIC_BACKEND_URL:', publicBackendUrl);
     console.log('- INTERNAL_BACKEND_URL:', internalBackendUrl);
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+    console.log('- browser:', browser);
   }
 
   // Определяем приоритет URL:
@@ -43,9 +45,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
   // В Docker контейнере используем внутренний URL, если он задан
   if (!browser && internalBackendUrl) {
     defaultBaseUrl = internalBackendUrl;
-    if (process.env.NODE_ENV !== 'production') {
-      console.log(`[httpClientFactory] Using internal backend URL: ${defaultBaseUrl}`);
-    }
+    console.log(`[httpClientFactory] Using internal backend URL: ${defaultBaseUrl}`);
   }
   // Для браузера или когда внутренний URL не задан, используем публичный
   else if (publicBackendUrl) {
@@ -71,9 +71,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     fetch = undefined  // Опциональный fetch из SvelteKit
   } = options;
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.log(`[httpClientFactory] Creating client with baseUrl: ${baseUrl}`);
-  }
+  console.log(`[httpClientFactory] Creating client with baseUrl: ${baseUrl}`);
 
   // В зависимости от окружения создаем разные клиенты
   if (browser) {

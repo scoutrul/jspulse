@@ -69,7 +69,7 @@ export class VacancyService {
    * Всегда возвращает валидную структуру ответа, даже при ошибках,
    * чтобы обеспечить стабильную работу UI-компонентов.
    */
-  async getVacancies(params: VacanciesOptions): Promise<VacanciesClientResponse> {
+  async fetchVacanciesClient(params: VacanciesOptions): Promise<VacanciesClientResponse> {
     try {
       logger.debug(CONTEXT, 'Запрос списка вакансий', { params });
 
