@@ -1,38 +1,46 @@
-import express, { Express, Request, Response, NextFunction } from "express";
-import "dotenv/config";
-import cors from "cors";
-import { connectDB } from "./config/db.js";
-import vacancyRoutes from "./routes/vacancyRoutes.js";
-import { logger, errorHandler, authGuard, AppError } from "./middleware/index.js";
+import { createApp, gracefulShutdown } from './app.js';
 
-const app: Express = express();
+/**
+ * Главный entry point для backend сервера.
+ * Инициализирует приложение и настраивает graceful shutdown.
+ */
+async function main() {
+  try {
+    // Создаем приложение с DI Container
+    const { app, container } = await createApp();
 
-const port = process.env.PORT;
+    // Получаем порт из переменных окружения
+    const PORT = process.env.PORT || 3001;
 
-app.use(cors());
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+    // Запускаем сервер
+    const server = app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+      console.log(`📋 Health check: http://localhost:${PORT}/health`);
+      console.log(`📊 Container stats: http://localhost:${PORT}/api/container/stats`);
+    });
 
-app.use(logger);
-app.use(authGuard);
+    // Настраиваем graceful shutdown
+    process.on('SIGTERM', async () => {
+      console.log('📡 SIGTERM received');
+      server.close(() => {
+        gracefulShutdown(container);
+      });
+    });
 
-connectDB();
+    process.on('SIGINT', async () => {
+      console.log('📡 SIGINT received');
+      server.close(() => {
+        gracefulShutdown(container);
+      });
+    });
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Backend is running!");
-});
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+}
 
-app.use("/api/vacancies", vacancyRoutes);
-
-// Обработка ошибок 404 - используем обработчик, который не конфликтует с path-to-regexp
-// Избегаем использования динамических параметров в маршрутах со звездочкой
-app.use(function (req: Request, res: Response, next: NextFunction) {
-  const safeUrl = req.originalUrl.replace(/:/g, '%3A');
-  next(AppError.notFound(`Путь ${safeUrl} не найден на сервере`));
-});
-
-app.use(errorHandler);
-
-app.listen(port, () => {
-  console.log(`[server]: Server is running at http://localhost:${port}`);
+main().catch(error => {
+  console.error('❌ Unhandled error in main:', error);
+  process.exit(1);
 });

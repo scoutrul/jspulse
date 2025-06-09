@@ -19,31 +19,36 @@ export interface VacanciesClientResponse {
 }
 
 /**
- * Класс для работы с вакансиями, объединяющий различные источники данных
- * и предоставляющий удобные методы для клиентского и серверного кода
+ * Сервис-обертка для работы с вакансиями на клиентской стороне.
+ * Инкапсулирует логику обработки ошибок и преобразования данных
+ * между API-слоем и компонентами UI, обеспечивая единообразный интерфейс.
  */
 export class VacancyService {
-  // Инициализируем сервис без дополнительной конфигурации
-  // Используем готовый vacancyApi для всех операций
+  // Минимальная инициализация без дополнительной конфигурации,
+  // поскольку вся сложная логика делегируется в vacancyApi
   constructor() {
     logger.debug(CONTEXT, 'Инициализация VacancyService');
   }
 
   /**
-   * Получение списка навыков на клиенте.
+   * Получение навыков для автокомплита в фильтрах.
+   * Возвращает пустой массив при ошибках, чтобы не блокировать UI.
    */
   async fetchSkillsClient(): Promise<string[]> {
     try {
       logger.debug(CONTEXT, 'Запрос доступных навыков');
       return await vacancyApi.fetchSkills();
     } catch (error) {
+      // Навыки не критичны для функционирования приложения,
+      // поэтому возвращаем пустой массив вместо выброса ошибки
       logger.error(CONTEXT, 'Ошибка при получении навыков', error);
       return [];
     }
   }
 
   /**
-   * Получение детальной информации о вакансии на клиенте.
+   * Получение детальной информации о вакансии для страницы просмотра.
+   * Возвращает null при ошибках, чтобы компонент мог показать fallback.
    */
   async fetchVacancyByIdClient(
     id: string
@@ -52,25 +57,30 @@ export class VacancyService {
       logger.debug(CONTEXT, `Запрос вакансии с ID: ${id}`);
       return await vacancyApi.fetchVacancyById(id);
     } catch (error) {
+      // Возвращаем null для индикации отсутствия данных
+      // вместо выброса ошибки, чтобы позволить UI показать 404
       logger.error(CONTEXT, `Ошибка при получении вакансии ${id}`, error);
       return null;
     }
   }
 
   /**
-   * Получение списка вакансий с поддержкой пагинации
-   * Возвращает типизированный ответ согласно DTO-схеме
+   * Основной метод для получения списка вакансий с пагинацией и фильтрацией.
+   * Всегда возвращает валидную структуру ответа, даже при ошибках,
+   * чтобы обеспечить стабильную работу UI-компонентов.
    */
   async getVacancies(params: VacanciesOptions): Promise<VacanciesClientResponse> {
     try {
       logger.debug(CONTEXT, 'Запрос списка вакансий', { params });
-      
+
       const result = await vacancyApi.fetchVacancies({
         page: params.page,
         limit: params.limit,
         skills: params.skills
       });
 
+      // Приведение типов необходимо, поскольку API может возвращать
+      // различные варианты VacancyDTO в зависимости от контекста
       return {
         vacancies: result.vacancies as VacancyWithHtml[],
         total: result.total,
@@ -85,6 +95,8 @@ export class VacancyService {
 
       logger.error(CONTEXT, 'Ошибка при получении вакансий', error);
 
+      // Возвращаем структуру с пустыми данными и сообщением об ошибке
+      // для graceful degradation UI без блокировки интерфейса
       return {
         vacancies: [],
         total: 0,
@@ -97,5 +109,6 @@ export class VacancyService {
   }
 }
 
-// Экспортируем singleton экземпляр для использования в приложении
+// Singleton pattern для избежания множественных экземпляров
+// и обеспечения единообразного состояния сервиса в приложении
 export const vacancyService = new VacancyService();

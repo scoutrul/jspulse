@@ -1,41 +1,50 @@
 import express, { Request, Response, Router, RequestHandler, NextFunction } from "express";
-import { Vacancy } from "../models/Vacancy.js";
 import { isValidObjectId } from "mongoose";
 import {
   VacancyDTOSchema,
   VacancySearchSchema,
   ApiResponseSchema,
-  VacancyDTO
+  VacancyDTO,
+  DI_TOKENS,
+  IVacancyRepository,
+  ICacheService
 } from "@jspulse/shared";
 import { z } from "zod";
 import { validateBody, validateQuery, validateParams } from "../middleware/validation.middleware.js";
 
 const router: Router = express.Router();
 
-// ID параметр схема
+/**
+ * Схема валидации для параметра ID.
+ * Проверяет корректность MongoDB ObjectId для предотвращения некорректных запросов.
+ */
 const IdParamSchema = z.object({
   id: z.string().refine(val => isValidObjectId(val), {
     message: "Некорректный ID вакансии"
   })
 });
 
-// Схема поиска по навыкам
+/**
+ * Схема валидации для параметров поиска навыков.
+ * Обеспечивает корректность пагинации и предотвращает некорректные значения.
+ */
 const SkillsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().default(10),
   page: z.coerce.number().int().nonnegative().default(0)
 });
 
-// Эндпоинт для получения списка всех доступных навыков
+/**
+ * GET /skills - Получение уникальных навыков из всех вакансий.
+ * Используется для автокомплита в фильтрах на фронтенде.
+ * Теперь использует Repository с агрессивным кэшированием (30 минут).
+ */
 router.get("/skills", async (req: Request, res: Response) => {
   try {
-    // Используем агрегацию MongoDB для получения уникальных навыков
-    const skillsAggregation = await Vacancy.aggregate([
-      { $unwind: "$skills" }, // Разворачиваем массив skills
-      { $group: { _id: "$skills" } }, // Группируем по уникальным значениям
-      { $sort: { _id: 1 } }, // Сортируем по алфавиту
-    ]);
+    // Получаем Repository из DI Container
+    const vacancyRepository = req.resolve<IVacancyRepository>(DI_TOKENS.VACANCY_REPOSITORY);
 
-    const skills = skillsAggregation.map((item) => item._id);
+    // Делегируем логику получения навыков в Repository с кэшированием
+    const skills = await vacancyRepository.getUniqueSkills();
 
     res.json({
       success: true,
@@ -57,72 +66,49 @@ router.get("/skills", async (req: Request, res: Response) => {
   }
 });
 
-// Получение списка вакансий с пагинацией и фильтрацией
+/**
+ * GET / - Получение списка вакансий с пагинацией и фильтрацией по навыкам.
+ * Основной эндпоинт для отображения вакансий на главной странице.
+ * Использует Repository Pattern с интеллектуальным кэшированием (3-5 минут).
+ */
 router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Response) => {
-  // Получаем параметры из validatedQuery после валидации 
+  // Параметры получены из middleware валидации для безопасности типов
   const page = req.validatedQuery.page;
   const limit = req.validatedQuery.limit;
   const skills = req.query.skills;
 
-  const query: any = {};
-  if (skills) {
-    // Обрабатываем любой формат skills - как строку, так и массив
-    const skillsArray = Array.isArray(skills)
-      ? skills
-      : (typeof skills === 'string' ? skills.split(',').map(s => s.trim()) : []);
-
-    if (skillsArray.length > 0) {
-      query.skills = { $in: skillsArray };
-    }
-  }
-
   try {
-    const total = await Vacancy.countDocuments(query);
+    // Получаем Repository из DI Container
+    const vacancyRepository = req.resolve<IVacancyRepository>(DI_TOKENS.VACANCY_REPOSITORY);
 
-    // Рассчитываем offset для пропуска записей
-    const offset = page * limit;
-
-    const vacancies = await Vacancy.find(query)
-      .limit(limit)
-      .skip(offset)
-      .sort({ publishedAt: -1 })
-      .lean<VacancyDTO[]>();
-
-    // Валидируем вакансии через Zod
-    const validatedVacancies = vacancies.map(vacancy => {
-      // Преобразуем ObjectId в строку
-      const vacancyWithStringId = {
-        ...vacancy,
-        _id: vacancy._id ? vacancy._id.toString() : ''
-      };
-
-      // Валидируем через схему
-      const result = VacancyDTOSchema.safeParse(vacancyWithStringId);
-
-      // Если невалидно, логируем и возвращаем исправленную версию
-      if (!result.success) {
-        console.warn(`[GET /api/vacancies] Невалидная вакансия ${vacancy._id}:`, result.error);
-        // Применяем дефолтные значения
-        return {
-          ...vacancyWithStringId,
-          skills: Array.isArray(vacancy.skills) ? vacancy.skills : [],
-          publishedAt: new Date()
-        };
+    // Подготавливаем критерии поиска для Repository
+    // Приводим query параметры к строковому массиву для типобезопасности
+    let skillsArray: string[] | undefined = undefined;
+    if (skills) {
+      if (Array.isArray(skills)) {
+        skillsArray = skills.filter((skill): skill is string => typeof skill === 'string');
+      } else if (typeof skills === 'string') {
+        skillsArray = skills.split(',').map(s => s.trim());
       }
+    }
 
-      return result.data;
+    // Используем специализированный метод Repository для фильтрации с кэшированием
+    const result = await vacancyRepository.findWithFilters({
+      page,
+      limit,
+      skills: skillsArray
     });
 
     res.json({
       success: true,
-      data: validatedVacancies,
+      data: result.data,
       meta: {
-        page: page,
-        limit: limit,
-        totalItems: total,
-        totalPages: Math.ceil(total / limit),
-        hasNextPage: page < Math.ceil(total / limit) - 1,
-        hasPrevPage: page > 0
+        page: result.meta.page,
+        limit: result.meta.limit,
+        totalItems: result.meta.total,
+        totalPages: result.meta.totalPages,
+        hasNextPage: result.meta.hasNextPage,
+        hasPrevPage: result.meta.hasPrevPage
       }
     });
   } catch (error) {
@@ -138,12 +124,20 @@ router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Resp
   }
 });
 
-// Получение одной вакансии по ID
+/**
+ * GET /:id - Получение детальной информации о вакансии.
+ * Используется на странице просмотра конкретной вакансии.
+ * Repository обеспечивает валидацию ID и кэширование отдельных записей (15 минут).
+ */
 router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
-    const vacancy = await Vacancy.findById(id).lean<VacancyDTO>();
+    // Получаем Repository из DI Container
+    const vacancyRepository = req.resolve<IVacancyRepository>(DI_TOKENS.VACANCY_REPOSITORY);
+
+    // Repository инкапсулирует валидацию ObjectId, обработку ошибок и кэширование
+    const vacancy = await vacancyRepository.findById(id);
 
     if (!vacancy) {
       res.status(404).json({
@@ -156,33 +150,9 @@ router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Resp
       return;
     }
 
-    // Преобразуем _id из ObjectId в строку
-    const vacancyWithStringId = {
-      ...vacancy,
-      _id: vacancy._id ? vacancy._id.toString() : ''
-    };
-
-    // Валидируем вакансию через Zod
-    const result = VacancyDTOSchema.safeParse(vacancyWithStringId);
-
-    if (!result.success) {
-      console.warn(`[GET /vacancies/${id}] Невалидная вакансия:`, result.error);
-      // В случае проблем с форматом данных пытаемся исправить их
-      res.json({
-        success: true,
-        data: {
-          ...vacancyWithStringId,
-          skills: Array.isArray(vacancy.skills) ? vacancy.skills : [],
-          publishedAt: vacancy.publishedAt instanceof Date ?
-            vacancy.publishedAt : new Date(vacancy.publishedAt || Date.now())
-        }
-      });
-      return;
-    }
-
     res.json({
       success: true,
-      data: result.data
+      data: vacancy
     });
   } catch (error) {
     console.error(`Ошибка при получении вакансии ${id}:`, error);
@@ -191,6 +161,37 @@ router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Resp
       error: {
         code: 500,
         message: `Ошибка сервера при получении вакансии ${id}`,
+        details: error instanceof Error ? error.message : undefined
+      }
+    });
+  }
+});
+
+/**
+ * GET /cache/stats - Получение статистики кэша для мониторинга.
+ * Вспомогательный эндпоинт для отладки и оптимизации производительности.
+ */
+router.get("/cache/stats", async (req: Request, res: Response) => {
+  try {
+    // Получаем Cache Service из DI Container
+    const cacheService = req.resolve<ICacheService>(DI_TOKENS.CACHE_SERVICE);
+    const stats = await cacheService.getStats();
+
+    res.json({
+      success: true,
+      data: stats,
+      meta: {
+        description: "Статистика кэша вакансий",
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error("[GET /api/vacancies/cache/stats] Ошибка:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: "Ошибка при получении статистики кэша",
         details: error instanceof Error ? error.message : undefined
       }
     });
