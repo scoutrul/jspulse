@@ -12,7 +12,11 @@
     "db:hh": "tsx src/scripts/fetchAndSaveFromHH.ts",
     "db:clear": "tsx src/scripts/clearDatabase.ts",
     "db": "pnpm run db:seed && pnpm run db:hh",
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --config=jest.config.cjs",
+    "test:watch": "jest --config=jest.config.cjs --watch",
+    "test:coverage": "jest --config=jest.config.cjs --coverage",
+    "test:unit": "jest --config=jest.config.cjs tests/unit",
+    "test:integration": "jest --config=jest.config.cjs tests/integration",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
@@ -27,8 +31,14 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
+    "@types/jest": "^29.5.14",
     "@types/node": "^22.14.1",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.0.0",
+    "mongodb-memory-server": "^10.1.4",
     "nodemon": "^3.0.1",
+    "supertest": "^7.1.1",
+    "ts-jest": "^29.3.4",
     "ts-node": "^10.9.2",
     "tsx": "^4.19.4",
     "typescript": "^5.8.3"
