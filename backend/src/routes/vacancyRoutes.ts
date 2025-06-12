@@ -7,7 +7,8 @@ import {
   VacancyDTO,
   DI_TOKENS,
   IVacancyRepository,
-  ICacheService
+  ICacheService,
+  PAGINATION
 } from "@jspulse/shared";
 import { z } from "zod";
 import { validateBody, validateQuery, validateParams } from "../middleware/validation.middleware.js";
@@ -29,8 +30,8 @@ const IdParamSchema = z.object({
  * Обеспечивает корректность пагинации и предотвращает некорректные значения.
  */
 const SkillsQuerySchema = z.object({
-  limit: z.coerce.number().int().positive().default(10),
-  page: z.coerce.number().int().nonnegative().default(0)
+  limit: z.coerce.number().int().positive().default(PAGINATION.DEFAULT_PAGE_SIZE),
+  page: z.coerce.number().int().nonnegative().default(PAGINATION.VALIDATION.MIN_PAGE)
 });
 
 /**

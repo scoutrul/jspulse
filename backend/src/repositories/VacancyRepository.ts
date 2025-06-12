@@ -3,7 +3,8 @@ import {
   IVacancyFindCriteria,
   IFindResult,
   VacancyDTO,
-  ICacheService
+  ICacheService,
+  PAGINATION
 } from "@jspulse/shared";
 import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
 import { isValidObjectId } from "mongoose";
@@ -68,7 +69,7 @@ export class VacancyRepository implements IVacancyRepository {
    * Для продвинутых фильтров используйте findWithFilters().
    */
   async findMany(criteria: IVacancyFindCriteria): Promise<IFindResult<VacancyDTO>> {
-    const { page = 0, limit = 10, where = {}, orderBy } = criteria;
+    const { page = PAGINATION.VALIDATION.MIN_PAGE, limit = PAGINATION.DEFAULT_PAGE_SIZE, where = {}, orderBy } = criteria;
 
     // Кэшируем простые запросы списков
     const cacheKey = this.buildListCacheKey('findMany', { page, limit, where, orderBy });
@@ -214,8 +215,8 @@ export class VacancyRepository implements IVacancyRepository {
     }
 
     const {
-      page = 0,
-      limit = 10,
+      page = PAGINATION.VALIDATION.MIN_PAGE,
+      limit = PAGINATION.DEFAULT_PAGE_SIZE,
       skills,
       salaryRange,
       sources,
