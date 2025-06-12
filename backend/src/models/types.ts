@@ -14,7 +14,7 @@ import {
 // IVacancy уже определен в shared/src/types/db/vacancy.model.ts
 
 // Дополнительно экспортируем нужные типы из shared
-export {
+export type {
   VacancyDTO,
   PaginatedResponse,
   ApiSingleResponse,

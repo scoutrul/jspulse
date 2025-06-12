@@ -7,10 +7,10 @@ import ky, { HTTPError as KyHTTPError } from "ky";
  * @returns Настроенный экземпляр ky для работы с API.
  */
 function createApiClient() {
-  // В браузере используем VITE_PUBLIC_BACKEND_URL с fallback на localhost в dev
+  // В браузере используем VITE_PUBLIC_BACKEND_URL
   const backendUrl = import.meta.env.VITE_PUBLIC_BACKEND_URL;
   if (!backendUrl) {
-    console.warn("[http.client] VITE_PUBLIC_BACKEND_URL не задан, используем localhost:3001");
+    console.warn("[http.client] VITE_PUBLIC_BACKEND_URL не задан, используем fallback");
   }
   const baseUrl = backendUrl || "http://localhost:3001";
 

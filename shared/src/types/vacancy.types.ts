@@ -1,4 +1,4 @@
-import { BaseVacancy } from "./core/vacancy.base.js";
+import type { BaseVacancy } from "./core/vacancy.base.js";
 
 export interface VacancyArea {
   id: string;

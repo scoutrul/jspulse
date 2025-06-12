@@ -15,12 +15,12 @@ async function fetchApiData<TResponse>(
   endpoint: string,
   fetchFn: typeof fetch
 ): Promise<TResponse> {
-  // На сервере используем INTERNAL_BACKEND_URL с fallback на localhost в dev
+  // На сервере используем INTERNAL_BACKEND_URL
   const internalBackendUrl = process.env.INTERNAL_BACKEND_URL;
   if (!internalBackendUrl) {
-    console.warn("[http.server] INTERNAL_BACKEND_URL не задан, используем localhost:3001");
+    console.warn("[http.server] INTERNAL_BACKEND_URL не задан, используем fallback");
   }
-  const baseUrl = internalBackendUrl || "http://localhost:3001";
+  const baseUrl = internalBackendUrl || "http://backend:3001";
 
   // Формируем полный URL
   const fullUrl = `${baseUrl}/${endpoint}`.replace(/([^:]\/)\/+/g, "$1");

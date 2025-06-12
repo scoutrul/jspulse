@@ -1,5 +1,5 @@
-import { IRepository, IFindCriteria, IFindResult } from './repository.interface.js';
-import { VacancyDTO } from '../dto/vacancy.dto.js';
+import type { IRepository, IFindCriteria, IFindResult } from './repository.interface.js';
+import type { VacancyDTO } from '../dto/vacancy.dto.js';
 
 /**
  * Критерии поиска вакансий с дополнительными фильтрами.

@@ -69,11 +69,8 @@ export class VacancyApi {
       const baseApiUrl = `/api/vacancies`;
       const url = baseApiUrl + (queryParams.toString() ? `?${queryParams.toString()}` : '');
 
-      // Делаем прямой запрос к API с обходом middleware (для отладки)
-      const response = typeof window !== 'undefined'
-        ? await fetch(`http://localhost:3001${url}`)
-          .then(res => res.json())
-        : await this.httpClient.get(url);
+      // Делаем запрос к API 
+      const response = await this.httpClient.get(url);
 
       // Валидируем данные через схему
       const validationResult = VacancyListResponseSchema.safeParse(response);
@@ -134,11 +131,8 @@ export class VacancyApi {
 
       logger.debug(this.CONTEXT, `Запрос вакансии по ID: ${id}, URL: ${url}`);
 
-      // Делаем прямой запрос к API с обходом middleware (аналогично fetchVacancies)
-      const response = typeof window !== 'undefined'
-        ? await fetch(`http://localhost:3001${url}`)
-          .then(res => res.json())
-        : await this.httpClient.get(url);
+      // Делаем запрос к API
+      const response = await this.httpClient.get(url);
 
       logger.debug(this.CONTEXT, `Получен ответ для вакансии ${id}:`, response);
 
