@@ -182,6 +182,9 @@ async function fetchAndSaveHHVacancies() {
   }
 }
 
-fetchAndSaveHHVacancies();
+// Запускать только при прямом вызове как CLI скрипт
+if (import.meta.url === `file://${process.argv[1]}`) {
+  fetchAndSaveHHVacancies();
+}
 
 export default fetchAndSaveHHVacancies;

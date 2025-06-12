@@ -1,8 +1,8 @@
-import { IDIContainer, IDIContainerFactory, DI_TOKENS, ServiceLifetime, ICacheService } from "@jspulse/shared";
+import { IDIContainer, IDIContainerFactory, DI_TOKENS, ICacheService } from "@jspulse/shared";
 import { DIContainer } from "./DIContainer.js";
 import { VacancyRepository } from "../repositories/VacancyRepository.js";
 import { MemoryCacheService } from "../services/MemoryCacheService.js";
-import { Vacancy } from "../models/Vacancy.js";
+import { SchedulerService } from "../services/SchedulerService.js";
 
 /**
  * Фабрика для создания и настройки DI Container с различными конфигурациями.
@@ -54,6 +54,12 @@ export class ContainerFactory implements IDIContainerFactory {
         const cacheService = container.resolve(DI_TOKENS.CACHE_SERVICE) as ICacheService;
         return new VacancyRepository(cacheService);
       }
+    );
+
+    // Регистрируем SchedulerService как singleton
+    container.registerSingleton(
+      'SchedulerService',
+      () => new SchedulerService()
     );
 
     // Можно добавить другие production сервисы
@@ -144,6 +150,7 @@ export class ContainerFactory implements IDIContainerFactory {
     const requiredServices = [
       DI_TOKENS.CACHE_SERVICE,
       DI_TOKENS.VACANCY_REPOSITORY,
+      'SchedulerService',
     ];
 
     for (const token of requiredServices) {

@@ -56,8 +56,13 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
   }
   // Fallback для случаев когда переменные не заданы (например, во время сборки)
   else {
-    // Во время сборки или в режиме разработки используем разумные значения по умолчанию
-    defaultBaseUrl = browser ? "http://localhost:3001" : "http://backend:3001";
+    // В dev режиме всегда используем localhost
+    if (process.env.NODE_ENV === 'development') {
+      defaultBaseUrl = "http://localhost:3001";
+    } else {
+      // В production для Docker используем backend hostname
+      defaultBaseUrl = browser ? "http://localhost:3001" : "http://backend:3001";
+    }
     if (!browser) {
       console.warn(`[httpClientFactory] INTERNAL_BACKEND_URL не задан, используем fallback: ${defaultBaseUrl}`);
     }

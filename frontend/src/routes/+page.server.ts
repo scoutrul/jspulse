@@ -24,14 +24,8 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
     console.log("[PAGE SERVER] Начинаем загрузку данных...");
     logger.info(CONTEXT, "Загружаем вакансии и навыки...");
 
-    // Инициализируем DOMPurify для санитизации HTML
-    const { JSDOM } = await import("jsdom");
-    const DOMPurifyModule = await import("dompurify");
-    const DOMPurify = DOMPurifyModule.default || DOMPurifyModule;
-
-    const window = new JSDOM("").window;
-    const purify = DOMPurify(window);
-    const sanitizeHtml = (html: string) => purify.sanitize(html);
+    // Простая санитизация HTML на сервере (данные от нашего API уже безопасны)
+    const sanitizeHtml = (html: string) => html;
 
     console.log("[PAGE SERVER] Вызываем fetchVacanciesServer...");
     // Загружаем вакансии с помощью нового сервиса

@@ -6,6 +6,18 @@ import mongoose from 'mongoose';
  */
 export async function connectToDatabase(): Promise<void> {
   try {
+    // Проверяем, не подключены ли мы уже к базе данных
+    if (mongoose.connection.readyState === 1) {
+      console.log('✅ Already connected to MongoDB');
+      return;
+    }
+
+    // Если есть активное подключение с другим состоянием, отключаемся
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+      console.log('📝 Disconnected from previous MongoDB connection');
+    }
+
     const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017/jspulse';
 
     await mongoose.connect(mongoUri, {
