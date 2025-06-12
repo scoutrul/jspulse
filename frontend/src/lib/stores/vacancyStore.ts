@@ -1,4 +1,4 @@
-import { writable } from 'svelte/store';
+import { writable, get } from 'svelte/store';
 import type { VacancyWithHtml } from '@jspulse/shared';
 
 /**
@@ -13,6 +13,9 @@ interface VacancyState {
   selectedSkills: string[];
   loading: boolean;
   error: string | null;
+  // Новые поля для гибкой пагинации
+  availablePageSizes: number[];
+  paginationMode: 'replace' | 'append'; // replace для классической пагинации, append для "load more"
 }
 
 const initialState: VacancyState = {
@@ -24,6 +27,8 @@ const initialState: VacancyState = {
   selectedSkills: [],
   loading: false,
   error: null,
+  availablePageSizes: [10, 20, 50, 100],
+  paginationMode: 'replace',
 };
 
 /**
@@ -32,7 +37,7 @@ const initialState: VacancyState = {
 function createVacancyStore() {
   const { subscribe, set, update } = writable<VacancyState>(initialState);
 
-  return {
+  const store = {
     subscribe,
 
     // Инициализация начальными данными (сброс)
@@ -69,8 +74,130 @@ function createVacancyStore() {
     setError: (error: string | null) => update(state => ({ ...state, error })),
 
     // Сбросить состояние
-    reset: () => set(initialState)
+    reset: () => set(initialState),
+
+    // Новые методы для гибкой пагинации
+
+    // Переход к конкретной странице (заменяет все вакансии)
+    goToPage: (page: number) => update(state => ({
+      ...state,
+      page,
+      paginationMode: 'replace'
+    })),
+
+    // Изменение размера страницы
+    setPageSize: (limit: number) => update(state => {
+      // При изменении размера страницы, пересчитываем текущую страницу
+      // чтобы показать примерно те же элементы
+      const currentFirstItem = state.page * state.limit;
+      const newPage = Math.floor(currentFirstItem / limit);
+      const newTotalPages = Math.ceil(state.total / limit);
+
+      return {
+        ...state,
+        limit,
+        page: Math.min(newPage, Math.max(0, newTotalPages - 1)),
+        totalPages: newTotalPages,
+        paginationMode: 'replace'
+      };
+    }),
+
+    // Увеличить размер страницы для "показать еще"
+    increasePageSize: () => update(state => {
+      let newLimit = state.limit;
+
+      if (newLimit < 20) newLimit = 20;
+      else if (newLimit < 30) newLimit = 30;
+      else if (newLimit < 50) newLimit = 50;
+      else if (newLimit < 100) newLimit = 100;
+      else newLimit += 50; // После 100 увеличиваем по 50
+
+      const newTotalPages = Math.ceil(state.total / newLimit);
+
+      return {
+        ...state,
+        limit: newLimit,
+        totalPages: newTotalPages,
+        page: 0, // Сброс на первую страницу
+        paginationMode: 'replace'
+      };
+    }),
+
+    // Установить режим пагинации
+    setPaginationMode: (mode: 'replace' | 'append') => update(state => ({
+      ...state,
+      paginationMode: mode
+    })),
+
+    // Сохранить настройки пагинации в localStorage
+    savePaginationSettings: () => {
+      const currentState = get({ subscribe });
+      try {
+        const settings = {
+          limit: currentState.limit,
+          paginationMode: currentState.paginationMode
+        };
+        localStorage.setItem('jspulse-pagination-settings', JSON.stringify(settings));
+      } catch (error) {
+        console.warn('Failed to save pagination settings to localStorage:', error);
+      }
+    },
+
+    // Загрузить настройки пагинации из localStorage
+    loadPaginationSettings: () => update(state => {
+      try {
+        const saved = localStorage.getItem('jspulse-pagination-settings');
+        if (saved) {
+          const settings = JSON.parse(saved);
+          return {
+            ...state,
+            limit: settings.limit || state.limit,
+            paginationMode: settings.paginationMode || state.paginationMode
+          };
+        }
+      } catch (error) {
+        console.warn('Failed to load pagination settings from localStorage:', error);
+      }
+      return state;
+    }),
+
+    // Синхронизация с URL параметрами
+    syncWithURL: (searchParams: URLSearchParams) => update(state => {
+      const page = parseInt(searchParams.get('page') || '0');
+      const limit = parseInt(searchParams.get('limit') || state.limit.toString());
+      const skills = searchParams.get('skills')?.split(',').filter(Boolean) || [];
+
+      return {
+        ...state,
+        page: Math.max(0, page),
+        limit: state.availablePageSizes.includes(limit) ? limit : state.limit,
+        selectedSkills: skills,
+        paginationMode: 'replace'
+      };
+    }),
+
+    // Получить параметры для URL
+    getURLParams: (): string => {
+      const currentState = get({ subscribe });
+      const params = new URLSearchParams();
+
+      if (currentState.page > 0) {
+        params.set('page', currentState.page.toString());
+      }
+
+      if (currentState.limit !== 10) {
+        params.set('limit', currentState.limit.toString());
+      }
+
+      if (currentState.selectedSkills.length > 0) {
+        params.set('skills', currentState.selectedSkills.join(','));
+      }
+
+      return params.toString();
+    }
   };
+
+  return store;
 }
 
 export const vacancyStore = createVacancyStore(); 

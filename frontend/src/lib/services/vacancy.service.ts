@@ -107,6 +107,135 @@ export class VacancyService {
       };
     }
   }
+
+  /**
+   * Прямой переход к конкретной странице (для новой пагинации).
+   * Метод оптимизирован для быстрого перехода без лишних операций.
+   */
+  async fetchPageDirectly(params: {
+    page: number;
+    limit: number;
+    skills?: string[];
+  }): Promise<VacanciesClientResponse> {
+    try {
+      logger.debug(CONTEXT, 'Прямой переход к странице', { params });
+
+      const result = await vacancyApi.fetchVacancies({
+        page: params.page,
+        limit: params.limit,
+        skills: params.skills || []
+      });
+
+      return {
+        vacancies: result.vacancies as VacancyWithHtml[],
+        total: result.total,
+        page: result.page,
+        limit: result.limit,
+        totalPages: result.totalPages
+      };
+    } catch (error) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Ошибка при переходе к странице';
+
+      logger.error(CONTEXT, 'Ошибка при прямом переходе к странице', error);
+
+      return {
+        vacancies: [],
+        total: 0,
+        page: params.page,
+        limit: params.limit,
+        totalPages: 0,
+        error: errorMessage
+      };
+    }
+  }
+
+  /**
+   * Предзагрузка соседних страниц для улучшения UX.
+   * Запускается в фоне без блокировки UI.
+   */
+  async preloadAdjacentPages(currentPage: number, totalPages: number, params: {
+    limit: number;
+    skills?: string[];
+  }): Promise<void> {
+    try {
+      logger.debug(CONTEXT, 'Предзагрузка соседних страниц', { currentPage, totalPages });
+
+      const promises: Promise<any>[] = [];
+
+      // Предзагружаем предыдущую страницу
+      if (currentPage > 0) {
+        promises.push(this.fetchPageDirectly({
+          page: currentPage - 1,
+          limit: params.limit,
+          skills: params.skills
+        }));
+      }
+
+      // Предзагружаем следующую страницу
+      if (currentPage < totalPages - 1) {
+        promises.push(this.fetchPageDirectly({
+          page: currentPage + 1,
+          limit: params.limit,
+          skills: params.skills
+        }));
+      }
+
+      // Запускаем предзагрузку в фоне без ожидания результата
+      if (promises.length > 0) {
+        Promise.allSettled(promises).then(results => {
+          const successful = results.filter(r => r.status === 'fulfilled').length;
+          logger.debug(CONTEXT, `Предзагружено ${successful} из ${promises.length} страниц`);
+        });
+      }
+    } catch (error) {
+      // Ошибки предзагрузки не критичны, логируем и продолжаем
+      logger.warn(CONTEXT, 'Ошибка при предзагрузке страниц', error);
+    }
+  }
+
+  /**
+   * Debounced метод для предотвращения множественных запросов.
+   * Используется при быстрых переходах между страницами.
+   */
+  private debounceTimers = new Map<string, NodeJS.Timeout>();
+
+  async fetchVacanciesDebounced(
+    params: VacanciesOptions,
+    debounceKey: string = 'default',
+    delay: number = 300
+  ): Promise<VacanciesClientResponse> {
+    return new Promise((resolve) => {
+      // Отменяем предыдущий таймер для этого ключа
+      const existingTimer = this.debounceTimers.get(debounceKey);
+      if (existingTimer) {
+        clearTimeout(existingTimer);
+      }
+
+      // Устанавливаем новый таймер
+      const timer = setTimeout(async () => {
+        try {
+          const result = await this.fetchVacanciesClient(params);
+          resolve(result);
+        } catch (error) {
+          // В случае ошибки возвращаем пустой результат
+          resolve({
+            vacancies: [],
+            total: 0,
+            page: params.page || 0,
+            limit: params.limit || 10,
+            totalPages: 0,
+            error: 'Ошибка при загрузке данных'
+          });
+        } finally {
+          this.debounceTimers.delete(debounceKey);
+        }
+      }, delay);
+
+      this.debounceTimers.set(debounceKey, timer);
+    });
+  }
 }
 
 // Singleton pattern для избежания множественных экземпляров
