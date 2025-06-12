@@ -76,13 +76,19 @@ function createVacancyStore() {
 
     // Добавить вакансии (пагинация)
     appendVacancies: (newVacancies: VacancyWithHtml[], total: number, totalPages: number, page: number) =>
-      update(state => ({
-        ...state,
-        vacancies: [...state.vacancies, ...newVacancies],
-        total,
-        totalPages,
-        page
-      })),
+      update(state => {
+        // Фильтруем дубликаты по _id для предотвращения ошибки each_key_duplicate в Svelte
+        const existingIds = new Set(state.vacancies.map(v => v._id));
+        const uniqueNewVacancies = newVacancies.filter(v => !existingIds.has(v._id));
+
+        return {
+          ...state,
+          vacancies: [...state.vacancies, ...uniqueNewVacancies],
+          total,
+          totalPages,
+          page
+        };
+      }),
 
     // Установить состояние загрузки
     setLoading: (loading: boolean) => update(state => ({ ...state, loading })),
@@ -221,7 +227,12 @@ function createVacancyStore() {
     appendVacanciesVirtual: (newVacancies: VacancyWithHtml[], total: number) =>
       update(state => {
         const currentLoaded = state.vacancies.length;
-        const newSize = newVacancies.length;
+
+        // Фильтруем дубликаты по _id для предотвращения ошибки each_key_duplicate в Svelte
+        const existingIds = new Set(state.vacancies.map(v => v._id));
+        const uniqueNewVacancies = newVacancies.filter(v => !existingIds.has(v._id));
+
+        const newSize = uniqueNewVacancies.length;
         const maxWindowSize = 100; // Максимальный размер окна для производительности
 
         // Если загружаем больше 50 элементов и уже есть много в списке
@@ -233,7 +244,7 @@ function createVacancyStore() {
           };
 
           // Удаляем старые элементы сверху (столько же сколько добавляем)
-          const updatedVacancies = [...state.vacancies.slice(newSize), ...newVacancies];
+          const updatedVacancies = [...state.vacancies.slice(newSize), ...uniqueNewVacancies];
 
           return {
             ...state,
@@ -251,7 +262,7 @@ function createVacancyStore() {
           // Обычное добавление для небольших порций
           return {
             ...state,
-            vacancies: [...state.vacancies, ...newVacancies],
+            vacancies: [...state.vacancies, ...uniqueNewVacancies],
             total,
             virtualWindow: {
               start: state.virtualWindow.start,

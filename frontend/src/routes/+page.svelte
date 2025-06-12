@@ -175,35 +175,29 @@
     
     try {
       if (isOffsetMode) {
-        // Offset-режим: загружаем следующую порцию, заменяя первую порцию
-        const currentOffset = (store.vacancies.length > 50) ? 50 : 0; // смещение для замены
-        const newOffset = currentOffset + 50;
+        // Offset-режим: простая пагинация без виртуализации для предотвращения дублирования
+        const nextPage = Math.floor(store.vacancies.length / 50);
         
         const response = await vacancyService.fetchVacanciesClient({
-          page: Math.floor(newOffset / 100),
-          limit: 100, // Загружаем элементы виртуального окна
+          page: nextPage,
+          limit: 50, // Загружаем следующие 50 элементов
           skills: store.selectedSkills
         });
 
         if (response.error) {
           vacancyStore.setError(response.error);
         } else {
-          const allVacancies = response.vacancies.map(convertVacancy);
-          // Берем вторую половину и объединяем с первой половиной предыдущих
-          const firstHalf = store.vacancies.slice(50); // последние элементы
-          const secondHalf = allVacancies.slice(0, 50); // первые новые элементы
+          const newVacancies = response.vacancies.map(convertVacancy);
           
-          vacancyStore.setVacancies(
-            [...firstHalf, ...secondHalf],
-            response.total,
-            response.totalPages,
-            0
-          );
+          // Добавляем новые вакансии к существующим (append режим)
+          vacancyStore.appendVacancies(newVacancies, response.total, response.totalPages, nextPage);
           vacancyStore.setError(null);
           
           // Плавный скролл к новому контенту
           setTimeout(() => {
-            const firstNewElement = document.querySelector('.vacancy-card:nth-child(51)');
+            const currentVacanciesCount = document.querySelectorAll('.vacancy-card').length;
+            const firstNewElementIndex = currentVacanciesCount - newVacancies.length + 1;
+            const firstNewElement = document.querySelector('.vacancy-card:nth-child(' + firstNewElementIndex + ')');
             if (firstNewElement) {
               firstNewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -236,16 +230,16 @@
           vacancyStore.setError(response.error);
         } else {
           const allVacancies = response.vacancies.map(convertVacancy);
-          const newVacancies = allVacancies.slice(currentCount);
           
           // Обновляем лимит в store
           vacancyStore.setPageSize(newLimit);
           
-          // Добавляем новые вакансии
-          vacancyStore.appendVacancies(newVacancies, response.total, response.totalPages, 0);
+          // В прогрессивном режиме заменяем все данные (не добавляем), 
+          // так как получили полный набор с новым лимитом
+          vacancyStore.setVacancies(allVacancies, response.total, response.totalPages, 0);
           vacancyStore.setError(null);
           
-          // Анимация для новых элементов
+          // Анимация для новых элементов (начиная с позиции где были старые данные)
           setTimeout(() => {
             triggerFadeInAnimation(currentCount);
             
@@ -283,16 +277,15 @@
         vacancyStore.setError(response.error);
       } else {
         const allVacancies = response.vacancies.map(convertVacancy);
-        const newVacancies = allVacancies.slice(currentCount);
         
         // Обновляем лимит в store
         vacancyStore.setPageSize(store.total);
         
-        // Добавляем новые вакансии
-        vacancyStore.appendVacancies(newVacancies, response.total, response.totalPages, 0);
+        // В режиме "показать все" заменяем все данные полным набором
+        vacancyStore.setVacancies(allVacancies, response.total, response.totalPages, 0);
         vacancyStore.setError(null);
         
-        // Анимация для новых элементов
+        // Анимация для новых элементов (начиная с позиции где были старые данные)
         setTimeout(() => {
           triggerFadeInAnimation(currentCount);
           
