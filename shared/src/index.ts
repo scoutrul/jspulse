@@ -1,5 +1,9 @@
 export * from './types/index.js';
 
+// Явно экспортируем DI интерфейсы
+export { IDIContainerFactory, IDIContainer, DI_TOKENS, ServiceLifetime } from './types/core/di-container.interface.js';
+export { ICacheService } from './types/core/cache.interface.js';
+
 // Явно экспортируем необходимые схемы для бэкенда
 export {
   VacancyDTOSchema,
