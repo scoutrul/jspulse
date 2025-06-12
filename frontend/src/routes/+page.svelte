@@ -11,6 +11,7 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { browser } from '$app/environment';
+  import { PAGINATION, ANIMATION } from '$lib/config/pagination.constants';
 
   export let data: PageData;
 
@@ -60,7 +61,7 @@
           // Используем сервисы вместо прямых fetch
           const vacancyResponse = await vacancyService.fetchVacanciesClient({
             page: 0,
-            limit: 10,
+            limit: PAGINATION.DEFAULT_PAGE_SIZE,
             skills: []
           });
           
@@ -97,12 +98,12 @@
   async function handleSkillsChange(skills: string[]) {
     vacancyStore.setSkills(skills);
     // Сбрасываем пагинацию при изменении фильтров
-    vacancyStore.setPageSize(10);
+    vacancyStore.setPageSize(PAGINATION.DEFAULT_PAGE_SIZE);
     vacancyStore.setLoading(true);
     
     const response = await vacancyService.fetchVacanciesClient({
       page: 0,
-      limit: 10, // Сброс к начальному лимиту
+      limit: PAGINATION.DEFAULT_PAGE_SIZE, // Сброс к начальному лимиту
       skills
     });
     if (response.error) {
@@ -129,7 +130,7 @@
     
     const response = await vacancyService.fetchVacanciesClient({
       page: 0,
-      limit: 10, // Сброс к начальному лимиту
+      limit: PAGINATION.DEFAULT_PAGE_SIZE, // Сброс к начальному лимиту
       skills: []
     });
     if (response.error) {
@@ -165,13 +166,19 @@
     
     // Вычисляем количество новых элементов для загрузки
     const currentLimit = store.limit;
-    let additionalItems = 10; // По умолчанию добавляем 10
+    let additionalItems: number = PAGINATION.INCREMENTS.SMALL; // По умолчанию добавляем 10
     
-    if (currentLimit === 10) additionalItems = 10; // 10 -> 20
-    else if (currentLimit === 20) additionalItems = 10; // 20 -> 30  
-    else if (currentLimit === 30) additionalItems = 20; // 30 -> 50
-    else if (currentLimit === 50) additionalItems = 50; // 50 -> 100
-    else additionalItems = 50; // 100+ -> +50
+    if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_1) {
+      additionalItems = PAGINATION.INCREMENTS.SMALL; // 10 -> 20
+    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_2) {
+      additionalItems = PAGINATION.INCREMENTS.SMALL; // 20 -> 30  
+    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_3) {
+      additionalItems = PAGINATION.INCREMENTS.MEDIUM; // 30 -> 50
+    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_4) {
+      additionalItems = PAGINATION.INCREMENTS.LARGE; // 50 -> 100
+    } else {
+      additionalItems = PAGINATION.INCREMENTS.LARGE; // 100+ -> +50
+    }
     
     const newLimit = currentLimit + additionalItems;
     
@@ -209,8 +216,8 @@
           // Скроллим к первому новому элементу в середину экрана с небольшой задержкой
           setTimeout(() => {
             scrollToFirstNewElement(currentCount);
-          }, 100);
-        }, 50);
+          }, ANIMATION.TIMING.SCROLL_DELAY);
+        }, ANIMATION.TIMING.DOM_RENDER_DELAY);
         
         // Сохраняем настройки
         vacancyStore.savePaginationSettings();
@@ -232,7 +239,7 @@
         // Удаляем класс после завершения анимации
         setTimeout(() => {
           element.classList.remove('fade-in-new');
-        }, 1200);
+        }, ANIMATION.FADE_IN_DURATION_MS);
       }
     });
   }
@@ -288,6 +295,11 @@
 </main>
 
 <style>
+  :root {
+    --animation-duration: 1.2s;
+    --animation-easing: ease-out;
+  }
+
   main {
     max-width: 800px;
     margin: 2rem auto;
@@ -296,7 +308,7 @@
 
   /* Анимация появления новых элементов с оранжевым фоном */
   :global(.fade-in-new) {
-    animation: fadeInOrangeSlide 1.2s ease-out;
+    animation: fadeInOrangeSlide var(--animation-duration, 1.2s) var(--animation-easing, ease-out);
   }
 
   @keyframes fadeInOrangeSlide {

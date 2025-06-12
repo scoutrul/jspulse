@@ -1,8 +1,9 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
   import { ArrowDown, ArrowPathRoundedSquare } from 'svelte-heros-v2';
+  import { PAGINATION, LOCALE } from '../config/pagination.constants';
 
-  export let currentPageSize: number = 10;
+  export let currentPageSize: number = PAGINATION.DEFAULT_PAGE_SIZE;
   export let totalItems: number = 0;
   export let loading: boolean = false;
   export let showingItems: number = 0; // Количество показанных элементов
@@ -18,12 +19,18 @@
   function getAdditionalItems(currentLimit: number, total: number, showing: number): number {
     if (showing >= total) return 0;
     
-    let additionalItems = 10;
-    if (currentLimit === 10) additionalItems = 10; // 10 -> 20
-    else if (currentLimit === 20) additionalItems = 10; // 20 -> 30  
-    else if (currentLimit === 30) additionalItems = 20; // 30 -> 50
-    else if (currentLimit === 50) additionalItems = 50; // 50 -> 100
-    else additionalItems = 50; // 100+ -> +50
+    let additionalItems: number = PAGINATION.INCREMENTS.SMALL;
+    if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_1) {
+      additionalItems = PAGINATION.INCREMENTS.SMALL; // 10 -> 20
+    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_2) {
+      additionalItems = PAGINATION.INCREMENTS.SMALL; // 20 -> 30  
+    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_3) {
+      additionalItems = PAGINATION.INCREMENTS.MEDIUM; // 30 -> 50
+    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_4) {
+      additionalItems = PAGINATION.INCREMENTS.LARGE; // 50 -> 100
+    } else {
+      additionalItems = PAGINATION.INCREMENTS.LARGE; // 100+ -> +50
+    }
     
     return Math.min(additionalItems, total - showing);
   }
@@ -38,7 +45,7 @@
 <div class="simple-pagination">
   {#if totalItems > 0}
     <div class="pagination-info">
-      Показано {showingItems.toLocaleString('ru')} из {totalItems.toLocaleString('ru')} вакансий
+      Показано {showingItems.toLocaleString(LOCALE.PRIMARY)} из {totalItems.toLocaleString(LOCALE.PRIMARY)} вакансий
     </div>
 
     {#if hasMore}
@@ -53,7 +60,7 @@
           Загрузка...
         {:else}
           <ArrowDown size="18" />
-          Показать еще {additionalItems.toLocaleString('ru')}
+          Показать еще {additionalItems.toLocaleString(LOCALE.PRIMARY)}
         {/if}
       </button>
     {:else}
@@ -69,6 +76,12 @@
 </div>
 
 <style>
+  :global(:root) {
+    --bottom-padding: 50vh;
+    --load-more-min-width-desktop: 160px;
+    --load-more-min-width-mobile: 140px;
+  }
+
   .simple-pagination {
     display: flex;
     flex-direction: column;
@@ -77,7 +90,7 @@
     margin: 2rem 0;
     padding: 1rem;
     /* Добавляем отступ внизу на половину высоты экрана */
-    padding-bottom: 50vh;
+    padding-bottom: var(--bottom-padding, 50vh);
   }
 
   .pagination-info {
@@ -98,7 +111,7 @@
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    min-width: 160px;
+    min-width: var(--load-more-min-width-desktop);
     justify-content: center;
   }
 
@@ -157,7 +170,7 @@
     .load-more-btn {
       padding: 0.7rem 1.5rem;
       font-size: 0.9rem;
-      min-width: 140px;
+      min-width: var(--load-more-min-width-mobile);
     }
 
     .pagination-info {

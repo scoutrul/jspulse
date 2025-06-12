@@ -1,5 +1,6 @@
 import { writable, get } from 'svelte/store';
 import type { VacancyWithHtml } from '@jspulse/shared';
+import { PAGINATION } from '../config/pagination.constants';
 
 /**
  * Интерфейс состояния вакансий для хранения в store
@@ -22,12 +23,12 @@ const initialState: VacancyState = {
   vacancies: [],
   total: 0,
   page: 0,
-  limit: 10,
+  limit: PAGINATION.DEFAULT_PAGE_SIZE,
   totalPages: 0,
   selectedSkills: [],
   loading: false,
   error: null,
-  availablePageSizes: [10, 20, 50, 100],
+  availablePageSizes: [...PAGINATION.AVAILABLE_PAGE_SIZES],
   paginationMode: 'replace',
 };
 
@@ -106,11 +107,17 @@ function createVacancyStore() {
     increasePageSize: () => update(state => {
       let newLimit = state.limit;
 
-      if (newLimit < 20) newLimit = 20;
-      else if (newLimit < 30) newLimit = 30;
-      else if (newLimit < 50) newLimit = 50;
-      else if (newLimit < 100) newLimit = 100;
-      else newLimit += 50; // После 100 увеличиваем по 50
+      if (newLimit < PAGINATION.PROGRESSIVE_STEPS.STEP_2) {
+        newLimit = PAGINATION.PROGRESSIVE_STEPS.STEP_2; // 10 -> 20
+      } else if (newLimit < PAGINATION.PROGRESSIVE_STEPS.STEP_3) {
+        newLimit = PAGINATION.PROGRESSIVE_STEPS.STEP_3; // 20 -> 30
+      } else if (newLimit < PAGINATION.PROGRESSIVE_STEPS.STEP_4) {
+        newLimit = PAGINATION.PROGRESSIVE_STEPS.STEP_4; // 30 -> 50
+      } else if (newLimit < 100) {
+        newLimit = 100; // 50 -> 100
+      } else {
+        newLimit += PAGINATION.PROGRESSIVE_STEPS.INCREMENTAL; // 100+ -> +50
+      }
 
       const newTotalPages = Math.ceil(state.total / newLimit);
 
@@ -185,7 +192,7 @@ function createVacancyStore() {
         params.set('page', currentState.page.toString());
       }
 
-      if (currentState.limit !== 10) {
+      if (currentState.limit !== PAGINATION.DEFAULT_PAGE_SIZE) {
         params.set('limit', currentState.limit.toString());
       }
 
