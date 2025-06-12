@@ -4,12 +4,14 @@ import { connectToDatabase } from './config/database.js';
 import { containerFactory } from './container/ContainerFactory.js';
 import { createDIMiddleware, diErrorHandler } from './middleware/diMiddleware.js';
 import vacancyRoutes from './routes/vacancyRoutes.js';
+import schedulerRoutes from './routes/schedulerRoutes.js';
+import { SchedulerService } from './services/SchedulerService.js';
 
 /**
  * Создание и настройка Express приложения с DI Container.
  * Инициализирует все необходимые middleware, маршруты и зависимости.
  */
-export async function createApp(): Promise<{ app: express.Application; container: any }> {
+export async function createApp(): Promise<{ app: express.Application; container: any; scheduler: SchedulerService }> {
   const app = express();
 
   // Подключение к MongoDB
@@ -26,6 +28,11 @@ export async function createApp(): Promise<{ app: express.Application; container
   }
 
   console.log('✅ DI Container validation passed');
+
+  // Инициализация и запуск SchedulerService
+  const scheduler = rootContainer.resolve<SchedulerService>('SchedulerService');
+  await scheduler.start();
+  console.log('⏰ SchedulerService started successfully');
 
   // Настройка базовых middleware
   app.use(cors());
@@ -45,15 +52,23 @@ export async function createApp(): Promise<{ app: express.Application; container
 
   // Регистрация маршрутов
   app.use('/api/vacancies', vacancyRoutes);
+  app.use('/api/scheduler', schedulerRoutes);
 
   // Health check endpoint
-  app.get('/health', (req, res) => {
+  app.get('/health', async (req, res) => {
+    const schedulerHealth = await scheduler.getHealth();
     res.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
       container: {
         registeredServices: rootContainer.getRegisteredTokens().length,
         stats: (rootContainer as any).getStats?.()
+      },
+      scheduler: {
+        status: schedulerHealth.status,
+        totalJobs: schedulerHealth.totalJobs,
+        runningJobs: schedulerHealth.runningJobs,
+        lastError: schedulerHealth.lastError
       }
     });
   });
@@ -98,16 +113,21 @@ export async function createApp(): Promise<{ app: express.Application; container
     });
   });
 
-  return { app, container: rootContainer };
+  return { app, container: rootContainer, scheduler };
 }
 
 /**
  * Graceful shutdown handler для корректного освобождения ресурсов.
  */
-export async function gracefulShutdown(container: any) {
+export async function gracefulShutdown(container: any, scheduler: SchedulerService) {
   console.log('🔄 Starting graceful shutdown...');
 
   try {
+    // Останавливаем scheduler первым делом
+    console.log('⏰ Stopping scheduler...');
+    await scheduler.stop();
+    console.log('✅ Scheduler stopped successfully');
+
     // Освобождаем ресурсы DI Container
     await container.dispose();
     console.log('✅ DI Container disposed successfully');

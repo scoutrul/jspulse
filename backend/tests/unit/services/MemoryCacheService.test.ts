@@ -1,4 +1,4 @@
-import { MemoryCacheService } from '../../../src/services/MemoryCacheService';
+import { MemoryCacheService } from '../../../src/services/MemoryCacheService.js';
 
 describe('MemoryCacheService', () => {
   let cacheService: MemoryCacheService;

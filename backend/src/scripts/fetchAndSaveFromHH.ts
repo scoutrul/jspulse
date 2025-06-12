@@ -9,22 +9,29 @@ import { HH_API_BASE_URL } from "../config/api.js";
 
 const SOURCE_HH = "hh.ru";
 const MAX_VACANCIES_PER_PAGE = 10; // HH API limit
-const MAX_PAGES_TO_FETCH = 5;
+const MAX_PAGES_TO_FETCH = 20; // Увеличено с 5 до 20 для получения 200 вакансий
 const SEARCH_TEXT = "JavaScript Developer OR Frontend Developer";
 
 async function fetchAndSaveHHVacancies() {
-  console.log("Запускаю импорт вакансий с HeadHunter...");
+  console.log("🚀 Запускаю incremental импорт вакансий с HeadHunter...");
+  console.log(`📊 Настройки: ${MAX_PAGES_TO_FETCH} страниц × ${MAX_VACANCIES_PER_PAGE} = до ${MAX_PAGES_TO_FETCH * MAX_VACANCIES_PER_PAGE} вакансий`);
+
   // Принудительно используем локальный MongoDB
   const mongoUrl = "mongodb://localhost:27017/jspulse";
 
   let connection;
   try {
     connection = await mongoose.connect(mongoUrl);
-    console.log("Успешное подключение к MongoDB");
+    console.log("✅ Успешное подключение к MongoDB");
+
+    // Проверяем текущее состояние БД
+    const initialCount = await Vacancy.countDocuments();
+    console.log(`📋 Текущее количество вакансий в БД: ${initialCount}`);
 
     let totalReceived = 0;
     let totalNew = 0;
-    let totalExisting = 0;
+    let totalUpdated = 0;
+    let totalSkipped = 0;
 
     for (let page = 0; page < MAX_PAGES_TO_FETCH; page++) {
       const searchParams = {
@@ -36,8 +43,7 @@ async function fetchAndSaveHHVacancies() {
       };
 
       console.log(
-        `Запрос страницы ${page + 1}/${MAX_PAGES_TO_FETCH} с ${HH_API_BASE_URL}... Параметры:`,
-        searchParams
+        `📄 Запрос страницы ${page + 1}/${MAX_PAGES_TO_FETCH} с ${HH_API_BASE_URL}...`
       );
 
       try {
@@ -53,25 +59,29 @@ async function fetchAndSaveHHVacancies() {
           .json<HHResponseRaw>();
 
         if (!data.items) {
-          console.error(`Ошибка: Ответ от API не содержит 'items'. Полный ответ:`, data);
+          console.error(`❌ Ошибка: Ответ от API не содержит 'items'. Полный ответ:`, data);
           return;
         }
 
         const receivedCount = data.items.length;
-        console.log(`Страница ${page + 1}: Получено ${receivedCount} вакансий.`);
+        console.log(`📄 Страница ${page + 1}: Получено ${receivedCount} вакансий от HH API`);
         totalReceived += receivedCount;
 
         if (receivedCount === 0) {
-          console.log("Больше вакансий не найдено, завершаем.");
+          console.log("🏁 Больше вакансий не найдено, завершаем.");
           break;
         }
 
         let pageNew = 0;
-        let pageExisting = 0;
+        let pageUpdated = 0;
+        let pageSkipped = 0;
 
         for (const hhVacancy of data.items) {
           const transformedData = transformHHVacancyToIVacancy(hhVacancy);
-          if (!transformedData) continue;
+          if (!transformedData) {
+            pageSkipped++;
+            continue;
+          }
 
           // Проверяем, что есть skills для фильтрации
           if (
@@ -98,10 +108,6 @@ async function fetchAndSaveHHVacancies() {
             );
 
             transformedData.skills = detectedSkills.length > 0 ? detectedSkills : ["javascript"]; // Дефолтный навык, если ничего не найдено
-
-            console.log(
-              `Для вакансии "${transformedData.title}" добавлены навыки: ${transformedData.skills.join(", ")}`
-            );
           }
 
           const existingVacancy = await Vacancy.findOne({
@@ -112,42 +118,66 @@ async function fetchAndSaveHHVacancies() {
           if (!existingVacancy) {
             await Vacancy.create(transformedData);
             pageNew++;
+            console.log(`  ✨ НОВАЯ: "${transformedData.title}" (ID: ${transformedData.externalId})`);
           } else {
-            // Обновляем существующую вакансию
-            // Можно использовать Object.assign и save(), или updateOne()
-            // updateOne() может быть эффективнее, т.к. не требует загрузки всего документа
-            await Vacancy.updateOne({ _id: existingVacancy._id }, transformedData);
-            // Можно добавить логирование, что вакансия была обновлена
-            // console.log(`Вакансия "${existingVacancy.title}" (ID: ${existingVacancy._id}) обновлена.`);
-            pageExisting++; // Считаем ее как "уже существующую", но обновленную
+            // Обновляем существующую вакансию с улучшенным логированием
+            const updateResult = await Vacancy.updateOne(
+              { _id: existingVacancy._id },
+              {
+                ...transformedData,
+                updatedAt: new Date() // Добавляем timestamp обновления
+              }
+            );
+
+            if (updateResult.modifiedCount > 0) {
+              pageUpdated++;
+              console.log(`  🔄 ОБНОВЛЕНА: "${transformedData.title}" (ID: ${transformedData.externalId})`);
+            } else {
+              // Данные не изменились
+              console.log(`  ⚪ БЕЗ ИЗМЕНЕНИЙ: "${transformedData.title}" (ID: ${transformedData.externalId})`);
+            }
           }
         }
+
         totalNew += pageNew;
-        totalExisting += pageExisting;
-        console.log(`Страница ${page + 1}: Сохранено ${pageNew}, уже было ${pageExisting}.`);
+        totalUpdated += pageUpdated;
+        totalSkipped += pageSkipped;
+
+        console.log(`📄 Страница ${page + 1} итог: ✨${pageNew} новых, 🔄${pageUpdated} обновлено, ⚪${receivedCount - pageNew - pageUpdated - pageSkipped} без изменений, ❌${pageSkipped} пропущено`);
+
+        // Добавляем небольшую задержку между запросами для избежания rate limiting
+        if (page < MAX_PAGES_TO_FETCH - 1) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       } catch (error) {
-        console.error(`Ошибка при запросе страницы ${page + 1}:`, error);
+        console.error(`❌ Ошибка при запросе страницы ${page + 1}:`, error);
         if (error instanceof HTTPError) {
           const errorBody = await error.response.text();
           console.error(
-            `Ответ сервера при ошибке (${error.response.status}):`,
+            `📋 Ответ сервера при ошибке (${error.response.status}):`,
             errorBody.slice(0, 500)
           );
         }
-        // Можно решить, прерывать ли цикл при ошибке или продолжать
+        // Продолжаем работу при ошибках отдельных страниц
       }
     }
 
-    console.log("Итоговая статистика: ");
-    console.log(`Всего получено: ${totalReceived}`);
-    console.log(`Новых сохранено: ${totalNew}`);
-    console.log(`Уже существовало: ${totalExisting}`);
+    // Финальная статистика
+    const finalCount = await Vacancy.countDocuments();
+    console.log("\n🎯 ИТОГОВАЯ СТАТИСТИКА INCREMENTAL UPDATE:");
+    console.log(`📊 Всего получено от API: ${totalReceived}`);
+    console.log(`✨ Новых добавлено: ${totalNew}`);
+    console.log(`🔄 Обновлено существующих: ${totalUpdated}`);
+    console.log(`❌ Пропущено (ошибки трансформации): ${totalSkipped}`);
+    console.log(`📋 Было в БД: ${initialCount} → Стало: ${finalCount} (изменение: +${finalCount - initialCount})`);
+    console.log(`🎉 Merge операция завершена успешно! Дубликаты исключены.`);
+
   } catch (error) {
-    console.error("Произошла критическая ошибка во время выполнения скрипта:", error);
+    console.error("💥 Произошла критическая ошибка во время выполнения скрипта:", error);
   } finally {
     if (connection) {
       await mongoose.disconnect();
-      console.log("Соединение с MongoDB закрыто");
+      console.log("🔌 Соединение с MongoDB закрыто");
     }
   }
 }

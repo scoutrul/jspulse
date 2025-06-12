@@ -1,4 +1,4 @@
-import { DIContainer } from '../../../src/container/DIContainer';
+import { DIContainer } from '../../../src/container/DIContainer.js';
 import { ServiceLifetime } from '@jspulse/shared';
 
 describe('DIContainer', () => {
@@ -85,7 +85,7 @@ describe('DIContainer', () => {
 
       container.register({
         token: serviceToken,
-        factory: (container) => {
+        factory: (container: any) => {
           const dep = container.resolve(dependencyToken);
           return { dependency: dep };
         },

@@ -4,9 +4,9 @@ import { ICacheService, IVacancyFindCriteria } from '@jspulse/shared';
 // Mock Vacancy Model
 jest.mock('../../../src/models/Vacancy.js', () => ({
   Vacancy: {
-    find: jest.fn(),
-    findById: jest.fn(),
-    findByIdAndUpdate: jest.fn(),
+    find: jest.fn().mockReturnThis(),
+    findById: jest.fn().mockReturnThis(),
+    findByIdAndUpdate: jest.fn().mockReturnThis(),
     findByIdAndDelete: jest.fn(),
     countDocuments: jest.fn(),
     aggregate: jest.fn(),
@@ -17,7 +17,7 @@ jest.mock('../../../src/models/Vacancy.js', () => ({
   }
 }));
 
-const { Vacancy } = require('../../../src/models/Vacancy');
+const { Vacancy } = require('../../../src/models/Vacancy.js');
 
 // Mock cache service
 const mockCacheService: jest.Mocked<ICacheService> = {
@@ -33,7 +33,7 @@ describe('VacancyRepository', () => {
   let repository: VacancyRepository;
 
   // Create a fully chainable mock query that supports Mongoose chaining
-  const createChainableMock = <T = any>(finalData: T[] = [] as T[]) => {
+  const createChainableMock = <T = any>(finalData: T[] = []): any => {
     const chainableMock = {
       limit: jest.fn(),
       skip: jest.fn(),
@@ -49,7 +49,7 @@ describe('VacancyRepository', () => {
     chainableMock.sort.mockReturnValue(chainableMock);
 
     // Make it thenable (awaitable) and return data
-    chainableMock.then.mockImplementation((resolve) => {
+    chainableMock.then.mockImplementation((resolve: any) => {
       resolve(finalData);
       return Promise.resolve(finalData);
     });

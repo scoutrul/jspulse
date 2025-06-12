@@ -1,4 +1,4 @@
-import { DIContainer } from '../../../src/container/DIContainer';
+import { DIContainer } from '../../../src/container/DIContainer.js';
 
 // Простая реализация ServiceLifetime для тестов
 enum ServiceLifetime {

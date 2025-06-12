@@ -5,7 +5,7 @@ import mongoose from 'mongoose';
 import { IVacancyRepository } from '@jspulse/shared';
 
 // Import app setup
-import { containerFactory } from '../../../src/container/ContainerFactory';
+import { containerFactory } from '../../../src/container/ContainerFactory.js';
 
 describe('Vacancy Routes Integration Tests', () => {
   let app: express.Application;
