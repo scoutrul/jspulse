@@ -12,7 +12,6 @@
   import Tag from 'svelte-heros-v2/Tag.svelte';
   import CalendarDays from 'svelte-heros-v2/CalendarDays.svelte';
   import ArrowTopRightOnSquare from 'svelte-heros-v2/ArrowTopRightOnSquare.svelte';
-  import { VacancyDTOSchema } from '@jspulse/shared';
   import type { VacancyWithHtml } from "@jspulse/shared";
   import { vacancyStore } from '../stores/vacancyStore';
   import { createEventDispatcher } from 'svelte';
@@ -24,14 +23,8 @@
   // Параметр для отображения полного неусеченного описания
   export let showFullDescription = false;
 
-  // Валидируем входящие данные
-  $: validationResult = VacancyDTOSchema.safeParse(vacancy);
-  $: if (!validationResult.success) {
-    console.warn('[VacancyCard] Невалидные данные вакансии:', validationResult.error);
-  }
-
-  // Используем данные только если они валидны, или используем исходные данные с проверками
-  $: validVacancy = validationResult.success ? validationResult.data : vacancy;
+  // Используем данные напрямую (валидация убрана для совместимости с клиентом)
+  $: validVacancy = vacancy;
   $: hasSalary = validVacancy.salaryFrom || validVacancy.salaryTo || validVacancy.salaryCurrency;
   $: hasDetails = validVacancy.experience || validVacancy.employment || validVacancy.schedule || validVacancy.address;
   $: hasSkills = validVacancy.skills && validVacancy.skills.length > 0;

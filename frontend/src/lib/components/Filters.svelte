@@ -3,6 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   export let availableSkills: string[] = [];
   export let selectedSkills: string[] = [];
+  export let totalVacancies: number = 0;
   const dispatch = createEventDispatcher<{
     change: string[];
     reset: void;
@@ -20,10 +21,17 @@
 </script>
 
 <section class="filters">
-  <h2>
-    <AdjustmentsHorizontal size="20" />
-    Фильтр по навыкам ({availableSkills?.length ?? 0})
-  </h2>
+  <div class="filters-header">
+    <h2>
+      <AdjustmentsHorizontal size="20" />
+      Фильтр по навыкам ({availableSkills?.length ?? 0})
+    </h2>
+    {#if totalVacancies > 0}
+      <div class="results-legend">
+        Найдено: <strong>{totalVacancies.toLocaleString('ru')}</strong> {totalVacancies === 1 ? 'вакансия' : totalVacancies < 5 ? 'вакансии' : 'вакансий'}
+      </div>
+    {/if}
+  </div>
   {#if availableSkills && availableSkills.length > 0}
     <div class="skills-list">
       {#each availableSkills as skill (skill)}
@@ -49,14 +57,35 @@
     margin-bottom: 2rem;
     border: 1px solid #e9ecef;
   }
-  .filters h2 {
-    margin-top: 0;
+  .filters-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 1rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .filters h2 {
+    margin: 0;
     font-size: 1.3rem;
     color: #495057;
     display: flex;
     align-items: center;
     gap: 0.5rem;
+  }
+
+  .results-legend {
+    font-size: 0.95rem;
+    color: #6c757d;
+    background-color: #e8f4fd;
+    padding: 0.4rem 0.8rem;
+    border-radius: 6px;
+    border: 1px solid #b3d9f7;
+  }
+
+  .results-legend strong {
+    color: #0066cc;
   }
   .skills-list {
     display: flex;
@@ -103,5 +132,37 @@
   .reset-btn:hover {
     background: #e7f3ff;
     border-color: #007bff;
+  }
+
+  /* Мобильная адаптация */
+  @media (max-width: 768px) {
+    .filters {
+      padding: 1rem;
+    }
+
+    .filters-header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+
+    .filters h2 {
+      font-size: 1.2rem;
+    }
+
+    .results-legend {
+      font-size: 0.9rem;
+      align-self: stretch;
+      text-align: center;
+    }
+
+    .skills-list {
+      gap: 0.4rem 0.8rem;
+    }
+
+    .skills-list label {
+      font-size: 0.85rem;
+      padding: 0.35rem 0.7rem;
+    }
   }
 </style>
