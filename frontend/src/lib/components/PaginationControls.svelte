@@ -2,11 +2,12 @@
   import { createEventDispatcher } from 'svelte';
   import PageSizeSelector from './PageSizeSelector.svelte';
   import PageJumper from './PageJumper.svelte';
+  import { PAGINATION, LOCALE } from '../config/pagination.constants';
 
   export let currentPage: number = 0;
   export let totalPages: number = 0;
   export let totalItems: number = 0;
-  export let pageSize: number = 10;
+  export let pageSize: number = PAGINATION.DEFAULT_PAGE_SIZE;
   export let loading: boolean = false;
   export let compact: boolean = false;
 
@@ -15,7 +16,7 @@
     pageSizeChange: number;
   }>();
 
-  const pageSizeOptions = [10, 20, 50, 100];
+  const pageSizeOptions = [...PAGINATION.AVAILABLE_PAGE_SIZES];
 
   // Вычисляем видимые номера страниц для умной навигации
   $: visiblePages = getVisiblePages(currentPage, totalPages);
@@ -143,7 +144,7 @@
       <div class="pagination-info">
         <div class="items-info">
           {#if totalItems > 0}
-            Показано {startItem}–{endItem} из {totalItems.toLocaleString('ru')} вакансий
+            Показано {startItem}–{endItem} из {totalItems.toLocaleString(LOCALE.PRIMARY)} вакансий
           {:else}
             Вакансии не найдены
           {/if}
