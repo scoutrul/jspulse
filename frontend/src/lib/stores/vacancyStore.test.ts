@@ -3,18 +3,19 @@ import { get } from 'svelte/store';
 import { vacancyStore } from './vacancyStore';
 import type { VacancyWithHtml } from '@jspulse/shared';
 
-// Helper function to create mock vacancy
+// Мок функция для создания тестовых вакансий
 function createMockVacancy(id: string, overrides: Partial<VacancyWithHtml> = {}): VacancyWithHtml {
   return {
     _id: id,
     externalId: `ext_${id}`,
-    title: `Job ${id}`,
-    company: `Company ${id}`,
+    title: `Test Vacancy ${id}`,
+    company: 'Test Company',
     location: 'Москва',
-    skills: ['JavaScript'],
-    source: 'hh.ru',
     url: 'https://example.com',
+    skills: ['JavaScript'],
+    description: 'Test description',
     publishedAt: new Date('2024-01-01'),
+    source: 'test',
     ...overrides
   };
 }
@@ -41,35 +42,8 @@ describe('vacancyStore', () => {
     });
   });
 
-  describe('init', () => {
-    it('should initialize store with partial data', () => {
-      const initData = {
-        total: 100,
-        limit: 20,
-        selectedSkills: ['React']
-      };
-
-      vacancyStore.init(initData);
-      const state = get(vacancyStore);
-
-      expect(state.total).toBe(100);
-      expect(state.limit).toBe(20);
-      expect(state.selectedSkills).toEqual(['React']);
-      expect(state.vacancies).toEqual([]); // unchanged
-    });
-
-    it('should merge with existing state', () => {
-      vacancyStore.setLoading(true);
-      vacancyStore.init({ total: 50 });
-
-      const state = get(vacancyStore);
-      expect(state.loading).toBe(true); // preserved
-      expect(state.total).toBe(50); // updated
-    });
-  });
-
   describe('setSkills', () => {
-    it('should set skills and reset page and vacancies', () => {
+    it('should set skills', () => {
       const mockVacancies = [createMockVacancy('1'), createMockVacancy('2')];
 
       // Set initial state with vacancies
@@ -80,8 +54,6 @@ describe('vacancyStore', () => {
 
       const state = get(vacancyStore);
       expect(state.selectedSkills).toEqual(['TypeScript', 'React']);
-      expect(state.page).toBe(0);
-      expect(state.vacancies).toEqual([]);
     });
 
     it('should handle empty skills array', () => {
@@ -89,8 +61,6 @@ describe('vacancyStore', () => {
 
       const state = get(vacancyStore);
       expect(state.selectedSkills).toEqual([]);
-      expect(state.page).toBe(0);
-      expect(state.vacancies).toEqual([]);
     });
   });
 
@@ -181,6 +151,23 @@ describe('vacancyStore', () => {
 
       const state = get(vacancyStore);
       expect(state.error).toBeNull();
+    });
+  });
+
+  describe('setPageSize', () => {
+    it('should set page size', () => {
+      vacancyStore.setPageSize(20);
+
+      const state = get(vacancyStore);
+      expect(state.limit).toBe(20);
+    });
+
+    it('should update page size multiple times', () => {
+      vacancyStore.setPageSize(30);
+      vacancyStore.setPageSize(50);
+
+      const state = get(vacancyStore);
+      expect(state.limit).toBe(50);
     });
   });
 

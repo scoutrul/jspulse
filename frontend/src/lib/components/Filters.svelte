@@ -1,6 +1,8 @@
 <script lang="ts">
   import { AdjustmentsHorizontal, Tag } from 'svelte-heros-v2';
   import { createEventDispatcher } from 'svelte';
+  import GradientButton from './ui/GradientButton.svelte';
+  
   export let availableSkills: string[] = [];
   export let selectedSkills: string[] = [];
   export let totalVacancies: number = 0;
@@ -42,7 +44,15 @@
         </label>
       {/each}
     </div>
-    <button type="button" class="reset-btn" on:click={handleReset}>Сбросить фильтр</button>
+    <GradientButton 
+      variant="primary" 
+      size="md" 
+      fullWidth={true} 
+      hideOnMobile={false} 
+      on:click={handleReset}
+    >
+      Сбросить фильтр
+    </GradientButton>
   {:else}
     <p>Нет доступных навыков для фильтрации.</p>
   {/if}
@@ -51,118 +61,63 @@
 <style>
   /* Стили для фильтров */
   .filters {
-    background-color: #f8f9fa;
-    padding: 1rem 1.5rem;
-    border-radius: 8px;
-    margin-bottom: 2rem;
-    border: 1px solid #e9ecef;
+    @apply bg-neutral-50 p-6 rounded-lg mb-8 border border-neutral-300;
   }
   .filters-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-    gap: 1rem;
+    @apply flex justify-between items-center mb-4 flex-wrap gap-4;
   }
 
   .filters h2 {
-    margin: 0;
-    font-size: 1.3rem;
-    color: #495057;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    @apply m-0 text-xl text-neutral-700 flex items-center gap-2 font-semibold;
   }
 
   .results-legend {
-    font-size: 0.95rem;
-    color: #6c757d;
-    background-color: #e8f4fd;
-    padding: 0.4rem 0.8rem;
-    border-radius: 6px;
-    border: 1px solid #b3d9f7;
+    @apply text-sm text-neutral-600 bg-info-50 px-3 py-2 rounded-md border border-info-200;
   }
 
   .results-legend strong {
-    color: #0066cc;
+    @apply text-info-700;
   }
   .skills-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1rem;
+    @apply flex flex-wrap gap-2;
   }
   .skills-list label {
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    background-color: #fff;
-    padding: 0.4rem 0.8rem;
-    border-radius: 15px;
-    border: 1px solid #dee2e6;
-    font-size: 0.9rem;
-    transition:
-      background-color 0.2s,
-      border-color 0.2s;
-    gap: 0.3rem;
-  }
-  .skills-list label:hover {
-    background-color: #f1f3f5;
+    @apply cursor-pointer inline-flex items-center bg-white px-3 py-2 rounded-xl border border-neutral-300 text-sm transition-all duration-200 gap-2 hover:bg-neutral-100;
   }
   .skills-list input[type="checkbox"] {
-    margin-right: 0.3rem;
-    accent-color: #007bff;
+    @apply mr-1 accent-primary-500;
   }
 
   /* Стиль для родительского label, когда внутренний чекбокс выбран */
   .skills-list label:has(input[type="checkbox"]:checked) {
-    background-color: #e7f3ff;
-    border-color: #007bff;
-    font-weight: 500;
+    @apply bg-primary-50 border-primary-300 font-medium text-primary-800;
   }
-  .reset-btn {
-    margin-top: 1rem;
-    padding: 0.5rem 1.2rem;
-    background: #eee;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    cursor: pointer;
-    font-size: 1rem;
-  }
-  .reset-btn:hover {
-    background: #e7f3ff;
-    border-color: #007bff;
-  }
+  /* Стили для кнопки сброса перенесены в компонент GradientButton */
 
   /* Мобильная адаптация */
   @media (max-width: 768px) {
     .filters {
-      padding: 1rem;
+      @apply p-4;
     }
 
     .filters-header {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 0.75rem;
+      @apply flex-col items-start gap-3;
     }
 
     .filters h2 {
-      font-size: 1.2rem;
+      @apply text-lg;
     }
 
     .results-legend {
-      font-size: 0.9rem;
-      align-self: stretch;
-      text-align: center;
+      @apply text-sm self-stretch text-center;
     }
 
     .skills-list {
-      gap: 0.4rem 0.8rem;
+      @apply gap-2;
     }
 
     .skills-list label {
-      font-size: 0.85rem;
-      padding: 0.35rem 0.7rem;
+      @apply text-sm px-3 py-2;
     }
   }
 </style>

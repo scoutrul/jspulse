@@ -14,19 +14,10 @@
 
 <style>
   .error-container {
-    background-color: #fff3cd;
-    border: 1px solid #ffeeba;
-    color: #856404;
-    padding: 1rem;
-    border-radius: 5px;
-    margin-bottom: 1.5rem;
+    @apply bg-warning-100 border border-warning-300 text-warning-800 p-4 rounded-lg mb-6;
   }
 
   .error-message {
-    margin: 0;
-    font-weight: bold;
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
+    @apply m-0 font-semibold flex items-center gap-2;
   }
 </style>

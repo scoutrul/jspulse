@@ -1,0 +1,43 @@
+/* 🎨 JSPULSE DESIGN SYSTEM - Градиентные утилиты */
+
+/* Глобальные анимации */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+/* Базовая градиентная анимация */
+.gradient-animated {
+  background: linear-gradient(90deg, 
+    #10b981 0%, 
+    #f59e0b 25%, 
+    #059669 50%, 
+    #3b82f6 75%, 
+    #10b981 100%);
+  background-size: 200% 100%;
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+/* Контейнер для анимированного бордера */
+.gradient-border {
+  position: relative;
+  background: linear-gradient(90deg, 
+    #10b981 0%, 
+    #f59e0b 25%, 
+    #059669 50%, 
+    #3b82f6 75%, 
+    #10b981 100%);
+  background-size: 200% 100%;
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+/* Контент внутри анимированного бордера */
+.gradient-border-content {
+  position: relative;
+  margin: 1px;
+  z-index: 1;
+} 

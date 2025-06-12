@@ -1,6 +1,7 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { ArrowDown, ArrowPathRoundedSquare } from 'svelte-heros-v2';
+  import GradientButton from '$lib/components/ui/GradientButton.svelte';
 
   export let loading: boolean = false;
   export let disabled: boolean = false;
@@ -16,7 +17,12 @@
 </script>
 
 <div class="load-more">
-  <button on:click={handleClick} disabled={disabled || loading}>
+  <GradientButton 
+    on:click={handleClick}
+    disabled={disabled || loading}
+    variant="primary"
+    size="lg"
+  >
     {#if loading}
       <ArrowPathRoundedSquare size="18" class="spinner" />
       Загрузка...
@@ -24,36 +30,12 @@
       <ArrowDown size="18" />
       Показать еще {limit}
     {/if}
-  </button>
+  </GradientButton>
 </div>
 
 <style>
   .load-more {
-    text-align: center;
-    margin-top: 2rem;
-  }
-
-  button {
-    padding: 0.8rem 2rem;
-    font-size: 1rem;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background-color 0.2s;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-  }
-
-  button:hover:not(:disabled) {
-    background-color: #0056b3;
-  }
-
-  button:disabled {
-    background-color: #aaa;
-    cursor: not-allowed;
+    @apply text-center mt-8;
   }
   
   :global(.spinner) {

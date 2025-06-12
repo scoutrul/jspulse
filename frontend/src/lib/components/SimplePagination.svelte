@@ -131,135 +131,177 @@
   }
 
   .simple-pagination {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
-    margin: 2rem 0;
-    padding: 1rem;
-    /* Добавляем отступ внизу на половину высоты экрана */
+    @apply flex flex-col items-center gap-6 my-8 p-6 rounded-lg bg-neutral-50 border border-neutral-200;
     padding-bottom: var(--bottom-padding, 50vh);
   }
 
   .pagination-info {
-    font-size: 0.9rem;
-    color: #666;
-    text-align: center;
+    @apply text-sm text-neutral-600 text-center font-medium px-4 py-2 bg-white rounded-md border border-neutral-200;
   }
 
   .pagination-buttons {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    flex-wrap: wrap;
-    justify-content: center;
+    @apply flex gap-5 items-center flex-wrap justify-center;
   }
 
   .load-more-btn,
   .load-all-btn {
-    padding: 0.8rem 2rem;
-    font-size: 1rem;
-    color: white;
-    border: none;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
+    @apply px-9 py-4 text-base font-medium text-white border-2 border-transparent rounded-xl cursor-pointer transition-all duration-300 inline-flex items-center gap-3 min-h-[48px] relative overflow-hidden;
     min-width: var(--load-more-min-width-desktop);
-    justify-content: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
+  /* Enhanced button colors */
   .load-more-btn {
-    background-color: #007bff;
+    background: linear-gradient(135deg, theme('colors.primary.500') 0%, theme('colors.primary.600') 100%);
   }
 
   .load-all-btn {
-    background-color: #28a745;
+    background: linear-gradient(135deg, theme('colors.success.500') 0%, theme('colors.success.600') 100%);
   }
 
+  /* Enhanced hover states */
   .load-more-btn:hover:not(:disabled) {
-    background-color: #0056b3;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+    background: linear-gradient(135deg, theme('colors.primary.600') 0%, theme('colors.primary.700') 100%);
+    @apply -translate-y-0.5;
+    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3), 0 4px 8px rgba(59, 130, 246, 0.2);
+    @apply border-white/20;
   }
 
   .load-all-btn:hover:not(:disabled) {
-    background-color: #218838;
-    transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+    background: linear-gradient(135deg, theme('colors.success.600') 0%, theme('colors.success.700') 100%);
+    @apply -translate-y-0.5;
+    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3), 0 4px 8px rgba(16, 185, 129, 0.2);
+    @apply border-white/20;
   }
 
+  /* Enhanced active states */
   .load-more-btn:active:not(:disabled),
   .load-all-btn:active:not(:disabled) {
-    transform: translateY(0);
+    @apply -translate-y-px transition-all duration-100;
   }
 
   .load-more-btn:active:not(:disabled) {
-    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
   }
 
   .load-all-btn:active:not(:disabled) {
-    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
   }
 
+  /* Enhanced disabled state */
   .load-more-btn:disabled,
   .load-all-btn:disabled {
-    background-color: #aaa;
-    cursor: not-allowed;
-    transform: none;
-    box-shadow: none;
+    background: linear-gradient(135deg, theme('colors.neutral.400') 0%, theme('colors.neutral.500') 100%);
+    @apply cursor-not-allowed transform-none opacity-70;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
   }
 
-  .all-loaded {
-    font-size: 0.9rem;
-    color: #666;
-    text-align: center;
-    font-style: italic;
-    padding: 1rem;
-    background-color: #f8f9fa;
-    border-radius: 8px;
-    border: 1px solid #e9ecef;
-  }
-
-  .no-results {
-    font-size: 0.9rem;
-    color: #666;
-    text-align: center;
-    font-style: italic;
-  }
-  
+  /* Enhanced loading state animation */
   :global(.spinner) {
-    animation: spin 1s linear infinite;
+    animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+    filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.3));
   }
   
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% { 
+      transform: rotate(0deg) scale(1);
+    }
+    50% {
+      transform: rotate(180deg) scale(1.1);
+    }
+    100% { 
+      transform: rotate(360deg) scale(1);
+    }
   }
 
-  /* Мобильная адаптация */
+  /* Enhanced status messages */
+  .all-loaded {
+    @apply text-sm text-neutral-600 text-center font-medium px-5 py-3 bg-gradient-to-r from-info-50 to-info-100 rounded-xl border border-info-200 relative;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .all-loaded::before {
+    content: "✅";
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+  }
+
+  .no-results {
+    @apply text-sm text-neutral-600 text-center font-medium px-5 py-3 bg-gradient-to-r from-warning-50 to-warning-100 rounded-xl border border-warning-300;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  .no-results::before {
+    content: "🔍";
+    margin-right: 0.5rem;
+    font-size: 1.1rem;
+  }
+
+  /* Enhanced focus indicators для accessibility */
+  .load-more-btn:focus,
+  .load-all-btn:focus {
+    @apply outline-2 outline-warning-400 outline-offset-2;
+  }
+
+  /* Accessibility improvements */
+  @media (prefers-reduced-motion: reduce) {
+    .load-more-btn,
+    .load-all-btn {
+      @apply transition-colors duration-200;
+    }
+    
+    .load-more-btn:hover:not(:disabled),
+    .load-all-btn:hover:not(:disabled) {
+      @apply transform-none;
+    }
+    
+    :global(.spinner) {
+      animation: spin 2s linear infinite;
+    }
+  }
+
+  /* Enhanced mobile optimization */
   @media (max-width: 768px) {
     .simple-pagination {
-      margin: 1.5rem 0;
-      padding: 0.5rem;
+      @apply my-6 p-4 gap-4;
     }
 
     .pagination-buttons {
-      flex-direction: column;
-      gap: 0.75rem;
+      @apply flex-col gap-4 w-full;
     }
 
     .load-more-btn,
     .load-all-btn {
-      padding: 0.7rem 1.5rem;
-      font-size: 0.9rem;
-      min-width: var(--load-more-min-width-mobile);
+      @apply px-6 py-4 text-sm min-w-[200px] w-full max-w-sm;
     }
 
     .pagination-info {
-      font-size: 0.8rem;
+      @apply text-sm px-4 py-3;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .simple-pagination {
+      @apply p-3 my-4;
+    }
+    
+    .load-more-btn,
+    .load-all-btn {
+      @apply text-sm px-5 py-4;
+    }
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .load-more-btn,
+    .load-all-btn {
+      @apply border-2 border-current;
+    }
+    
+    .pagination-info,
+    .all-loaded,
+    .no-results {
+      @apply border-2 border-current;
     }
   }
 </style> 

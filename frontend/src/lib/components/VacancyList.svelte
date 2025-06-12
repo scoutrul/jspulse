@@ -40,33 +40,22 @@
 
 <style>
   .vacancies {
-    margin-top: 1rem;
-    transition: opacity 0.3s ease-in-out;
+    @apply mt-4 transition-opacity duration-300;
   }
   .vacancies.loading {
-    opacity: 0.5;
-    pointer-events: none;
+    @apply opacity-50 pointer-events-none;
   }
 
   ul.loading-more {
-    opacity: 0.8;
+    @apply opacity-80;
   }
 
-
-
   .no-vacancies {
-    text-align: center;
-    color: #777;
-    margin-top: 2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 1rem;
+    @apply text-center text-neutral-500 mt-8 flex flex-col items-center gap-4;
   }
 
   ul {
-    list-style: none;
-    padding: 0;
+    @apply list-none p-0;
   }
   /* Стили для li перенесены в VacancyCard.svelte */
 </style>

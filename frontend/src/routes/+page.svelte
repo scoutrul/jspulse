@@ -4,7 +4,6 @@
   import Filters from "$lib/components/Filters.svelte";
   import VacancyList from "$lib/components/VacancyList.svelte";
   import SimplePagination from "$lib/components/SimplePagination.svelte";
-  import LoadPreviousButton from "$lib/components/LoadPreviousButton.svelte";
   import LoadingIndicator from "$lib/components/LoadingIndicator.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import { vacancyService } from "$lib/services/vacancy.service";
@@ -106,7 +105,6 @@
   // Фильтрация с сбросом виртуализации
   async function handleSkillsChange(skills: string[]) {
     vacancyStore.setSkills(skills);
-    vacancyStore.resetVirtual(); // Сбрасываем виртуализацию
     vacancyStore.setPageSize(PAGINATION.DEFAULT_PAGE_SIZE); // Сброс к начальному лимиту
     vacancyStore.setLoading(true);
     
@@ -131,10 +129,10 @@
     vacancyStore.setLoading(false);
   }
 
-  // Сброс фильтра с сбросом виртуализации
+  // Сброс фильтра
   async function handleReset() {
     vacancyStore.setSkills([]);
-    vacancyStore.reset(); // Это уже включает сброс виртуализации через resetVirtual
+    vacancyStore.reset();
     vacancyStore.setLoading(true);
     
     const response = await vacancyService.fetchVacanciesClient({
@@ -163,7 +161,7 @@
     handleSkillsChange([event.detail]);
   }
 
-  // Загрузка дополнительных элементов (показать еще) с виртуализацией
+  // Загрузка дополнительных элементов (показать еще)
   async function handleLoadMore() {
     if (store.loading) return;
     
@@ -175,7 +173,7 @@
     
     try {
       if (isOffsetMode) {
-        // Offset-режим: простая пагинация без виртуализации для предотвращения дублирования
+        // Offset-режим: простая пагинация
         const nextPage = Math.floor(store.vacancies.length / 50);
         
         const response = await vacancyService.fetchVacanciesClient({
@@ -234,12 +232,11 @@
           // Обновляем лимит в store
           vacancyStore.setPageSize(newLimit);
           
-          // В прогрессивном режиме заменяем все данные (не добавляем), 
-          // так как получили полный набор с новым лимитом
+          // В прогрессивном режиме заменяем все данные
           vacancyStore.setVacancies(allVacancies, response.total, response.totalPages, 0);
           vacancyStore.setError(null);
           
-          // Анимация для новых элементов (начиная с позиции где были старые данные)
+          // Анимация для новых элементов
           setTimeout(() => {
             triggerFadeInAnimation(currentCount);
             
@@ -285,7 +282,7 @@
         vacancyStore.setVacancies(allVacancies, response.total, response.totalPages, 0);
         vacancyStore.setError(null);
         
-        // Анимация для новых элементов (начиная с позиции где были старые данные)
+        // Анимация для новых элементов
         setTimeout(() => {
           triggerFadeInAnimation(currentCount);
           
@@ -297,48 +294,6 @@
       }
     } catch (error) {
       vacancyStore.setError('Ошибка при загрузке всех вакансий');
-    } finally {
-      vacancyStore.setLoading(false);
-    }
-  }
-
-  // Загрузка предыдущих элементов (откат виртуализации)
-  async function handleLoadPrevious() {
-    if (store.loading) return;
-    
-    const virtualInfo = vacancyStore.getVirtualInfo();
-    if (!virtualInfo.canLoadPrevious) return;
-    
-    vacancyStore.setLoading(true);
-    
-    try {
-      // Загружаем предыдущие элементы
-      const response = await vacancyService.fetchVacanciesClient({
-        page: 0,
-        limit: virtualInfo.windowStart + store.vacancies.length,
-        skills: store.selectedSkills
-      });
-
-      if (response.error) {
-        vacancyStore.setError(response.error);
-      } else {
-        const allVacancies = response.vacancies.map(convertVacancy);
-        
-        // Откатываем виртуализацию и показываем предыдущие элементы
-        vacancyStore.loadPreviousVirtual();
-        vacancyStore.setVacancies(allVacancies, response.total, response.totalPages, 0);
-        vacancyStore.setError(null);
-        
-        // Скроллим к началу предыдущих элементов
-        setTimeout(() => {
-          const firstVisibleElement = document.querySelector('.vacancy-card:first-child');
-          if (firstVisibleElement) {
-            firstVisibleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }, ANIMATION.TIMING.DOM_RENDER_DELAY);
-      }
-    } catch (error) {
-      vacancyStore.setError('Ошибка при загрузке предыдущих вакансий');
     } finally {
       vacancyStore.setLoading(false);
     }
@@ -390,16 +345,6 @@
 
   <ErrorMessage message={store.error} />
 
-  <!-- Кнопка "Показать предыдущие" сверху при виртуализации -->
-  {#if store.canLoadPrevious}
-    {@const virtualInfo = vacancyStore.getVirtualInfo()}
-    <LoadPreviousButton 
-      hiddenCount={virtualInfo.hiddenItemsCount}
-      loading={store.loading}
-      on:loadPrevious={handleLoadPrevious}
-    />
-  {/if}
-
   <VacancyList 
     vacancies={store.vacancies} 
     loadingFilter={store.loading && store.vacancies.length === 0} 
@@ -426,9 +371,7 @@
   }
 
   main {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 1rem;
+    @apply max-w-4xl mx-auto my-8 px-4;
   }
 
   /* Анимация появления новых элементов с оранжевым фоном */
@@ -439,32 +382,32 @@
   @keyframes fadeInOrangeSlide {
     0% {
       opacity: 0;
-      background-color: #ff8c00;
+      background-color: theme('colors.warning.500');
       transform: translateY(30px) scale(0.95);
-      border-color: #ff8c00;
+      border-color: theme('colors.warning.500');
     }
     30% {
       opacity: 0.8;
-      background-color: #ffb347;
+      background-color: theme('colors.warning.300');
       transform: translateY(15px) scale(0.98);
-      border-color: #ffb347;
+      border-color: theme('colors.warning.300');
     }
     70% {
       opacity: 1;
-      background-color: #fff5ee;
+      background-color: theme('colors.warning.50');
       transform: translateY(5px) scale(1);
-      border-color: #ffd4c4;
+      border-color: theme('colors.warning.200');
     }
     100% {
       opacity: 1;
       background-color: white;
       transform: translateY(0) scale(1);
-      border-color: #eee;
+      border-color: theme('colors.neutral.200');
     }
   }
 
   /* Предотвращение layout shift при загрузке */
   :global(.vacancy-card) {
-    transition: all 0.3s ease;
+    @apply transition-all duration-300;
   }
 </style>

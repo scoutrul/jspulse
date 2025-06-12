@@ -15,6 +15,7 @@
   import type { VacancyWithHtml } from "@jspulse/shared";
   import { vacancyStore } from '../stores/vacancyStore';
   import { createEventDispatcher } from 'svelte';
+  import GradientButton from './ui/GradientButton.svelte';
 
   // type VacancyWithHtml = VacancyDTO & { htmlDescription?: string };
   export let vacancy: VacancyWithHtml;
@@ -128,142 +129,135 @@
       <div>{validVacancy.description}</div>
     </details>
   {/if}
-  {#if validVacancy.url}
-    <a href={validVacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
-      <ArrowTopRightOnSquare size="16" /> Перейти к источнику ({validVacancy.source})
-    </a>
-  {/if}
+  <div class="vacancy-actions">
+    {#if validVacancy.url}
+      <a href={validVacancy.url} target="_blank" rel="noopener noreferrer" class="source-link">
+        <ArrowTopRightOnSquare size="16" /> Перейти к источнику ({validVacancy.source})
+      </a>
+    {/if}
+    
+    <GradientButton 
+      variant="secondary" 
+      size="sm" 
+      hideOnMobile={true}
+      on:click={() => alert('Функция отклика будет доступна в ближайшее время!')}
+    >
+      Откликнуться
+    </GradientButton>
+  </div>
 </li>
 
 <style>
   li {
-    border: 1px solid #eee;
-    border-radius: 8px;
-    margin-bottom: 1.5rem;
-    padding: 1.5rem;
-    background-color: white;
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    transition: box-shadow 0.2s ease-in-out;
-    list-style: none;
+    @apply border border-neutral-300 rounded-lg mb-6 p-6 bg-white shadow-md transition-all duration-200 ease-in-out list-none;
   }
   li:hover {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    @apply shadow-lg -translate-y-0.5 border-neutral-400;
+  }
+
+  li:focus-within {
+    @apply outline-2 outline-primary-500 outline-offset-2;
   }
 
   li h3 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    font-size: 1.3rem;
-    color: #0056b3;
+    @apply mt-0 mb-2 text-xl text-primary-800 font-semibold leading-snug;
   }
   .vacancy-title-link {
-    text-decoration: none;
-    color: inherit;
+    @apply no-underline text-inherit rounded;
   }
   .vacancy-title-link:hover h3 {
-    text-decoration: underline;
+    @apply underline text-primary-700;
+  }
+  .vacancy-title-link:focus {
+    @apply outline-2 outline-primary-500 outline-offset-2;
   }
 
   .vacancy-header {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
-    margin-bottom: 1rem;
-    color: #555;
-    font-size: 0.95rem;
+    @apply flex flex-wrap gap-3 gap-x-6 mb-4 text-neutral-700 text-sm;
   }
 
   .company,
   .location,
   .salary {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
+    @apply m-0 flex items-center gap-2;
+  }
+
+  @media (max-width: 768px) {
+    .vacancy-header {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .company,
+    .location,
+    .salary {
+      width: 100%;
+    }
   }
 
   .vacancy-details {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.5rem 1.5rem;
-    margin-bottom: 1rem;
-    font-size: 0.9rem;
-    color: #666;
+    @apply grid grid-cols-[repeat(auto-fit,minmax(220px,1fr))] gap-3 gap-x-6 mb-4 text-sm text-neutral-600;
   }
   .vacancy-details p {
-    margin: 0;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
+    @apply m-0 flex items-center gap-2;
+  }
+
+  @media (max-width: 768px) {
+    .vacancy-details {
+      grid-template-columns: 1fr;
+      gap: 0.5rem;
+    }
   }
 
   .skills {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    display: flex;
-    align-items: center;
-    gap: 0.3rem;
+    @apply mt-4 mb-4 flex items-start gap-2 flex-wrap;
   }
   .skills strong {
-    margin-right: 0.5rem;
+    @apply mr-2 text-neutral-700 flex-shrink-0;
   }
 
   .skill-tag {
-    display: inline-block;
-    background-color: #e7f3ff;
-    color: #0056b3;
-    padding: 0.2rem 0.6rem;
-    border-radius: 12px;
-    margin-right: 0.4rem;
-    margin-bottom: 0.4rem;
-    font-size: 0.85rem;
+    @apply inline-block bg-primary-100 text-primary-800 px-3 py-1 rounded-xl mr-2 mb-2 text-sm font-medium border border-primary-200 transition-all duration-150 ease-in-out cursor-pointer min-h-[32px];
+  }
+
+  .skill-tag:hover {
+    @apply bg-primary-200 border-primary-300 -translate-y-px;
+  }
+
+  .skill-tag:focus {
+    @apply outline-2 outline-primary-500 outline-offset-2;
   }
 
   .published-at {
-    font-size: 0.85rem;
-    color: #888;
-    margin-top: 1rem;
-    text-align: right;
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 0.3rem;
+    @apply text-sm text-neutral-500 mt-4 text-right flex items-center justify-end gap-2;
+  }
+
+  @media (max-width: 768px) {
+    .published-at {
+      text-align: left;
+      justify-content: flex-start;
+    }
   }
 
   .description-details {
-    margin-top: 1rem;
-    margin-bottom: 1rem;
-    font-size: 0.95rem;
-    line-height: 1.6;
+    @apply mt-4 mb-4 text-sm leading-relaxed border border-neutral-200 rounded-lg overflow-hidden;
   }
   .description-details summary {
-    cursor: pointer;
-    font-weight: bold;
-    margin-bottom: 0.5rem;
-    color: #444;
+    @apply cursor-pointer font-semibold px-4 py-3 mb-0 text-neutral-700 bg-neutral-50 border-b border-neutral-200 transition-colors duration-150 hover:bg-neutral-100;
   }
   .description-details[open] summary {
-    margin-bottom: 0.8rem;
+    @apply mb-0;
   }
   .description-details > div {
-    padding: 0.5rem;
-    border-left: 3px solid #eee;
-    background-color: #fdfdfd;
-    overflow-wrap: break-word;
-    word-wrap: break-word;
-    word-break: break-word;
-    max-width: 100%;
+    @apply p-4 border-l-0 bg-white break-words max-w-full;
   }
   
-  /* Стили для HTML-элементов внутри описания */
   .description-details > div :global(ul),
   .description-details > div :global(ol) {
-    padding-left: 1.5rem;
-    margin-bottom: 1rem;
+    @apply pl-6 mb-4;
   }
   
   .description-details > div :global(p) {
-    margin-bottom: 0.8rem;
+    @apply mb-3 text-neutral-700;
   }
   
   .description-details > div :global(h1),
@@ -272,58 +266,64 @@
   .description-details > div :global(h4),
   .description-details > div :global(h5),
   .description-details > div :global(h6) {
-    margin-top: 1rem;
-    margin-bottom: 0.5rem;
-    color: #333;
+    @apply mt-4 mb-2 text-neutral-800 font-semibold;
   }
   
   .description-details > div :global(pre),
   .description-details > div :global(code) {
-    background-color: #f5f5f5;
-    padding: 0.2rem 0.4rem;
-    border-radius: 4px;
-    overflow-x: auto;
-    font-size: 0.9rem;
-    font-family: monospace;
+    @apply bg-neutral-100 px-2 py-1 rounded border border-neutral-200 overflow-x-auto text-sm font-mono;
   }
   
   .description-details > div :global(img) {
-    max-width: 100%;
-    height: auto;
+    @apply max-w-full h-auto rounded;
   }
   
   .description-details > div :global(a) {
-    color: #0056b3;
-    text-decoration: none;
+    @apply text-primary-700 no-underline hover:underline hover:text-primary-800;
   }
   
-  .description-details > div :global(a:hover) {
-    text-decoration: underline;
+  .vacancy-actions {
+    @apply mt-4 flex items-center justify-between flex-wrap gap-4;
   }
   
   .source-link {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    color: #0056b3;
-    text-decoration: none;
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-  }
-  .source-link:hover {
-    text-decoration: underline;
+    @apply inline-flex items-center gap-2 text-primary-700 no-underline text-sm font-medium px-3 py-2 rounded-md border border-neutral-200 bg-neutral-50 transition-all duration-150 min-h-[40px] hover:bg-neutral-100 hover:border-neutral-300 hover:-translate-y-px focus:outline-2 focus:outline-primary-500 focus:outline-offset-2;
   }
 
   .full-description {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
-    border-top: 1px dashed #ddd;
+    @apply mt-6 pt-4 border-t border-neutral-200;
   }
   
   .full-description h4 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-    font-size: 1rem;
-    color: #666;
+    @apply mt-0 mb-2 text-base text-neutral-600 font-semibold;
+  }
+
+  @keyframes fadeInScale {
+    from {
+      opacity: 0;
+      transform: translateY(20px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  @media (max-width: 480px) {
+    li {
+      @apply mb-4 p-4;
+    }
+    
+    li h3 {
+      @apply text-lg;
+    }
+    
+    .skills {
+      @apply flex-col items-stretch;
+    }
+    
+    .skills strong {
+      @apply mb-2;
+    }
   }
 </style>

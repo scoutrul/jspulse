@@ -1,15 +1,10 @@
 <script>
   import "../app.css";
+  import Header from "$lib/components/Header.svelte";
 </script>
 
 <div class="app-container">
-  <header>
-    <a href="/" class="header-link">
-      <img src="/jspulse.png" alt="JS Пульс логотип" class="logo" />
-      <h1>JS Пульс</h1>
-      <p class="description">Агрегатор вакансий по Frontend/JavaScript</p>
-    </a>
-  </header>
+  <Header />
 
   <main class="content">
     <slot />
@@ -25,59 +20,30 @@
 
 <style>
   .app-container {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-  }
-
-  header {
-    background-color: #fff; /* Или другой фон, если нужно */
-    padding: 1rem 2rem; /* Добавим немного отступов */
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    /* display: flex; - убираем, т.к. flex теперь на ссылке */
-    /* align-items: center; - убираем */
-    /* margin-bottom: 1rem; - убираем, отступ будет у main */
-  }
-
-  .header-link {
-    display: flex;
-    align-items: center;
-    text-decoration: none; /* Убираем подчеркивание ссылки */
-    color: inherit; /* Наследуем цвет текста */
-  }
-
-  .logo {
-    width: 50px; /* Немного уменьшим лого в хедере */
-    height: 50px;
-    margin-right: 1rem;
-  }
-
-  h1 {
-    color: #fdc007;
-    margin: 0;
-    font-size: 1.5rem; /* Немного уменьшим заголовок в хедере */
+    @apply flex flex-col min-h-screen;
   }
 
   .content {
-    flex-grow: 1; /* Основной контент занимает оставшееся место */
-    padding: 1rem 2rem; /* Добавим отступы для основного контента */
-    max-width: 1100px; /* Можно ограничить ширину контента */
-    margin: 1rem auto; /* Центрируем контент и добавляем отступ сверху */
-  }
-
-  .description {
-    margin-left: auto;
+    @apply flex-grow px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full;
   }
 
   /* Стили для футера, если он будет добавлен */
   /*
   footer {
-    text-align: center;
-    padding: 1rem;
-    margin-top: auto; 
-    background-color: #f8f8f8;
-    color: #666;
-    font-size: 0.9rem;
+    @apply text-center p-4 mt-auto bg-neutral-100 text-neutral-600 text-sm;
   }
   */
+
+  /* Улучшенная адаптивность для контента */
+  @media (max-width: 640px) {
+    .content {
+      @apply px-4 py-4;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .content {
+      @apply px-3 py-3;
+    }
+  }
 </style>
