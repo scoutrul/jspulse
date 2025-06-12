@@ -10,15 +10,30 @@
 
   const dispatch = createEventDispatcher<{
     loadMore: void;
+    loadAll: void;
   }>();
-
+  // Проверка режима offset-based пагинации
+  $: isOffsetMode = currentPageSize >= PAGINATION.THRESHOLDS.OFFSET_MODE_LIMIT && totalItems > PAGINATION.THRESHOLDS.OFFSET_MODE_LIMIT;
+  
   // Вычисляем количество дополнительных элементов
-  $: hasMore = showingItems < totalItems;
-  $: additionalItems = getAdditionalItems(currentPageSize, totalItems, showingItems);
+  $: hasMore = showingItems < totalItems; // Проверяем есть ли еще элементы для показа
+    (showingItems < totalItems); // В прогрессивном режиме проверяем показаны ли все элементы
+  $: additionalItems = getAdditionalItems(currentPageSize, totalItems, showingItems, isOffsetMode);
+  $: buttonText = getButtonText(currentPageSize, additionalItems, isOffsetMode);
+  
+  // Логика для кнопки "Показать все"
+  $: showLoadAllButton = !isOffsetMode && hasMore && totalItems <= PAGINATION.THRESHOLDS.SHOW_ALL_MAX_TOTAL && showingItems < totalItems;
+  $: remainingItems = totalItems - showingItems;
 
-  function getAdditionalItems(currentLimit: number, total: number, showing: number): number {
+  function getAdditionalItems(currentLimit: number, total: number, showing: number, offsetMode: boolean): number {
     if (showing >= total) return 0;
     
+    // В offset-режиме всегда показываем следующую порцию
+    if (offsetMode) {
+      return PAGINATION.THRESHOLDS.OFFSET_WINDOW_SIZE;
+    }
+    
+    // Прогрессивное увеличение до 100
     let additionalItems: number = PAGINATION.INCREMENTS.SMALL;
     if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_1) {
       additionalItems = PAGINATION.INCREMENTS.SMALL; // 10 -> 20
@@ -29,15 +44,29 @@
     } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_4) {
       additionalItems = PAGINATION.INCREMENTS.LARGE; // 50 -> 100
     } else {
-      additionalItems = PAGINATION.INCREMENTS.LARGE; // 100+ -> +50
+      // После максимального элемента загружаем порциями
+      additionalItems = PAGINATION.INCREMENTS.LARGE; // 100 -> 150
     }
     
     return Math.min(additionalItems, total - showing);
   }
 
+  function getButtonText(currentLimit: number, additionalItems: number, offsetMode: boolean): string {
+    if (offsetMode) {
+      return `Следующие ${additionalItems}`;
+    }
+    return `Показать еще ${additionalItems.toLocaleString(LOCALE.PRIMARY)}`;
+  }
+
   function handleLoadMore() {
     if (!loading && hasMore) {
       dispatch('loadMore');
+    }
+  }
+
+  function handleLoadAll() {
+    if (!loading && showLoadAllButton) {
+      dispatch('loadAll');
     }
   }
 </script>
@@ -49,20 +78,39 @@
     </div>
 
     {#if hasMore}
-      <button 
-        class="load-more-btn" 
-        on:click={handleLoadMore} 
-        disabled={loading}
-        aria-label="Показать еще {additionalItems} вакансий"
-      >
-        {#if loading}
-          <ArrowPathRoundedSquare size="18" class="spinner" />
-          Загрузка...
-        {:else}
-          <ArrowDown size="18" />
-          Показать еще {additionalItems.toLocaleString(LOCALE.PRIMARY)}
+      <div class="pagination-buttons">
+        <button 
+          class="load-more-btn" 
+          on:click={handleLoadMore} 
+          disabled={loading}
+          aria-label="Показать еще {additionalItems} вакансий"
+        >
+          {#if loading}
+            <ArrowPathRoundedSquare size="18" class="spinner" />
+            Загрузка...
+          {:else}
+            <ArrowDown size="18" />
+            {buttonText}
+          {/if}
+        </button>
+        
+        {#if showLoadAllButton}
+          <button 
+            class="load-all-btn" 
+            on:click={handleLoadAll} 
+            disabled={loading}
+            aria-label="Показать все {remainingItems} оставшихся вакансий"
+          >
+            {#if loading}
+              <ArrowPathRoundedSquare size="18" class="spinner" />
+              Загрузка...
+            {:else}
+              <ArrowDown size="18" />
+              Показать все ({remainingItems})
+            {/if}
+          </button>
         {/if}
-      </button>
+      </div>
     {:else}
       <div class="all-loaded">
         Все вакансии загружены
@@ -99,10 +147,18 @@
     text-align: center;
   }
 
-  .load-more-btn {
+  .pagination-buttons {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .load-more-btn,
+  .load-all-btn {
     padding: 0.8rem 2rem;
     font-size: 1rem;
-    background-color: #007bff;
     color: white;
     border: none;
     border-radius: 8px;
@@ -115,18 +171,41 @@
     justify-content: center;
   }
 
+  .load-more-btn {
+    background-color: #007bff;
+  }
+
+  .load-all-btn {
+    background-color: #28a745;
+  }
+
   .load-more-btn:hover:not(:disabled) {
     background-color: #0056b3;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
   }
 
-  .load-more-btn:active:not(:disabled) {
+  .load-all-btn:hover:not(:disabled) {
+    background-color: #218838;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(40, 167, 69, 0.3);
+  }
+
+  .load-more-btn:active:not(:disabled),
+  .load-all-btn:active:not(:disabled) {
     transform: translateY(0);
+  }
+
+  .load-more-btn:active:not(:disabled) {
     box-shadow: 0 2px 4px rgba(0, 123, 255, 0.3);
   }
 
-  .load-more-btn:disabled {
+  .load-all-btn:active:not(:disabled) {
+    box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+  }
+
+  .load-more-btn:disabled,
+  .load-all-btn:disabled {
     background-color: #aaa;
     cursor: not-allowed;
     transform: none;
@@ -167,7 +246,13 @@
       padding: 0.5rem;
     }
 
-    .load-more-btn {
+    .pagination-buttons {
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .load-more-btn,
+    .load-all-btn {
       padding: 0.7rem 1.5rem;
       font-size: 0.9rem;
       min-width: var(--load-more-min-width-mobile);

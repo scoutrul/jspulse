@@ -24,6 +24,14 @@ export const PAGINATION = {
     SMALL: 10,   // 10 -> 20, 20 -> 30
     MEDIUM: 20,  // 30 -> 50
     LARGE: 50    // 50 -> 100, 100+ -> +50
+  },
+
+  /** Пороговые значения */
+  THRESHOLDS: {
+    OFFSET_MODE_LIMIT: 100,      // Когда переходить в offset-режим
+    SHOW_ALL_MAX_TOTAL: 50,      // Максимальное количество для кнопки "Показать все"
+    OFFSET_WINDOW_SIZE: 50,      // Размер окна для замены в offset-режиме
+    VIRTUAL_WINDOW_SIZE: 100,    // Размер виртуального окна (загружаем)
   }
 } as const;
 

@@ -50,10 +50,9 @@
   // Reactive переменные для UI
   $: isMobile = browser && window.innerWidth < 768;
   
-  // Загружаем данные и настройки при монтировании
+  // Загружаем данные при монтировании
   onMount(async () => {
     if (browser) {
-      vacancyStore.loadPaginationSettings();
       
       // Синхронизируем с URL параметрами (базовые настройки)
       const searchParams = new URLSearchParams($page.url.search);
@@ -169,31 +168,114 @@
     if (store.loading) return;
     
     const currentCount = store.vacancies.length;
+    const currentLimit = store.limit;
+    const isOffsetMode = currentLimit >= 100 && store.total > 100;
+    
     vacancyStore.setLoading(true);
     
-    // Вычисляем количество новых элементов для загрузки
-    const currentLimit = store.limit;
-    let additionalItems: number = PAGINATION.INCREMENTS.SMALL; // По умолчанию добавляем 10
-    
-    if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_1) {
-      additionalItems = PAGINATION.INCREMENTS.SMALL; // 10 -> 20
-    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_2) {
-      additionalItems = PAGINATION.INCREMENTS.SMALL; // 20 -> 30  
-    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_3) {
-      additionalItems = PAGINATION.INCREMENTS.MEDIUM; // 30 -> 50
-    } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_4) {
-      additionalItems = PAGINATION.INCREMENTS.LARGE; // 50 -> 100
-    } else {
-      additionalItems = PAGINATION.INCREMENTS.LARGE; // 100+ -> +50
+    try {
+      if (isOffsetMode) {
+        // Offset-режим: загружаем следующую порцию, заменяя первую порцию
+        const currentOffset = (store.vacancies.length > 50) ? 50 : 0; // смещение для замены
+        const newOffset = currentOffset + 50;
+        
+        const response = await vacancyService.fetchVacanciesClient({
+          page: Math.floor(newOffset / 100),
+          limit: 100, // Загружаем элементы виртуального окна
+          skills: store.selectedSkills
+        });
+
+        if (response.error) {
+          vacancyStore.setError(response.error);
+        } else {
+          const allVacancies = response.vacancies.map(convertVacancy);
+          // Берем вторую половину и объединяем с первой половиной предыдущих
+          const firstHalf = store.vacancies.slice(50); // последние элементы
+          const secondHalf = allVacancies.slice(0, 50); // первые новые элементы
+          
+          vacancyStore.setVacancies(
+            [...firstHalf, ...secondHalf],
+            response.total,
+            response.totalPages,
+            0
+          );
+          vacancyStore.setError(null);
+          
+          // Плавный скролл к новому контенту
+          setTimeout(() => {
+            const firstNewElement = document.querySelector('.vacancy-card:nth-child(51)');
+            if (firstNewElement) {
+              firstNewElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          }, ANIMATION.TIMING.DOM_RENDER_DELAY);
+        }
+      } else {
+        // Прогрессивный режим: увеличиваем лимит (накопительно)
+        let additionalItems: number = PAGINATION.INCREMENTS.SMALL;
+        
+        if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_1) {
+          additionalItems = PAGINATION.INCREMENTS.SMALL; // 10 -> 20
+        } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_2) {
+          additionalItems = PAGINATION.INCREMENTS.SMALL; // 20 -> 30  
+        } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_3) {
+          additionalItems = PAGINATION.INCREMENTS.MEDIUM; // 30 -> 50
+        } else if (currentLimit === PAGINATION.PROGRESSIVE_STEPS.STEP_4) {
+          additionalItems = PAGINATION.INCREMENTS.LARGE; // 50 -> 100
+        }
+        
+        const newLimit = currentLimit + additionalItems;
+        
+        // Загружаем все элементы с новым лимитом
+        const response = await vacancyService.fetchVacanciesClient({
+          page: 0,
+          limit: newLimit,
+          skills: store.selectedSkills
+        });
+
+        if (response.error) {
+          vacancyStore.setError(response.error);
+        } else {
+          const allVacancies = response.vacancies.map(convertVacancy);
+          const newVacancies = allVacancies.slice(currentCount);
+          
+          // Обновляем лимит в store
+          vacancyStore.setPageSize(newLimit);
+          
+          // Добавляем новые вакансии
+          vacancyStore.appendVacancies(newVacancies, response.total, response.totalPages, 0);
+          vacancyStore.setError(null);
+          
+          // Анимация для новых элементов
+          setTimeout(() => {
+            triggerFadeInAnimation(currentCount);
+            
+            // Скроллим к первому новому элементу
+            setTimeout(() => {
+              scrollToFirstNewElement(currentCount);
+            }, ANIMATION.TIMING.SCROLL_DELAY);
+          }, ANIMATION.TIMING.DOM_RENDER_DELAY);
+        }
+      }
+    } catch (error) {
+      vacancyStore.setError('Ошибка при загрузке дополнительных вакансий');
+    } finally {
+      vacancyStore.setLoading(false);
     }
+  }
+
+  // Загрузка всех оставшихся элементов (показать все)
+  async function handleLoadAll() {
+    if (store.loading) return;
     
-    const newLimit = currentLimit + additionalItems;
+    const currentCount = store.vacancies.length;
+    
+    vacancyStore.setLoading(true);
     
     try {
-      // Загружаем все элементы с новым лимитом
+      // Загружаем все элементы
       const response = await vacancyService.fetchVacanciesClient({
         page: 0,
-        limit: newLimit,
+        limit: store.total, // Загружаем все элементы
         skills: store.selectedSkills
       });
 
@@ -204,28 +286,24 @@
         const newVacancies = allVacancies.slice(currentCount);
         
         // Обновляем лимит в store
-        vacancyStore.setPageSize(newLimit);
+        vacancyStore.setPageSize(store.total);
         
-        // Используем новую виртуализацию
-        vacancyStore.appendVacanciesVirtual(newVacancies, response.total);
+        // Добавляем новые вакансии
+        vacancyStore.appendVacancies(newVacancies, response.total, response.totalPages, 0);
         vacancyStore.setError(null);
         
         // Анимация для новых элементов
         setTimeout(() => {
-          triggerFadeInAnimation(Math.max(0, currentCount - (additionalItems >= 50 ? additionalItems : 0)));
+          triggerFadeInAnimation(currentCount);
           
-          // Скроллим к первому новому элементу если не было виртуализации
-          if (additionalItems < 50 || currentCount < 50) {
-            setTimeout(() => {
-              scrollToFirstNewElement(currentCount);
-            }, ANIMATION.TIMING.SCROLL_DELAY);
-          }
+          // Скроллим к первому новому элементу
+          setTimeout(() => {
+            scrollToFirstNewElement(currentCount);
+          }, ANIMATION.TIMING.SCROLL_DELAY);
         }, ANIMATION.TIMING.DOM_RENDER_DELAY);
-        
-        vacancyStore.savePaginationSettings();
       }
     } catch (error) {
-      vacancyStore.setError('Ошибка при загрузке дополнительных вакансий');
+      vacancyStore.setError('Ошибка при загрузке всех вакансий');
     } finally {
       vacancyStore.setLoading(false);
     }
@@ -311,7 +389,7 @@
 </svelte:head>
 
 <main>
-  <Filters {availableSkills} selectedSkills={store.selectedSkills} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
+  <Filters {availableSkills} selectedSkills={store.selectedSkills} totalVacancies={store.total} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
 
   {#if store.loading && store.vacancies.length === 0}
     <LoadingIndicator text="Применение фильтров..." />
@@ -331,7 +409,6 @@
 
   <VacancyList 
     vacancies={store.vacancies} 
-    totalVacancies={store.total} 
     loadingFilter={store.loading && store.vacancies.length === 0} 
     loadingMore={store.loading && store.vacancies.length > 0}
     clientError={store.error} 
@@ -345,6 +422,7 @@
     showingItems={store.vacancies.length}
     loading={store.loading}
     on:loadMore={handleLoadMore}
+    on:loadAll={handleLoadAll}
   />
 </main>
 

@@ -37,7 +37,7 @@ const initialState: VacancyState = {
   selectedSkills: [],
   loading: false,
   error: null,
-  availablePageSizes: [...PAGINATION.AVAILABLE_PAGE_SIZES],
+  availablePageSizes: [10, 20, 30, 50], // Принудительно устанавливаем правильные размеры
   paginationMode: 'replace',
   virtualWindow: {
     start: 0,
@@ -138,10 +138,9 @@ function createVacancyStore() {
         newLimit = PAGINATION.PROGRESSIVE_STEPS.STEP_3; // 20 -> 30
       } else if (newLimit < PAGINATION.PROGRESSIVE_STEPS.STEP_4) {
         newLimit = PAGINATION.PROGRESSIVE_STEPS.STEP_4; // 30 -> 50
-      } else if (newLimit < 100) {
-        newLimit = 100; // 50 -> 100
       } else {
-        newLimit += PAGINATION.PROGRESSIVE_STEPS.INCREMENTAL; // 100+ -> +50
+        // Больше 50 не увеличиваем, это максимум
+        newLimit = PAGINATION.PROGRESSIVE_STEPS.STEP_4; // максимум 50
       }
 
       const newTotalPages = Math.ceil(state.total / newLimit);
@@ -155,43 +154,31 @@ function createVacancyStore() {
       };
     }),
 
+    // Переход к следующей странице (offset-based пагинация)
+    goToNextPage: () => update(state => {
+      const nextPage = state.page + 1;
+      const maxPage = Math.ceil(state.total / state.limit) - 1;
+
+      return {
+        ...state,
+        page: Math.min(nextPage, maxPage),
+        paginationMode: 'replace'
+      };
+    }),
+
+    // Проверка режима offset-based пагинации (после 50 элементов)
+    isOffsetMode: () => {
+      const currentState = get({ subscribe });
+      return currentState.limit >= 50 && currentState.total > 50;
+    },
+
     // Установить режим пагинации
     setPaginationMode: (mode: 'replace' | 'append') => update(state => ({
       ...state,
       paginationMode: mode
     })),
 
-    // Сохранить настройки пагинации в localStorage
-    savePaginationSettings: () => {
-      const currentState = get({ subscribe });
-      try {
-        const settings = {
-          limit: currentState.limit,
-          paginationMode: currentState.paginationMode
-        };
-        localStorage.setItem('jspulse-pagination-settings', JSON.stringify(settings));
-      } catch (error) {
-        console.warn('Failed to save pagination settings to localStorage:', error);
-      }
-    },
 
-    // Загрузить настройки пагинации из localStorage
-    loadPaginationSettings: () => update(state => {
-      try {
-        const saved = localStorage.getItem('jspulse-pagination-settings');
-        if (saved) {
-          const settings = JSON.parse(saved);
-          return {
-            ...state,
-            limit: settings.limit || state.limit,
-            paginationMode: settings.paginationMode || state.paginationMode
-          };
-        }
-      } catch (error) {
-        console.warn('Failed to load pagination settings from localStorage:', error);
-      }
-      return state;
-    }),
 
     // Синхронизация с URL параметрами
     syncWithURL: (searchParams: URLSearchParams) => update(state => {
