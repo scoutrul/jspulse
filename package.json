@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
+    "concurrently": "^9.1.2",
     "typescript": "^5.3.3"
   },
   "dependencies": {
