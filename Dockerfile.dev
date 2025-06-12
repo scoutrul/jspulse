@@ -1,0 +1,60 @@
+FROM node:20-alpine AS base
+
+WORKDIR /app
+
+# Install pnpm and concurrently for running multiple processes
+RUN npm install -g pnpm concurrently
+
+# Copy root package files
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+
+# Copy package.json from each package
+COPY backend/package.json ./backend/
+COPY frontend/package.json ./frontend/
+COPY shared/package.json ./shared/
+
+# Install dependencies
+RUN pnpm install
+
+# Backend development stage
+FROM base AS backend-dev
+
+# Copy shared source files
+COPY shared/ ./shared/
+
+# Build shared initially
+RUN pnpm --filter @jspulse/shared build
+
+# Install nodemon globally for hot reload
+RUN npm install -g nodemon ts-node
+
+# Copy backend source files
+COPY backend/ ./backend/
+
+WORKDIR /app/backend
+
+# Expose port
+EXPOSE 3001
+
+# Development command with shared watch + backend dev
+CMD ["sh", "-c", "cd /app && concurrently \"pnpm --filter @jspulse/shared dev\" \"cd backend && pnpm dev\""]
+
+# Frontend development stage  
+FROM base AS frontend-dev
+
+# Copy shared source files
+COPY shared/ ./shared/
+
+# Build shared initially
+RUN pnpm --filter @jspulse/shared build
+
+# Copy frontend source files
+COPY frontend/ ./frontend/
+
+WORKDIR /app/frontend
+
+# Expose ports (main + HMR)
+EXPOSE 3000 24678
+
+# Development command with shared watch + frontend dev
+CMD ["sh", "-c", "cd /app && concurrently \"pnpm --filter @jspulse/shared dev\" \"cd frontend && pnpm dev --host 0.0.0.0\""] 

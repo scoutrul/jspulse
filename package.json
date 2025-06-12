@@ -1,7 +1,8 @@
 {
   "name": "jspulse",
-  "version": "1.0.0",
   "private": true,
+  "version": "1.0.0",
+  "description": "JS Пульс - агрегатор вакансий по фронтенду",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -16,17 +17,29 @@
     }
   },
   "scripts": {
-    "prebuild": "rm -rf dist && mkdir -p dist/types/core dist/types/db dist/types/dto dist/types/sources",
-    "dev": "concurrently \"pnpm --filter @jspulse/shared run dev\" \"pnpm --filter @jspulse/backend run dev\" \"pnpm --filter @jspulse/frontend run dev\"",
-    "build": "pnpm --filter @jspulse/shared run build && pnpm --filter @jspulse/backend build && pnpm --filter @jspulse/frontend build",
-    "lint": "pnpm --filter @jspulse/backend run lint && pnpm --filter @jspulse/frontend run check"
+    "dev": "docker-compose -f docker-compose.dev.yml up --build",
+    "dev:detached": "docker-compose -f docker-compose.dev.yml up --build -d",
+    "dev:down": "docker-compose -f docker-compose.dev.yml down",
+    "dev:logs": "docker-compose -f docker-compose.dev.yml logs -f",
+    "prod": "docker-compose up --build -d",
+    "prod:down": "docker-compose down",
+    "prod:logs": "docker-compose logs -f",
+    "build": "pnpm --filter @jspulse/shared build && pnpm --filter @jspulse/backend build && pnpm --filter @jspulse/frontend build",
+    "clean": "pnpm --filter @jspulse/shared run clean && pnpm --filter @jspulse/backend run clean && pnpm --filter @jspulse/frontend run clean",
+    "test": "pnpm --filter @jspulse/backend test && pnpm --filter @jspulse/frontend test",
+    "lint": "pnpm --filter @jspulse/backend lint && pnpm --filter @jspulse/frontend lint"
   },
   "devDependencies": {
     "@types/node": "^20.11.19",
     "concurrently": "^9.1.2",
-    "typescript": "^5.3.3"
+    "typescript": "^5.8.3"
   },
   "dependencies": {
     "dayjs": "^1.11.13"
-  }
+  },
+  "workspaces": [
+    "backend",
+    "frontend", 
+    "shared"
+  ]
 }
