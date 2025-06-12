@@ -533,6 +533,10 @@ export class VacancyRepository implements IVacancyRepository {
    * Исключает MongoDB-специфичные поля (timestamps) из публичного API.
    */
   private documentToDTO(doc: any): VacancyDTO {
+    if (!doc || !doc._id) {
+      throw new Error('Invalid document: missing _id field');
+    }
+
     return {
       _id: doc._id.toString(),
       externalId: doc.externalId,

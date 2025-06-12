@@ -39,6 +39,12 @@ export interface ICacheService {
    * Полезно для мониторинга и оптимизации.
    */
   getStats(): Promise<ICacheStats>;
+
+  /**
+   * Освобождение ресурсов и cleanup.
+   * Должен вызываться при shutdown для предотвращения утечек.
+   */
+  destroy?(): void;
 }
 
 /**

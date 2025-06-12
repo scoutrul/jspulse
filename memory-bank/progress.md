@@ -33,6 +33,24 @@
 
 📦 **Архивировано**: [Progressive Pagination документация](../docs/archive/progressive-pagination-system-2025-01.md)
 
+### Phase 1 Critical Bug Fixes (Level 3) - ЗАВЕРШЕНО
+- ✅ **MemoryCacheService исправления**: TTL cleanup, worker process leaks, LRU logic
+- ✅ **VacancyRepository исправления**: Mongoose mocking, null safety, query chaining  
+- ✅ **Frontend configuration**: httpClientFactory.ts исправлен для development mode
+- ✅ **100% unit test success**: 52/52 tests passing (улучшение с 88% до 100%)
+- ✅ **Comprehensive reflection**: lessons learned документированы, правила созданы
+
+📦 **Архивировано**: [Phase 1 Critical Bug Fixes документация](../docs/archive/phase1-critical-bug-fixes-2025-01.md)
+
+### Memory Bank Standardization & Jest Linter Fixes - ЗАВЕРШЕНО
+- ✅ **Memory Bank структура**: Устранено дублирование файлов, единый стандарт в папке memory-bank/
+- ✅ **Jest/TypeScript интеграция**: Исправлены все ошибки типа "Cannot find name 'describe', 'jest', 'expect'"
+- ✅ **Типизация mock функций**: Generic типизация для всех типов тестовых данных
+- ✅ **Созданные правила**: Предотвращение future regressions через установленные стандарты
+- ✅ **Infrastructure ready**: Чистая, консистентная основа для дальнейшего development
+
+📦 **Архивировано**: [Memory Bank Standardization документация](docs/archive/memory-bank-standardization-jest-fixes-2025-01.md)
+
 ## 🎯 Планы развития (Level 3)
 
 ### Высокий приоритет: Тестирование

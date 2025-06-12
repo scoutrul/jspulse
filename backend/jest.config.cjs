@@ -6,6 +6,16 @@ module.exports = {
   // Среда выполнения
   testEnvironment: 'node',
   
+  // Глобальные переменные Jest
+  globals: {
+    'ts-jest': {
+      useESM: true
+    }
+  },
+  
+  // Настройка глобальных типов
+  setupFilesAfterEnv: ['<rootDir>/tests/setup/testSetup.ts'],
+  
   // Трансформация файлов
   transform: {
     '^.+\\.ts$': ['ts-jest', {

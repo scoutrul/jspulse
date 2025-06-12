@@ -10,8 +10,10 @@ describe('MemoryCacheService', () => {
     });
   });
 
-  afterEach(() => {
-    cacheService.clear();
+  afterEach(async () => {
+    await cacheService.clear();
+    // Важно: вызываем destroy() для предотвращения timer leaks в тестах
+    cacheService.destroy();
   });
 
   describe('Basic Operations', () => {
@@ -117,7 +119,7 @@ describe('MemoryCacheService', () => {
       // Arrange
       const key = 'customTTL';
       const value = 'short lived';
-      const customTTL = 500; // 0.5 seconds
+      const customTTL = 0.5; // 0.5 seconds (исправлено с 500ms)
 
       // Act
       await cacheService.set(key, value, customTTL);
@@ -172,43 +174,49 @@ describe('MemoryCacheService', () => {
     });
 
     it('should update access order when getting values', async () => {
-      // Arrange
+      // Arrange - создаем entries с четкими временными интервалами
       await cacheService.set('key1', 'value1', -1);
+      await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay
       await cacheService.set('key2', 'value2', -1);
+      await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay
       await cacheService.set('key3', 'value3', -1);
+      await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay
 
       // Access key1 to make it most recently used
       await cacheService.get('key1');
+      await new Promise(resolve => setTimeout(resolve, 10)); // 10ms delay
 
       // Act - add fourth item, should evict key2 (now oldest)
       await cacheService.set('key4', 'value4', -1);
 
       // Assert
       expect(await cacheService.has('key1')).toBe(true); // Still exists (recently accessed)
-      expect(await cacheService.has('key2')).toBe(false); // Evicted
+      expect(await cacheService.has('key2')).toBe(false); // Evicted (oldest lastAccessed)
       expect(await cacheService.has('key3')).toBe(true);
       expect(await cacheService.has('key4')).toBe(true);
     });
 
     it('should handle mixed TTL and LRU eviction', async () => {
       // Arrange - fill cache
-      await cacheService.set('key1', 'value1', 2000); // Long TTL
-      await cacheService.set('key2', 'value2', 100);  // Short TTL
-      await cacheService.set('key3', 'value3', 2000); // Long TTL
+      await cacheService.set('key1', 'value1', 2); // Long TTL (2 seconds)
+      await cacheService.set('key2', 'value2', 0.1);  // Short TTL (0.1 sec = 100ms)
+      await cacheService.set('key3', 'value3', 2); // Long TTL (2 seconds)
 
       // Wait for key2 to expire
-      await new Promise(resolve => setTimeout(resolve, 150));
+      await new Promise(resolve => setTimeout(resolve, 150)); // 150ms
 
-      // key2 should be expired but might still occupy space
-      expect(await cacheService.get('key2')).toBeNull();
+      // ИСПРАВЛЕНО: проверяем что key2 expired через has() - это вызовет cleanup
+      expect(await cacheService.has('key2')).toBe(false);
 
-      // Act - add new item
+      // Act - add new item, теперь expired key2 должен быть очищен
       await cacheService.set('key4', 'value4', -1);
 
-      // Assert - key1 and key3 should still exist
+      // Assert - key1 and key3 should still exist, expired key2 очищен
       expect(await cacheService.has('key1')).toBe(true);
       expect(await cacheService.has('key3')).toBe(true);
       expect(await cacheService.has('key4')).toBe(true);
+      // Убеждаемся что key2 действительно очищен
+      expect(await cacheService.get('key2')).toBeNull();
     });
   });
 

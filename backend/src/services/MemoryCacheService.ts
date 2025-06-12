@@ -24,6 +24,7 @@ interface CacheEntry<T> {
 export class MemoryCacheService implements ICacheService {
   private cache = new Map<string, CacheEntry<any>>();
   private readonly config: Required<ICacheConfig>;
+  private cleanupTimer?: NodeJS.Timeout; // Добавляем reference на timer для cleanup
   private stats = {
     hits: 0,
     misses: 0,
@@ -43,6 +44,16 @@ export class MemoryCacheService implements ICacheService {
     // Запускаем периодическую очистку истекших записей
     if (this.config.defaultTtlSeconds > 0) {
       this.startCleanupInterval();
+    }
+  }
+
+  /**
+   * Cleanup resources - останавливает cleanup timer
+   */
+  destroy(): void {
+    if (this.cleanupTimer) {
+      clearInterval(this.cleanupTimer);
+      this.cleanupTimer = undefined;
     }
   }
 
@@ -179,47 +190,66 @@ export class MemoryCacheService implements ICacheService {
   }
 
   /**
+   * Проактивная очистка всех истекших записей.
+   * Вызывается перед LRU eviction для освобождения места.
+   */
+  private cleanupExpiredKeys(): number {
+    const keysToDelete: string[] = [];
+
+    for (const [key, entry] of this.cache.entries()) {
+      if (this.isExpired(entry)) {
+        keysToDelete.push(key);
+      }
+    }
+
+    keysToDelete.forEach(key => this.cache.delete(key));
+    return keysToDelete.length;
+  }
+
+  /**
    * Вытеснение наименее используемых записей при превышении лимита.
    * Реализует LRU (Least Recently Used) алгоритм.
+   * ИСПРАВЛЕНО: сначала удаляет expired keys, потом применяет LRU.
    */
   private evictLeastUsed(): void {
-    const entries = Array.from(this.cache.entries());
+    // 1. Сначала очищаем все истекшие записи
+    const expiredCount = this.cleanupExpiredKeys();
 
-    // Сортируем по времени последнего доступа (LRU)
-    entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
+    // 2. Если после очистки истекших записей всё ещё превышен лимит, применяем LRU
+    if (this.cache.size >= this.config.maxKeys) {
+      const entries = Array.from(this.cache.entries());
 
-    // Удаляем 10% от максимального размера для batch eviction
-    const toEvict = Math.max(1, Math.floor(this.config.maxKeys * 0.1));
+      // Сортируем по времени последнего доступа (LRU)
+      entries.sort((a, b) => a[1].lastAccessed - b[1].lastAccessed);
 
-    for (let i = 0; i < toEvict && i < entries.length; i++) {
-      this.cache.delete(entries[i][0]);
+      // Удаляем 10% от максимального размера для batch eviction
+      const toEvict = Math.max(1, Math.floor(this.config.maxKeys * 0.1));
+
+      for (let i = 0; i < toEvict && i < entries.length; i++) {
+        this.cache.delete(entries[i][0]);
+      }
     }
   }
 
   /**
    * Периодическая очистка истекших записей для предотвращения утечек памяти.
    * Запускается в фоновом режиме каждые 60 секунд.
+   * ИСПРАВЛЕНО: добавлен unref() для предотвращения timer leaks в тестах.
    */
   private startCleanupInterval(): void {
     const cleanupInterval = 60000; // 1 минута
 
-    setInterval(() => {
-      const now = Date.now();
-      const keysToDelete: string[] = [];
-
-      for (const [key, entry] of this.cache.entries()) {
-        if (this.isExpired(entry)) {
-          keysToDelete.push(key);
-        }
-      }
-
-      keysToDelete.forEach(key => this.cache.delete(key));
+    this.cleanupTimer = setInterval(() => {
+      const expiredCount = this.cleanupExpiredKeys();
 
       // Логируем очистку в debug режиме
-      if (keysToDelete.length > 0) {
-        console.debug(`[MemoryCacheService] Очищено ${keysToDelete.length} истекших записей`);
+      if (expiredCount > 0) {
+        console.debug(`[MemoryCacheService] Очищено ${expiredCount} истекших записей`);
       }
     }, cleanupInterval);
+
+    // Предотвращаем timer leak в тестах
+    this.cleanupTimer.unref();
   }
 
   /**

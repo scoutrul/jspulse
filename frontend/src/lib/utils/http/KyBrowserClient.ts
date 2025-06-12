@@ -66,7 +66,7 @@ export class KyBrowserClient implements HttpClient {
       // Убираем лишний слеш между baseUrl и url
       const base = this.baseUrl.endsWith('/') ? this.baseUrl.slice(0, -1) : this.baseUrl;
       const path = url.startsWith('/') ? url : `/${url}`;
-      return `${base}/${path}`;
+      return `${base}${path}`;
     }
 
     // Без baseUrl используем текущий домен
