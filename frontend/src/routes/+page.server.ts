@@ -21,6 +21,7 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
   const initialPage = 0;
 
   try {
+    console.log("[PAGE SERVER] Начинаем загрузку данных...");
     logger.info(CONTEXT, "Загружаем вакансии и навыки...");
 
     // Инициализируем DOMPurify для санитизации HTML
@@ -32,17 +33,21 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
     const purify = DOMPurify(window);
     const sanitizeHtml = (html: string) => purify.sanitize(html);
 
+    console.log("[PAGE SERVER] Вызываем fetchVacanciesServer...");
     // Загружаем вакансии с помощью нового сервиса
     const { vacancies, total, page, limit, totalPages } = await fetchVacanciesServer(
       _fetch,
       { limit: initialLimit, page: initialPage },
       sanitizeHtml
     );
+    console.log("[PAGE SERVER] Получено вакансий:", vacancies.length, "из", total);
 
     logger.debug(CONTEXT, `Извлечено вакансий: ${vacancies.length}, всего: ${total}`);
 
     // Загружаем навыки через сервис
+    console.log("[PAGE SERVER] Загружаем навыки...");
     const availableSkills = await fetchSkillsServer(_fetch);
+    console.log("[PAGE SERVER] Получено навыков:", availableSkills.length);
     logger.debug(CONTEXT, `Получено ${availableSkills.length} навыков`);
 
     // Явно приводим типы, чтобы соответствовать VacancyWithHtml
@@ -50,6 +55,12 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
       ...vacancy,
       htmlDescription: vacancy.htmlDescription || undefined // Изменяем null на undefined
     }));
+
+    console.log("[PAGE SERVER] Возвращаем данные:", {
+      vacancies: vacanciesWithHtml.length,
+      total,
+      skills: availableSkills.length
+    });
 
     return {
       initialVacancies: vacanciesWithHtml,
@@ -61,16 +72,16 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
     };
   } catch (err) {
     logger.error(CONTEXT, "Общая ошибка загрузки данных:", err);
+    console.error("[PAGE SERVER] Детальная ошибка:", err);
 
     const message =
       err && typeof err === "object" && "message" in err
         ? (err as { message: string }).message
         : "Не удалось загрузить данные вакансий";
 
-    if (err instanceof Error && err.message.includes("API не вернуло ожидаемые данные")) {
-      error(500, message);
-    }
+    console.error("[PAGE SERVER] Сообщение об ошибке:", message);
 
+    // Не выбрасываем error, а возвращаем пустые данные
     return {
       initialVacancies: [],
       totalCount: 0,

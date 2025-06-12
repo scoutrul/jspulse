@@ -45,7 +45,7 @@
   }
 </script>
 
-<li>
+<li class="vacancy-card">
   <a href="/v/{validVacancy._id}" class="vacancy-title-link">
     <h3>{validVacancy.title}</h3>
   </a>
