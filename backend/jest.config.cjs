@@ -6,19 +6,13 @@ module.exports = {
   // Среда выполнения
   testEnvironment: 'node',
   
-  // Глобальные переменные Jest
-  globals: {
-    'ts-jest': {
-      useESM: true
-    }
-  },
-  
   // Настройка глобальных типов
   setupFilesAfterEnv: ['<rootDir>/tests/setup/testSetup.ts'],
   
   // Трансформация файлов
   transform: {
     '^.+\\.ts$': ['ts-jest', {
+      useESM: true,
       tsconfig: {
         module: 'commonjs',
         moduleResolution: 'node',
@@ -32,8 +26,8 @@ module.exports = {
   moduleNameMapper: {
     '^@jspulse/shared$': '<rootDir>/../shared/src/index.ts',
     '^@jspulse/shared/(.*)$': '<rootDir>/../shared/src/$1',
-    // Преобразование .js расширений в .ts для импортов
-    '^(.*)\\.js$': '$1'
+    // Преобразование всех .js расширений в tests к .ts/.js файлам
+    '^(.*)(\\.js)$': ['$1.ts', '$1.js', '$1']
   },
   
   // Расширения файлов

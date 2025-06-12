@@ -4,6 +4,15 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import { IVacancyRepository } from '@jspulse/shared';
 
+// Mock SchedulerService to avoid import.meta.url issues in Jest
+jest.mock('../../../src/services/SchedulerService.js', () => ({
+  SchedulerService: jest.fn().mockImplementation(() => ({
+    start: jest.fn(),
+    stop: jest.fn(),
+    isRunning: jest.fn().mockReturnValue(false)
+  }))
+}));
+
 // Import app setup
 import { containerFactory } from '../../../src/container/ContainerFactory.js';
 
@@ -12,6 +21,11 @@ describe('Vacancy Routes Integration Tests', () => {
   let mongoServer: MongoMemoryServer;
 
   beforeAll(async () => {
+    // Disconnect existing Mongoose connection if any
+    if (mongoose.connection.readyState !== 0) {
+      await mongoose.disconnect();
+    }
+
     // Setup in-memory MongoDB
     mongoServer = await MongoMemoryServer.create();
     const mongoUri = mongoServer.getUri();
