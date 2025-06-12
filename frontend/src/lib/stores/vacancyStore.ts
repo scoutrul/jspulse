@@ -17,6 +17,15 @@ interface VacancyState {
   // Новые поля для гибкой пагинации
   availablePageSizes: number[];
   paginationMode: 'replace' | 'append'; // replace для классической пагинации, append для "load more"
+
+  // Поля для адаптивной виртуализации
+  virtualWindow: {
+    start: number; // Начальный индекс видимого окна
+    size: number;  // Размер видимого окна (количество элементов)
+    totalLoaded: number; // Общее количество загруженных элементов
+  };
+  canLoadPrevious: boolean; // Можно ли загрузить предыдущие элементы
+  previousPageHistory: Array<{ start: number; size: number }>; // История для отката
 }
 
 const initialState: VacancyState = {
@@ -30,6 +39,13 @@ const initialState: VacancyState = {
   error: null,
   availablePageSizes: [...PAGINATION.AVAILABLE_PAGE_SIZES],
   paginationMode: 'replace',
+  virtualWindow: {
+    start: 0,
+    size: 0,
+    totalLoaded: 0
+  },
+  canLoadPrevious: false,
+  previousPageHistory: []
 };
 
 /**
@@ -75,7 +91,16 @@ function createVacancyStore() {
     setError: (error: string | null) => update(state => ({ ...state, error })),
 
     // Сбросить состояние
-    reset: () => set(initialState),
+    reset: () => set({
+      ...initialState,
+      virtualWindow: {
+        start: 0,
+        size: 0,
+        totalLoaded: 0
+      },
+      canLoadPrevious: false,
+      previousPageHistory: []
+    }),
 
     // Новые методы для гибкой пагинации
 
@@ -201,6 +226,102 @@ function createVacancyStore() {
       }
 
       return params.toString();
+    },
+
+    // 🚀 Новые методы для адаптивной виртуализации
+
+    // Добавить новые элементы с виртуализацией
+    appendVacanciesVirtual: (newVacancies: VacancyWithHtml[], total: number) =>
+      update(state => {
+        const currentLoaded = state.vacancies.length;
+        const newSize = newVacancies.length;
+        const maxWindowSize = 100; // Максимальный размер окна для производительности
+
+        // Если загружаем больше 50 элементов и уже есть много в списке
+        if (newSize >= 50 && currentLoaded >= 50) {
+          // Сохраняем историю для возможности отката
+          const historyEntry = {
+            start: state.virtualWindow.start,
+            size: state.virtualWindow.size
+          };
+
+          // Удаляем старые элементы сверху (столько же сколько добавляем)
+          const updatedVacancies = [...state.vacancies.slice(newSize), ...newVacancies];
+
+          return {
+            ...state,
+            vacancies: updatedVacancies,
+            total,
+            virtualWindow: {
+              start: state.virtualWindow.start + newSize,
+              size: Math.min(updatedVacancies.length, maxWindowSize),
+              totalLoaded: state.virtualWindow.totalLoaded + newSize
+            },
+            canLoadPrevious: true,
+            previousPageHistory: [...state.previousPageHistory, historyEntry]
+          };
+        } else {
+          // Обычное добавление для небольших порций
+          return {
+            ...state,
+            vacancies: [...state.vacancies, ...newVacancies],
+            total,
+            virtualWindow: {
+              start: state.virtualWindow.start,
+              size: state.vacancies.length + newSize,
+              totalLoaded: state.virtualWindow.totalLoaded + newSize
+            }
+          };
+        }
+      }),
+
+    // Загрузить предыдущие элементы (откат)
+    loadPreviousVirtual: () =>
+      update(state => {
+        if (!state.canLoadPrevious || state.previousPageHistory.length === 0) {
+          return state;
+        }
+
+        const lastHistory = state.previousPageHistory[state.previousPageHistory.length - 1];
+        const newHistory = state.previousPageHistory.slice(0, -1);
+
+        return {
+          ...state,
+          virtualWindow: {
+            start: lastHistory.start,
+            size: lastHistory.size,
+            totalLoaded: state.virtualWindow.totalLoaded
+          },
+          canLoadPrevious: newHistory.length > 0,
+          previousPageHistory: newHistory
+        };
+      }),
+
+    // Сброс виртуализации (при новом поиске)
+    resetVirtual: () =>
+      update(state => ({
+        ...state,
+        vacancies: [],
+        virtualWindow: {
+          start: 0,
+          size: 0,
+          totalLoaded: 0
+        },
+        canLoadPrevious: false,
+        previousPageHistory: []
+      })),
+
+    // Получить информацию о виртуальном окне
+    getVirtualInfo: () => {
+      const currentState = get({ subscribe });
+      return {
+        showing: currentState.vacancies.length,
+        windowStart: currentState.virtualWindow.start,
+        windowEnd: currentState.virtualWindow.start + currentState.vacancies.length,
+        totalLoaded: currentState.virtualWindow.totalLoaded,
+        canLoadPrevious: currentState.canLoadPrevious,
+        hiddenItemsCount: currentState.virtualWindow.start
+      };
     }
   };
 

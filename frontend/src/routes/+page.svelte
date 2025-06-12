@@ -4,6 +4,7 @@
   import Filters from "$lib/components/Filters.svelte";
   import VacancyList from "$lib/components/VacancyList.svelte";
   import SimplePagination from "$lib/components/SimplePagination.svelte";
+  import LoadPreviousButton from "$lib/components/LoadPreviousButton.svelte";
   import LoadingIndicator from "$lib/components/LoadingIndicator.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import { vacancyService } from "$lib/services/vacancy.service";
@@ -11,7 +12,16 @@
   import { onMount } from 'svelte';
   import { page } from '$app/stores';
   import { browser } from '$app/environment';
-  import { PAGINATION, ANIMATION } from '$lib/config/pagination.constants';
+  import { PAGINATION } from '$lib/config/pagination.constants';
+
+  // Константы для анимаций
+  const ANIMATION = {
+    FADE_IN_DURATION_MS: 1200,
+    TIMING: {
+      DOM_RENDER_DELAY: 50,
+      SCROLL_DELAY: 100
+    }
+  };
 
   export let data: PageData;
 
@@ -94,18 +104,19 @@
     }
   });
 
-  // Фильтрация
+  // Фильтрация с сбросом виртуализации
   async function handleSkillsChange(skills: string[]) {
     vacancyStore.setSkills(skills);
-    // Сбрасываем пагинацию при изменении фильтров
-    vacancyStore.setPageSize(PAGINATION.DEFAULT_PAGE_SIZE);
+    vacancyStore.resetVirtual(); // Сбрасываем виртуализацию
+    vacancyStore.setPageSize(PAGINATION.DEFAULT_PAGE_SIZE); // Сброс к начальному лимиту
     vacancyStore.setLoading(true);
     
     const response = await vacancyService.fetchVacanciesClient({
       page: 0,
-      limit: PAGINATION.DEFAULT_PAGE_SIZE, // Сброс к начальному лимиту
+      limit: PAGINATION.DEFAULT_PAGE_SIZE,
       skills
     });
+    
     if (response.error) {
       vacancyStore.setVacancies([], 0, 0, 0);
       vacancyStore.setError(response.error);
@@ -121,18 +132,18 @@
     vacancyStore.setLoading(false);
   }
 
-  // Сброс фильтра
+  // Сброс фильтра с сбросом виртуализации
   async function handleReset() {
     vacancyStore.setSkills([]);
-    // Сбрасываем пагинацию к начальному состоянию
-    vacancyStore.reset();
+    vacancyStore.reset(); // Это уже включает сброс виртуализации через resetVirtual
     vacancyStore.setLoading(true);
     
     const response = await vacancyService.fetchVacanciesClient({
       page: 0,
-      limit: PAGINATION.DEFAULT_PAGE_SIZE, // Сброс к начальному лимиту
+      limit: PAGINATION.DEFAULT_PAGE_SIZE,
       skills: []
     });
+    
     if (response.error) {
       vacancyStore.setVacancies([], 0, 0, 0);
       vacancyStore.setError(response.error);
@@ -153,15 +164,11 @@
     handleSkillsChange([event.detail]);
   }
 
-  // Загрузка дополнительных элементов (показать еще)
+  // Загрузка дополнительных элементов (показать еще) с виртуализацией
   async function handleLoadMore() {
     if (store.loading) return;
     
-    // Запоминаем текущее количество элементов и позицию кнопки
     const currentCount = store.vacancies.length;
-    const loadMoreButton = document.querySelector('.simple-pagination .load-more-btn');
-    const buttonPosition = loadMoreButton ? loadMoreButton.getBoundingClientRect().top + window.scrollY : null;
-    
     vacancyStore.setLoading(true);
     
     // Вычисляем количество новых элементов для загрузки
@@ -194,36 +201,73 @@
         vacancyStore.setError(response.error);
       } else {
         const allVacancies = response.vacancies.map(convertVacancy);
-        // Берем только новые элементы (с текущего количества)
         const newVacancies = allVacancies.slice(currentCount);
         
         // Обновляем лимит в store
         vacancyStore.setPageSize(newLimit);
         
-        // Добавляем новые элементы к существующим
-        vacancyStore.appendVacancies(
-          newVacancies,
-          response.total,
-          Math.ceil(response.total / newLimit), // Пересчитываем totalPages
-          0
-        );
+        // Используем новую виртуализацию
+        vacancyStore.appendVacanciesVirtual(newVacancies, response.total);
         vacancyStore.setError(null);
         
-        // Запускаем анимацию появления для новых элементов после рендеринга
+        // Анимация для новых элементов
         setTimeout(() => {
-          triggerFadeInAnimation(currentCount);
+          triggerFadeInAnimation(Math.max(0, currentCount - (additionalItems >= 50 ? additionalItems : 0)));
           
-          // Скроллим к первому новому элементу в середину экрана с небольшой задержкой
-          setTimeout(() => {
-            scrollToFirstNewElement(currentCount);
-          }, ANIMATION.TIMING.SCROLL_DELAY);
+          // Скроллим к первому новому элементу если не было виртуализации
+          if (additionalItems < 50 || currentCount < 50) {
+            setTimeout(() => {
+              scrollToFirstNewElement(currentCount);
+            }, ANIMATION.TIMING.SCROLL_DELAY);
+          }
         }, ANIMATION.TIMING.DOM_RENDER_DELAY);
         
-        // Сохраняем настройки
         vacancyStore.savePaginationSettings();
       }
     } catch (error) {
       vacancyStore.setError('Ошибка при загрузке дополнительных вакансий');
+    } finally {
+      vacancyStore.setLoading(false);
+    }
+  }
+
+  // Загрузка предыдущих элементов (откат виртуализации)
+  async function handleLoadPrevious() {
+    if (store.loading) return;
+    
+    const virtualInfo = vacancyStore.getVirtualInfo();
+    if (!virtualInfo.canLoadPrevious) return;
+    
+    vacancyStore.setLoading(true);
+    
+    try {
+      // Загружаем предыдущие элементы
+      const response = await vacancyService.fetchVacanciesClient({
+        page: 0,
+        limit: virtualInfo.windowStart + store.vacancies.length,
+        skills: store.selectedSkills
+      });
+
+      if (response.error) {
+        vacancyStore.setError(response.error);
+      } else {
+        const allVacancies = response.vacancies.map(convertVacancy);
+        
+        // Откатываем виртуализацию и показываем предыдущие элементы
+        vacancyStore.loadPreviousVirtual();
+        vacancyStore.setVacancies(allVacancies, response.total, response.totalPages, 0);
+        vacancyStore.setError(null);
+        
+        // Скроллим к началу предыдущих элементов
+        setTimeout(() => {
+          const firstVisibleElement = document.querySelector('.vacancy-card:first-child');
+          if (firstVisibleElement) {
+            firstVisibleElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }, ANIMATION.TIMING.DOM_RENDER_DELAY);
+      }
+    } catch (error) {
+      vacancyStore.setError('Ошибка при загрузке предыдущих вакансий');
     } finally {
       vacancyStore.setLoading(false);
     }
@@ -274,6 +318,16 @@
   {/if}
 
   <ErrorMessage message={store.error} />
+
+  <!-- Кнопка "Показать предыдущие" сверху при виртуализации -->
+  {#if store.canLoadPrevious}
+    {@const virtualInfo = vacancyStore.getVirtualInfo()}
+    <LoadPreviousButton 
+      hiddenCount={virtualInfo.hiddenItemsCount}
+      loading={store.loading}
+      on:loadPrevious={handleLoadPrevious}
+    />
+  {/if}
 
   <VacancyList 
     vacancies={store.vacancies} 
