@@ -35,6 +35,39 @@ const SkillsQuerySchema = z.object({
 });
 
 /**
+ * GET /skills/stats - Получение статистики навыков с количеством вакансий.
+ * Используется для визуализации популярности навыков в пузырьковой диаграмме.
+ */
+router.get("/skills/stats", async (req: Request, res: Response) => {
+  try {
+    // Получаем Repository из DI Container
+    const vacancyRepository = req.resolve<IVacancyRepository>(DI_TOKENS.VACANCY_REPOSITORY);
+
+    // Получаем полную статистику и извлекаем данные о навыках
+    const statistics = await vacancyRepository.getStatistics();
+
+    res.json({
+      success: true,
+      data: statistics.bySkills,
+      meta: {
+        count: statistics.bySkills.length,
+        totalVacancies: statistics.total
+      }
+    });
+  } catch (error) {
+    console.error("[GET /api/vacancies/skills/stats] Ошибка:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: "Ошибка сервера при получении статистики навыков",
+        details: error instanceof Error ? error.message : undefined
+      }
+    });
+  }
+});
+
+/**
  * GET /skills - Получение уникальных навыков из всех вакансий.
  * Используется для автокомплита в фильтрах на фронтенде.
  * Теперь использует Repository с агрессивным кэшированием (30 минут).
@@ -126,6 +159,37 @@ router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Resp
 });
 
 /**
+ * GET /cache/stats - Получение статистики кэша для мониторинга.
+ * Вспомогательный эндпоинт для отладки и оптимизации производительности.
+ */
+router.get("/cache/stats", async (req: Request, res: Response) => {
+  try {
+    // Получаем Cache Service из DI Container
+    const cacheService = req.resolve<ICacheService>(DI_TOKENS.CACHE_SERVICE);
+    const stats = await cacheService.getStats();
+
+    res.json({
+      success: true,
+      data: stats,
+      meta: {
+        description: "Статистика кэша вакансий",
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error("[GET /api/vacancies/cache/stats] Ошибка:", error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: "Ошибка при получении статистики кэша",
+        details: error instanceof Error ? error.message : undefined
+      }
+    });
+  }
+});
+
+/**
  * GET /:id - Получение детальной информации о вакансии.
  * Используется на странице просмотра конкретной вакансии.
  * Repository обеспечивает валидацию ID и кэширование отдельных записей (15 минут).
@@ -162,37 +226,6 @@ router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Resp
       error: {
         code: 500,
         message: `Ошибка сервера при получении вакансии ${id}`,
-        details: error instanceof Error ? error.message : undefined
-      }
-    });
-  }
-});
-
-/**
- * GET /cache/stats - Получение статистики кэша для мониторинга.
- * Вспомогательный эндпоинт для отладки и оптимизации производительности.
- */
-router.get("/cache/stats", async (req: Request, res: Response) => {
-  try {
-    // Получаем Cache Service из DI Container
-    const cacheService = req.resolve<ICacheService>(DI_TOKENS.CACHE_SERVICE);
-    const stats = await cacheService.getStats();
-
-    res.json({
-      success: true,
-      data: stats,
-      meta: {
-        description: "Статистика кэша вакансий",
-        timestamp: new Date().toISOString()
-      }
-    });
-  } catch (error) {
-    console.error("[GET /api/vacancies/cache/stats] Ошибка:", error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 500,
-        message: "Ошибка при получении статистики кэша",
         details: error instanceof Error ? error.message : undefined
       }
     });

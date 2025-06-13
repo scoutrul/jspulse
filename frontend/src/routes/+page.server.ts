@@ -1,7 +1,7 @@
 import { error } from "@sveltejs/kit";
 import type { PageServerLoad } from "./$types";
 import type { VacancyDTO, VacancyWithHtml } from "@jspulse/shared";
-import { fetchVacanciesServer, fetchSkillsServer } from "$lib/services/vacancy.server";
+import { fetchVacanciesServer, fetchSkillsServer, fetchSkillsStatsServer } from "$lib/services/vacancy.server";
 import { logger } from "$lib/utils/logger.js";
 
 interface HomePageData {
@@ -11,6 +11,7 @@ interface HomePageData {
   limit: number;
   totalPages: number;
   availableSkills: string[];
+  skillsStats: Array<{ skill: string; count: number }>;
   error?: string;
 }
 
@@ -38,11 +39,15 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
 
     logger.debug(CONTEXT, `Извлечено вакансий: ${vacancies.length}, всего: ${total}`);
 
-    // Загружаем навыки через сервис
-    console.log("[PAGE SERVER] Загружаем навыки...");
-    const availableSkills = await fetchSkillsServer(_fetch);
+    // Загружаем навыки и статистику параллельно
+    console.log("[PAGE SERVER] Загружаем навыки и статистику...");
+    const [availableSkills, skillsStats] = await Promise.all([
+      fetchSkillsServer(_fetch),
+      fetchSkillsStatsServer(_fetch)
+    ]);
     console.log("[PAGE SERVER] Получено навыков:", availableSkills.length);
-    logger.debug(CONTEXT, `Получено ${availableSkills.length} навыков`);
+    console.log("[PAGE SERVER] Получено статистик навыков:", skillsStats.length);
+    logger.debug(CONTEXT, `Получено ${availableSkills.length} навыков и ${skillsStats.length} статистик`);
 
     // Явно приводим типы, чтобы соответствовать VacancyWithHtml
     const vacanciesWithHtml: VacancyWithHtml[] = vacancies.map(vacancy => ({
@@ -63,6 +68,7 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
       limit: limit,
       totalPages: totalPages,
       availableSkills: availableSkills,
+      skillsStats: skillsStats,
     };
   } catch (err) {
     logger.error(CONTEXT, "Общая ошибка загрузки данных:", err);
@@ -83,6 +89,7 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
       limit: initialLimit,
       totalPages: 0,
       availableSkills: [],
+      skillsStats: [],
       error: message,
     };
   }

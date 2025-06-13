@@ -47,6 +47,20 @@ export class VacancyService {
   }
 
   /**
+   * Получение статистики навыков с количеством вакансий.
+   * Используется для визуализации в пузырьковой диаграмме.
+   */
+  async fetchSkillsStatsClient(): Promise<Array<{ skill: string; count: number }>> {
+    try {
+      logger.debug(CONTEXT, 'Запрос статистики навыков');
+      return await vacancyApi.fetchSkillsStats();
+    } catch (error) {
+      logger.error(CONTEXT, 'Ошибка при получении статистики навыков', error);
+      return [];
+    }
+  }
+
+  /**
    * Получение детальной информации о вакансии для страницы просмотра.
    * Возвращает null при ошибках, чтобы компонент мог показать fallback.
    */

@@ -123,6 +123,34 @@ export class VacancyApi {
   }
 
   /**
+   * Получение статистики навыков с количеством вакансий
+   */
+  async fetchSkillsStats(): Promise<Array<{ skill: string; count: number }>> {
+    try {
+      logger.debug(this.CONTEXT, 'Запрос статистики навыков с сервера');
+
+      const response = await this.httpClient.get('/api/vacancies/skills/stats');
+
+      // Проверяем типизированный ответ
+      const typedResponse = response as { success?: boolean; data?: unknown };
+      if (!typedResponse?.success || !Array.isArray(typedResponse.data)) {
+        logger.error(this.CONTEXT, 'Некорректный формат данных статистики навыков', response);
+        return [];
+      }
+
+      // Преобразуем данные к нужному формату
+      const rawData = typedResponse.data as Array<{ skill: string; count: number }>;
+      return rawData.map(item => ({
+        skill: item.skill,
+        count: item.count
+      }));
+    } catch (error) {
+      logger.error(this.CONTEXT, 'Ошибка при загрузке статистики навыков', error);
+      return [];
+    }
+  }
+
+  /**
  * Получение одной вакансии по её ID
  */
   async fetchVacancyById(id: string, sanitizeHtml?: (html: string) => string): Promise<VacancyDTO | null> {

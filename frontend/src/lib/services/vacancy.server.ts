@@ -35,6 +35,19 @@ export const fetchSkillsServer = async (
 };
 
 /**
+ * Получение статистики навыков на сервере
+ * 
+ * @param fetch Функция fetch из SvelteKit
+ */
+export const fetchSkillsStatsServer = async (
+  fetch: typeof globalThis.fetch
+): Promise<Array<{ skill: string; count: number }>> => {
+  // Создаем экземпляр API для использования на сервере
+  const vacancyApi = new VacancyApi({ fetch });
+  return vacancyApi.fetchSkillsStats();
+};
+
+/**
  * Получение детальной информации о вакансии на сервере
  * 
  * @param fetch Функция fetch из SvelteKit

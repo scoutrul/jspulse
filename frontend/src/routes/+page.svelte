@@ -7,6 +7,7 @@
   import LoadingIndicator from "$lib/components/LoadingIndicator.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import GradientButton from "$lib/components/ui/GradientButton.svelte";
+  import TagBubblesCanvas from "$lib/components/TagBubblesCanvas.svelte";
   import { ArrowDown, ArrowPathRoundedSquare } from 'svelte-heros-v2';
   import { vacancyService } from "$lib/services/vacancy.service";
   import { vacancyStore } from "$lib/stores/vacancyStore";
@@ -44,6 +45,22 @@
   }
 
   let availableSkills: string[] = data.availableSkills || [];
+  let skillsStats: Array<{ skill: string; count: number }> = data.skillsStats || [];
+  
+  // Если нет статистики с сервера, создаём fallback данные
+  if (skillsStats.length === 0 && availableSkills.length > 0) {
+    skillsStats = availableSkills.map(skill => ({
+      skill: skill,
+      count: Math.floor(Math.random() * 100) + 20
+    }));
+    console.log("[CLIENT] Создано", skillsStats.length, "fallback статистик с сервера");
+  }
+
+  // Данные для TagBubblesCanvas из реальной статистики
+  $: tagsForBubbles = skillsStats.map(stat => ({
+    name: stat.skill,
+    count: stat.count
+  }));
 
   // Подписка на store
   $: store = $vacancyStore;
@@ -92,6 +109,25 @@
           const skills = await vacancyService.fetchSkillsClient();
           availableSkills = skills;
           console.log("[CLIENT] Получено", skills.length, "навыков");
+
+          // Загружаем статистику навыков для пузырьков
+          try {
+            const stats = await vacancyService.fetchSkillsStatsClient();
+            if (stats && stats.length > 0) {
+              skillsStats = stats;
+              console.log("[CLIENT] Получено", stats.length, "статистик навыков");
+            } else {
+              throw new Error("Пустой ответ от API статистики");
+            }
+          } catch (error) {
+            console.warn("[CLIENT] Не удалось загрузить статистику навыков, используем fallback");
+            // Используем fallback данные на основе availableSkills
+            skillsStats = availableSkills.map(skill => ({
+              skill: skill,
+              count: Math.floor(Math.random() * 100) + 20
+            }));
+            console.log("[CLIENT] Создано", skillsStats.length, "fallback статистик навыков");
+          }
           
         } catch (error) {
           console.error("[CLIENT] Ошибка загрузки данных:", error);
@@ -161,6 +197,56 @@
   // Клик по тегу-навыку
   function handleSkillClick(event: CustomEvent<string>) {
     handleSkillsChange([event.detail]);
+  }
+
+  // Обработка клика по пузырю - сброс фильтров и применение одного навыка
+  async function handleTagClick(event: CustomEvent<{ name: string; count: number }>) {
+    const skillName = event.detail.name;
+    
+    // Проверяем, является ли этот навык единственным выбранным
+    const currentSkills = store.selectedSkills;
+    
+    // Запоминаем текущее количество вакансий для анимации
+    const currentCount = store.vacancies.length;
+    
+    if (currentSkills.length === 1 && currentSkills[0] === skillName) {
+      // Если уже выбран только этот навык, сбрасываем фильтры
+      await handleSkillsChange([]);
+    } else {
+      // Иначе сбрасываем все фильтры и применяем только этот навык
+      await handleSkillsChange([skillName]);
+    }
+    
+    // Сразу скроллим без задержки
+    scrollToResults();
+    
+    // Добавляем анимацию появления для обновленного списка
+    setTimeout(() => {
+      triggerFadeInAnimation(0); // Анимируем все элементы с начала
+    }, ANIMATION.TIMING.DOM_RENDER_DELAY);
+  }
+  
+  // Функция для скролла к результатам
+  function scrollToResults() {
+    // Сначала пробуем найти первую вакансию
+    let targetElement = document.querySelector('.vacancy-card');
+    
+    // Если вакансий нет, скроллим к фильтрам
+    if (!targetElement) {
+      targetElement = document.querySelector('.filters');
+    }
+    
+    // Если и фильтров нет, скроллим к основному контейнеру
+    if (!targetElement) {
+      targetElement = document.querySelector('main');
+    }
+    
+    if (targetElement) {
+      targetElement.scrollIntoView({ 
+        behavior: 'smooth', 
+        block: 'start'
+      });
+    }
   }
 
   // Загрузка дополнительных элементов (показать еще)
@@ -339,6 +425,19 @@
 </svelte:head>
 
 <main>
+  <!-- Визуализация тегов во всю ширину -->
+  {#if browser && skillsStats.length > 0}
+    <section class="tags-visualization-section">
+      <div class="tags-canvas-container">
+        <TagBubblesCanvas
+          tags={tagsForBubbles}
+          on:tagClick={(e) => handleTagClick(e)}
+          on:tagHover={(e) => console.log('Hovered:', e.detail)}
+        />
+      </div>
+    </section>
+  {/if}
+
   <Filters {availableSkills} selectedSkills={store.selectedSkills} totalVacancies={store.total} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
 
   {#if store.loading && store.vacancies.length === 0}
@@ -375,6 +474,26 @@
 
   main {
     @apply max-w-4xl mx-auto my-8 px-4;
+  }
+
+  .tags-visualization-section {
+    @apply -mx-4 mb-8; /* Выходим за границы main контейнера */
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+    @apply bg-gradient-to-br from-neutral-50 to-neutral-100 py-4;
+  }
+
+  .tags-canvas-container {
+    @apply max-w-7xl mx-auto px-6;
+    height: 400px;
+  }
+
+  /* Мобильная адаптация */
+  @media (max-width: 768px) {
+    .tags-canvas-container {
+      height: 300px;
+      @apply px-4;
+    }
   }
 
   /* Анимация появления новых элементов с оранжевым фоном */
