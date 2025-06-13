@@ -2,6 +2,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import { sanitizeDescription } from "$lib/utils/sanitize";
+  import GradientButton from '$lib/components/ui/GradientButton.svelte';
   
   export let data: PageData;
   
@@ -65,7 +66,9 @@
         <h3>Требуемые навыки:</h3>
         <div class="skills-list">
           {#each vacancy.skills as skill}
-            <span class="skill-tag">{skill}</span>
+            <GradientButton variant="outline" size="sm">
+              {skill}
+            </GradientButton>
           {/each}
         </div>
       </div>
@@ -105,18 +108,21 @@
         href={vacancy.url} 
         target="_blank" 
         rel="noopener noreferrer"
-        class="apply-button"
       >
-        Посмотреть на {vacancy.source || 'сайте'}
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M7 17L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M7 7H17V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
+        <GradientButton variant="primary" size="lg">
+          Посмотреть на {vacancy.source || 'сайте'}
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M7 17L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M7 7H17V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </GradientButton>
       </a>
     {/if}
     
-    <a href="/" class="back-button">
-      ← Вернуться к поиску
+    <a href="/">
+      <GradientButton variant="outline" size="lg">
+        ← Вернуться к поиску
+      </GradientButton>
     </a>
   </div>
 </div>
@@ -190,14 +196,7 @@
     gap: 0.5rem;
   }
 
-  .skill-tag {
-    background: var(--primary-color, #007acc);
-    color: white;
-    padding: 0.3rem 0.8rem;
-    border-radius: 15px;
-    font-size: 0.85rem;
-    font-weight: 500;
-  }
+
 
   .description-content {
     color: var(--text-primary, #333);
@@ -234,36 +233,7 @@
     border-top: 1px solid var(--border-color, #e9ecef);
   }
 
-  .apply-button {
-    background: var(--primary-color, #007acc);
-    color: white;
-    padding: 0.8rem 1.5rem;
-    border-radius: 6px;
-    text-decoration: none;
-    font-weight: 600;
-    display: inline-flex;
-    align-items: center;
-    gap: 0.5rem;
-    transition: background-color 0.2s ease;
-  }
 
-  .apply-button:hover {
-    background: var(--primary-dark, #005fa3);
-  }
-
-  .back-button {
-    color: var(--text-secondary, #666);
-    text-decoration: none;
-    padding: 0.8rem 1.5rem;
-    border: 1px solid var(--border-color, #e9ecef);
-    border-radius: 6px;
-    transition: all 0.2s ease;
-  }
-
-  .back-button:hover {
-    background: var(--background-light, #f8f9fa);
-    color: var(--text-primary, #333);
-  }
 
   @media (max-width: 768px) {
     .vacancy-detail {
@@ -285,11 +255,6 @@
 
     .skills-list {
       gap: 0.3rem;
-    }
-
-    .skill-tag {
-      font-size: 0.8rem;
-      padding: 0.2rem 0.6rem;
     }
   }
 </style>

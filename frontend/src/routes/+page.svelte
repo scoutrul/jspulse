@@ -6,6 +6,8 @@
   import SimplePagination from "$lib/components/SimplePagination.svelte";
   import LoadingIndicator from "$lib/components/LoadingIndicator.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
+  import GradientButton from "$lib/components/ui/GradientButton.svelte";
+  import { ArrowDown, ArrowPathRoundedSquare } from 'svelte-heros-v2';
   import { vacancyService } from "$lib/services/vacancy.service";
   import { vacancyStore } from "$lib/stores/vacancyStore";
   import { onMount } from 'svelte';
@@ -362,6 +364,7 @@
     on:loadMore={handleLoadMore}
     on:loadAll={handleLoadAll}
   />
+
 </main>
 
 <style>

@@ -33,7 +33,7 @@
   };
 </script>
 
-<div class="rounded-md relative inline-block gradient-border {hideOnMobile ? 'hidden sm:block' : ''} {fullWidth ? 'w-full' : ''} max-w-[calc(100%-2px)]">
+<div class="rounded-md relative inline-block gradient-border {hideOnMobile ? 'hidden sm:block' : ''} {fullWidth ? 'w-full' : ''} flex">
   <button
     {type}
     class="rounded-md cursor-pointer font-medium transition-all duration-200 border-0 relative gradient-border-content {variantClasses[variant]} {sizeClasses[size]} {fullWidth ? 'w-full' : ''} focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 active:bg-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"

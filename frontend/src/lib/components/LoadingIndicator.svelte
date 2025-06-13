@@ -56,21 +56,8 @@
   
   /* Enhanced spinner animation */
   :global(.spinner) {
-    animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
     @apply text-primary-500;
     filter: drop-shadow(0 2px 4px rgba(59, 130, 246, 0.15));
-  }
-  
-  @keyframes spin {
-    0% { 
-      transform: rotate(0deg) scale(1);
-    }
-    50% {
-      transform: rotate(180deg) scale(1.1);
-    }
-    100% { 
-      transform: rotate(360deg) scale(1);
-    }
   }
   
   /* Pulse animation для skeleton loading */

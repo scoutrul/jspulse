@@ -35,7 +35,7 @@
     {/if}
   </div>
   {#if availableSkills && availableSkills.length > 0}
-    <div class="skills-list">
+    <div class="skills-list mb-4">
       {#each availableSkills as skill (skill)}
         <label>
           <input type="checkbox" checked={selectedSkills.includes(skill)} on:change={() => handleChange(skill)} />

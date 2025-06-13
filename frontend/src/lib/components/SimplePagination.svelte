@@ -2,6 +2,7 @@
   import { createEventDispatcher } from 'svelte';
   import { ArrowDown, ArrowPathRoundedSquare } from 'svelte-heros-v2';
   import { PAGINATION, LOCALE } from '../config/pagination.constants';
+  import GradientButton from '$lib/components/ui/GradientButton.svelte';
 
   export let currentPageSize: number = PAGINATION.DEFAULT_PAGE_SIZE;
   export let totalItems: number = 0;
@@ -79,36 +80,40 @@
 
     {#if hasMore}
       <div class="pagination-buttons">
-        <button 
-          class="load-more-btn" 
+        <GradientButton 
           on:click={handleLoadMore} 
           disabled={loading}
-          aria-label="Показать еще {additionalItems} вакансий"
+          variant="primary"
+          size="lg"
         >
-          {#if loading}
-            <ArrowPathRoundedSquare size="18" class="spinner" />
-            Загрузка...
-          {:else}
-            <ArrowDown size="18" />
-            {buttonText}
-          {/if}
-        </button>
-        
-        {#if showLoadAllButton}
-          <button 
-            class="load-all-btn" 
-            on:click={handleLoadAll} 
-            disabled={loading}
-            aria-label="Показать все {remainingItems} оставшихся вакансий"
-          >
+          <div class="button-content">
             {#if loading}
               <ArrowPathRoundedSquare size="18" class="spinner" />
-              Загрузка...
+              <span>Загрузка...</span>
             {:else}
               <ArrowDown size="18" />
-              Показать все ({remainingItems})
+              <span>{buttonText}</span>
             {/if}
-          </button>
+          </div>
+        </GradientButton>
+        
+        {#if showLoadAllButton}
+          <GradientButton 
+            on:click={handleLoadAll} 
+            disabled={loading}
+            variant="secondary"
+            size="lg"
+          >
+            <div class="button-content">
+              {#if loading}
+                <ArrowPathRoundedSquare size="18" class="spinner" />
+                <span>Загрузка...</span>
+              {:else}
+                <ArrowDown size="18" />
+                <span>Показать все ({remainingItems})</span>
+              {/if}
+            </div>
+          </GradientButton>
         {/if}
       </div>
     {:else}
@@ -143,75 +148,13 @@
     @apply flex gap-5 items-center flex-wrap justify-center;
   }
 
-  .load-more-btn,
-  .load-all-btn {
-    @apply px-9 py-4 text-base font-medium text-white border-2 border-transparent rounded-xl cursor-pointer transition-all duration-300 inline-flex items-center gap-3 min-h-[48px] relative overflow-hidden;
-    min-width: var(--load-more-min-width-desktop);
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  }
-
-  /* Enhanced button colors */
-  .load-more-btn {
-    background: linear-gradient(135deg, theme('colors.primary.500') 0%, theme('colors.primary.600') 100%);
-  }
-
-  .load-all-btn {
-    background: linear-gradient(135deg, theme('colors.success.500') 0%, theme('colors.success.600') 100%);
-  }
-
-  /* Enhanced hover states */
-  .load-more-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, theme('colors.primary.600') 0%, theme('colors.primary.700') 100%);
-    @apply -translate-y-0.5;
-    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3), 0 4px 8px rgba(59, 130, 246, 0.2);
-    @apply border-white/20;
-  }
-
-  .load-all-btn:hover:not(:disabled) {
-    background: linear-gradient(135deg, theme('colors.success.600') 0%, theme('colors.success.700') 100%);
-    @apply -translate-y-0.5;
-    box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3), 0 4px 8px rgba(16, 185, 129, 0.2);
-    @apply border-white/20;
-  }
-
-  /* Enhanced active states */
-  .load-more-btn:active:not(:disabled),
-  .load-all-btn:active:not(:disabled) {
-    @apply -translate-y-px transition-all duration-100;
-  }
-
-  .load-more-btn:active:not(:disabled) {
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
-  }
-
-  .load-all-btn:active:not(:disabled) {
-    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
-  }
-
-  /* Enhanced disabled state */
-  .load-more-btn:disabled,
-  .load-all-btn:disabled {
-    background: linear-gradient(135deg, theme('colors.neutral.400') 0%, theme('colors.neutral.500') 100%);
-    @apply cursor-not-allowed transform-none opacity-70;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  .button-content {
+    @apply flex items-center gap-2;
   }
 
   /* Enhanced loading state animation */
   :global(.spinner) {
-    animation: spin 1.5s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
     filter: drop-shadow(0 1px 2px rgba(255, 255, 255, 0.3));
-  }
-  
-  @keyframes spin {
-    0% { 
-      transform: rotate(0deg) scale(1);
-    }
-    50% {
-      transform: rotate(180deg) scale(1.1);
-    }
-    100% { 
-      transform: rotate(360deg) scale(1);
-    }
   }
 
   /* Enhanced status messages */
@@ -237,24 +180,8 @@
     font-size: 1.1rem;
   }
 
-  /* Enhanced focus indicators для accessibility */
-  .load-more-btn:focus,
-  .load-all-btn:focus {
-    @apply outline-2 outline-warning-400 outline-offset-2;
-  }
-
   /* Accessibility improvements */
   @media (prefers-reduced-motion: reduce) {
-    .load-more-btn,
-    .load-all-btn {
-      @apply transition-colors duration-200;
-    }
-    
-    .load-more-btn:hover:not(:disabled),
-    .load-all-btn:hover:not(:disabled) {
-      @apply transform-none;
-    }
-    
     :global(.spinner) {
       animation: spin 2s linear infinite;
     }
@@ -270,11 +197,6 @@
       @apply flex-col gap-4 w-full;
     }
 
-    .load-more-btn,
-    .load-all-btn {
-      @apply px-6 py-4 text-sm min-w-[200px] w-full max-w-sm;
-    }
-
     .pagination-info {
       @apply text-sm px-4 py-3;
     }
@@ -285,19 +207,11 @@
       @apply p-3 my-4;
     }
     
-    .load-more-btn,
-    .load-all-btn {
-      @apply text-sm px-5 py-4;
-    }
+
   }
 
   /* High contrast mode support */
   @media (prefers-contrast: high) {
-    .load-more-btn,
-    .load-all-btn {
-      @apply border-2 border-current;
-    }
-    
     .pagination-info,
     .all-loaded,
     .no-results {

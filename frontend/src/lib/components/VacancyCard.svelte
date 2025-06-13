@@ -99,9 +99,13 @@
     <div class="skills">
       <Tag size="18" /><strong>Навыки:</strong>
       {#each validVacancy.skills as skill}
-        <button type="button" class="skill-tag" on:click={() => handleSkillClick(skill)}>
+        <GradientButton 
+          variant="outline" 
+          size="sm" 
+          on:click={() => handleSkillClick(skill)}
+        >
           {skill}
-        </button>
+        </GradientButton>
       {/each}
     </div>
   {/if}
@@ -215,17 +219,7 @@
     @apply mr-2 text-neutral-700 flex-shrink-0;
   }
 
-  .skill-tag {
-    @apply inline-block bg-primary-100 text-primary-800 px-3 py-1 rounded-xl mr-2 mb-2 text-sm font-medium border border-primary-200 transition-all duration-150 ease-in-out cursor-pointer min-h-[32px];
-  }
 
-  .skill-tag:hover {
-    @apply bg-primary-200 border-primary-300 -translate-y-px;
-  }
-
-  .skill-tag:focus {
-    @apply outline-2 outline-primary-500 outline-offset-2;
-  }
 
   .published-at {
     @apply text-sm text-neutral-500 mt-4 text-right flex items-center justify-end gap-2;
