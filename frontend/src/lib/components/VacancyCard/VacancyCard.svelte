@@ -2,6 +2,8 @@
   import type { VacancyDTO, VacancyWithHtml } from '@jspulse/shared/types';
   import { sanitizeDescription } from '$lib/utils/sanitize';
   import { createEventDispatcher } from 'svelte';
+  import { goto } from '$app/navigation';
+  import { saveScrollPosition } from '$lib/stores/scrollStore';
   
   import VacancyCardHeader from './VacancyCardHeader.svelte';
   import VacancyCardContent from './VacancyCardContent.svelte';
@@ -9,8 +11,9 @@
   
   export let vacancy: VacancyDTO | VacancyWithHtml;
   export let backUrl: string = '/';
-  export let backLabel: string = 'Вернуться к поиску';
+  export let backLabel: string = 'Вернуться к списку';
   export let showDetailLink: boolean = false; // Для отображения ссылки на детальную страницу
+  export let isDetailPage: boolean = false; // Указывает, что это детальная страница
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
@@ -20,6 +23,14 @@
   
   function handleSkillClick(event: CustomEvent<string>) {
     dispatch('skillClick', event.detail);
+  }
+  
+  function handleDescriptionClick() {
+    if (!isDetailPage) {
+      // Сохраняем позицию скролла перед переходом
+      saveScrollPosition();
+      goto(`/v/${vacancy._id}`, { noScroll: true });
+    }
   }
 </script>
 
@@ -44,7 +55,9 @@
       employment={vacancy.employment || undefined}
       skills={vacancy.skills || []}
       description={sanitizedDescription}
+      {isDetailPage}
       on:skillClick={handleSkillClick}
+      on:descriptionClick={handleDescriptionClick}
     />
     
     <!-- Actions Section -->

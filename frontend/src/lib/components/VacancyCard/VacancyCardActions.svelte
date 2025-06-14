@@ -1,18 +1,25 @@
 <script lang="ts">
   import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
   import GradientButton from '../ui/GradientButton.svelte';
   
   export let url: string | undefined = undefined;
   export let source: string | undefined = undefined;
   export let backUrl: string = '/';
-  export let backLabel: string = 'Вернуться к поиску';
+  export let backLabel: string = 'Вернуться к списку';
+  
+  function handleBackClick() {
+    // Используем программную навигацию с опцией noScroll
+    // Это позволит нашему кастомному scrollStore восстановить позицию
+    goto(backUrl, { noScroll: true });
+  }
 </script>
 
 {#if $page.url.pathname !== '/'}
 <div class="vacancy-actions">
   <div class="actions-container">
       <div class="secondary-action">
-        <a href={backUrl} class="action-link">
+        <button type="button" class="action-link" on:click={handleBackClick}>
           <GradientButton variant="outline" size="lg">
             <span class="button-content">
               <span class="button-icon" aria-hidden="true">
@@ -26,7 +33,7 @@
               </span>
             </span>
           </GradientButton>
-        </a>
+        </button>
       </div>
       {#if url}
         <div class="primary-action ml-auto">
@@ -81,6 +88,7 @@
     @apply transition-all duration-200;
     @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
     @apply rounded-lg;
+    @apply border-none bg-transparent p-0 cursor-pointer;
   }
   
   .button-content {

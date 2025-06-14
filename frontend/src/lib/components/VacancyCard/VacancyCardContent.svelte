@@ -1,22 +1,34 @@
 <script lang="ts">
   import SkillTag from '../ui/SkillTag.svelte';
+  import DescriptionRenderer from '../Description/DescriptionRenderer.svelte';
   import { createEventDispatcher } from 'svelte';
   
   export let experience: string | undefined = undefined;
   export let employment: string | undefined = undefined;
   export let skills: string[] = [];
   export let description: string | undefined = undefined;
+  export let fullDescription: any = undefined; // DescriptionContent из backend
+  export let processedHtml: string | undefined = undefined;
+  export let isDetailPage: boolean = false;
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
+    descriptionClick: void;
   }>();
   
   $: hasRequirements = experience || employment;
   $: hasSkills = skills && skills.length > 0;
   $: hasRequirementsOrSkills = hasRequirements || hasSkills;
+  $: hasDescription = description || fullDescription || processedHtml;
   
   function handleSkillClick(skill: string) {
     dispatch('skillClick', skill);
+  }
+  
+  function handleDescriptionClick() {
+    if (!isDetailPage && hasDescription) {
+      dispatch('descriptionClick');
+    }
   }
 </script>
 
@@ -63,14 +75,34 @@
     </section>
   {/if}
 
-  <!-- Описание -->
-  {#if description}
-    <section class="content-section description-section">
-      <h3 class="section-title">Описание вакансии</h3>
-      <div class="description-content">
-        {@html description}
-      </div>
-    </section>
+  <!-- Описание без заголовка и с кликабельным контейнером -->
+  {#if hasDescription}
+    <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
+    <div 
+      class="description-container" 
+      class:clickable={!isDetailPage}
+      on:click={handleDescriptionClick}
+      on:keydown={(e) => {
+        if ((e.key === 'Enter' || e.key === ' ') && !isDetailPage) {
+          e.preventDefault();
+          handleDescriptionClick();
+        }
+      }}
+      tabindex={!isDetailPage ? 0 : undefined}
+      role={!isDetailPage ? 'button' : 'region'}
+      aria-label={!isDetailPage ? 'Нажмите для просмотра полного описания вакансии' : 'Описание вакансии'}
+    >
+      <DescriptionRenderer 
+        content={processedHtml || description || ''}
+        processedContent={fullDescription}
+        mode={isDetailPage ? 'full' : 'auto'}
+        maxPreviewLength={220}
+        allowToggle={false}
+        showToggleButton={false}
+        variant="enhanced"
+        showMetrics={false}
+      />
+    </div>
   {/if}
 </div>
 
@@ -133,49 +165,41 @@
     @apply flex flex-wrap gap-2;
   }
   
-  /* Описание */
-  .description-section {
-    @apply bg-white border border-neutral-200 rounded-lg p-4;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  /* Описание без заголовка - кликабельный контейнер */
+  .description-container {
+    @apply relative transition-all duration-200 ease-in-out;
   }
   
-  .description-content {
-    @apply text-neutral-700 leading-relaxed text-sm;
+  .description-container.clickable {
+    @apply cursor-pointer;
+    @apply hover:bg-neutral-50 active:bg-neutral-100;
+    @apply rounded-lg p-3 -mx-3;
+    @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
+    @apply border border-transparent hover:border-neutral-200;
+    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease-in-out;
   }
   
-  .description-content :global(h1),
-  .description-content :global(h2),
-  .description-content :global(h3) {
-    @apply text-neutral-800 font-semibold mt-4 mb-2;
+  .description-container.clickable:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transform: translateY(-1px);
   }
   
-  .description-content :global(h1) {
-    @apply text-lg;
+  .description-container.clickable:active {
+    transform: translateY(0);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
   }
   
-  .description-content :global(h2) {
-    @apply text-base;
+  /* Индикатор кликабельности */
+  .description-container.clickable::after {
+    content: "";
+    @apply absolute top-2 right-2 w-2 h-2;
+    @apply bg-primary-400 rounded-full;
+    @apply opacity-0 transition-opacity duration-200;
   }
   
-  .description-content :global(h3) {
-    @apply text-sm;
-  }
-  
-  .description-content :global(ul),
-  .description-content :global(ol) {
-    @apply pl-4 my-3;
-  }
-  
-  .description-content :global(li) {
-    @apply mb-1;
-  }
-  
-  .description-content :global(p) {
-    @apply mb-3;
-  }
-  
-  .description-content :global(strong) {
-    @apply font-semibold text-neutral-800;
+  .description-container.clickable:hover::after {
+    @apply opacity-60;
   }
   
   /* Responsive design */
