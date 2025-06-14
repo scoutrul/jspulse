@@ -15,7 +15,11 @@
         </div>
       </a>
       
-      <div class="beta-badge ml-auto">
+      <nav class="header-nav">
+        <a href="/about" class="nav-link">О проекте</a>
+      </nav>
+      
+      <div class="beta-badge">
         <span>Beta</span>
       </div>
     </div>
@@ -41,7 +45,18 @@
   }
   
   .main-row {
-    @apply flex items-center justify-between w-full gap-2;
+    @apply flex items-center w-full gap-4;
+  }
+  
+  .header-nav {
+    @apply flex items-center ml-auto mr-4;
+  }
+  
+  .nav-link {
+    @apply px-4 py-2 text-sm font-medium text-neutral-600 hover:text-warning-600;
+    @apply bg-transparent hover:bg-warning-50 rounded-lg transition-all duration-200;
+    @apply border border-transparent hover:border-warning-200;
+    @apply no-underline focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
   }
 
   .header-link {
@@ -110,6 +125,18 @@
     .header-container {
       @apply px-4 py-3;
     }
+    
+    .main-row {
+      @apply flex-wrap gap-2;
+    }
+    
+    .header-nav {
+      @apply order-3 w-full justify-center ml-0 mr-0 mt-2;
+    }
+    
+    .beta-badge {
+      @apply order-2 ml-auto;
+    }
   }
 
   /* Адаптация для очень маленьких экранов */
@@ -161,7 +188,8 @@
   }
 
   /* Фокус-индикаторы для клавиатурной навигации */
-  .header-link:focus-visible {
+  .header-link:focus-visible,
+  .nav-link:focus-visible {
     @apply outline-2 outline-offset-2 outline-primary-500;
   }
 </style> 
