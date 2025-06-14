@@ -16,43 +16,18 @@
   $: hasSalary = salaryFrom !== undefined || salaryTo !== undefined;
 </script>
 
-<header class="vacancy-header">
-  {#if showDetailLink && vacancyId}
-    <h1 class="vacancy-title">
-      <a href="/v/{vacancyId}" class="title-link">
-        {title}
-      </a>
-    </h1>
-  {:else}
-    <h1 class="vacancy-title">{title}</h1>
-  {/if}
-  
-  <div class="vacancy-meta">
-    <InfoBadge 
-      label="Компания" 
-      value={company} 
-      variant="primary" 
-      size="md"
-    />
-    
-    {#if location}
-      <InfoBadge 
-        label="Местоположение" 
-        value={location} 
-        variant="info" 
-        size="sm"
-      />
+<header class="vacancy-header flex flex-col gap-4">
+  <div class="flex gap-2 justify-between items-baseline">
+    {#if showDetailLink && vacancyId}
+      <h1 class="vacancy-title">
+        <a href="/v/{vacancyId}" class="title-link">
+          {title}
+        </a>
+      </h1>
+    {:else}
+      <h1 class="vacancy-title">{title}</h1>
     {/if}
     
-    {#if formattedDate}
-      <InfoBadge 
-        label="Опубликовано" 
-        value={formattedDate} 
-        variant="default" 
-        size="sm"
-      />
-    {/if}
-    <!-- Зарплата в хедере -->
     {#if hasSalary}
       <SalaryRange 
         {salaryFrom} 
@@ -61,6 +36,43 @@
         variant="prominent" 
         size="sm" 
       />
+    {:else}
+      <InfoBadge 
+        label="" 
+        hideLabel={true}
+        value="Оплата не указана"    
+        size="sm"
+        variant="flat" 
+      />
+    {/if}
+  </div>  
+  <div class="vacancy-meta">
+    <InfoBadge 
+      label="Компания" 
+      hideLabel={true}
+      value={company} 
+      variant="primary" 
+      size="sm"
+    />
+    
+    {#if location}
+      <InfoBadge 
+        label="Локация" 
+        value={location} 
+        variant="info" 
+        size="sm"
+      />
+    {/if}
+    
+    {#if formattedDate}
+    <div class="ml-auto">
+      <InfoBadge 
+        label="Опубликовано" 
+        value={formattedDate} 
+        variant="flat" 
+        size="sm"
+      />
+    </div>
     {/if}
   </div>
   
@@ -75,7 +87,7 @@
   
   .vacancy-title {
     @apply text-xl sm:text-2xl font-bold leading-tight;
-    @apply mb-3 m-0;
+    @apply m-0;
     
     /* Применяем warning gradient как в дизайн-системе */
     background: linear-gradient(135deg, theme('colors.warning.600') 0%, theme('colors.warning.500') 50%, theme('colors.warning.400') 100%);
@@ -108,13 +120,6 @@
     @apply mb-3;
   }
   
-  .salary-container {
-    @apply bg-green-50 border border-green-200 rounded-lg p-3;
-    @apply text-center;
-    background: linear-gradient(135deg, rgba(236, 253, 245, 1) 0%, rgba(209, 250, 229, 0.5) 100%);
-    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.08);
-  }
-  
   /* Responsive design */
   @media (max-width: 640px) {
     .vacancy-title {
@@ -123,10 +128,6 @@
     
     .vacancy-meta {
       @apply flex-col items-start gap-2;
-    }
-    
-    .salary-container {
-      @apply p-2;
     }
   }
   
@@ -152,10 +153,6 @@
     .title-link {
       @apply text-warning-700;
       -webkit-text-fill-color: theme('colors.warning.700');
-    }
-    
-    .salary-container {
-      @apply border-2 border-green-600 bg-green-100;
     }
   }
 </style> 

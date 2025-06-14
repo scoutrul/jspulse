@@ -23,9 +23,7 @@
 
 {#if hasRange}
   <div class="salary-range salary-range--{variant} salary-range--{size}">
-
-    
-    <span class="salary-range__text">
+    <span class="salary-range__text whitespace-nowrap">
       {salaryText}
     </span>
   </div>

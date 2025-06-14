@@ -1,9 +1,10 @@
 <script lang="ts">
   export let label: string;
   export let value: string;
-  export let variant: 'default' | 'primary' | 'success' | 'info' = 'default';
+  export let variant: 'default' | 'primary' | 'success' | 'info' | 'flat' = 'default';
   export let size: 'sm' | 'md' | 'lg' = 'md';
   export let icon: string | undefined = undefined;
+  export let hideLabel: boolean = false;
 </script>
 
 <div class="info-badge info-badge--{variant} info-badge--{size}">
@@ -14,7 +15,9 @@
   {/if}
   
   <div class="info-badge__content">
-    <span class="info-badge__label">{label}:</span>
+    {#if !hideLabel}
+      <span class="info-badge__label">{label}:</span>
+    {/if}
     <span class="info-badge__value">{value}</span>
   </div>
 </div>
@@ -60,9 +63,14 @@
     @apply bg-blue-50 border-blue-200 text-blue-800;
     @apply hover:bg-blue-100 hover:border-blue-300;
   }
+
+  .info-badge--flat {
+    @apply bg-transparent border-none text-neutral-700;
+    @apply hover:bg-transparent hover:border-none;
+  }
   
   .info-badge__content {
-    @apply flex flex-col;
+    @apply flex gap-1;
   }
   
   .info-badge--sm .info-badge__content {
