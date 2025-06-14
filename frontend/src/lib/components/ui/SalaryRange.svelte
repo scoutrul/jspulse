@@ -1,9 +1,12 @@
 <script lang="ts">
+  import InfoBadge from './InfoBadge.svelte';
+  
   export let salaryFrom: number | undefined | null = undefined;
   export let salaryTo: number | undefined | null = undefined;
   export let currency: string = 'руб.';
   export let size: 'sm' | 'md' | 'lg' = 'md';
   export let variant: 'default' | 'prominent' = 'default';
+  export let href: string | undefined = undefined; // Пропускаем href в InfoBadge
   
   $: hasRange = salaryFrom !== undefined || salaryTo !== undefined;
   $: formattedFrom = salaryFrom?.toLocaleString('ru-RU');
@@ -19,81 +22,46 @@
     }
     return '';
   })();
+  
 </script>
 
 {#if hasRange}
-  <div class="salary-range salary-range--{variant} salary-range--{size}">
-    <span class="salary-range__text whitespace-nowrap">
-      {salaryText}
-    </span>
+  <div class="salary-range salary-range--{variant}">
+    <InfoBadge 
+      label=""
+      hideLabel={true}
+      value={salaryText}
+      variant="success"
+      {size}
+      {href}
+    />
   </div>
 {/if}
 
 <style>
   .salary-range {
-    @apply inline-flex items-center gap-2 rounded-lg transition-all duration-200;
-    @apply font-semibold;
-    will-change: transform, box-shadow;
-    backface-visibility: hidden;
+    @apply inline-block;
   }
   
-  /* Размеры */
-  .salary-range--sm {
-    @apply text-sm px-2 py-1;
-  }
-  
-  .salary-range--md {
-    @apply text-base px-3 py-2;
-  }
-  
-  .salary-range--lg {
-    @apply text-lg px-4 py-3;
-  }
-  
-  /* Варианты */
-  .salary-range--default {
-    @apply text-green-700 bg-green-50 border border-green-200;
-  }
-  
-  .salary-range--prominent {
-    @apply text-white border border-green-500;
+  /* Дополнительные стили для prominent варианта */
+  .salary-range--prominent :global(.info-badge) {
+    @apply font-bold;
     background: linear-gradient(135deg, #10b981 0%, #059669 50%, #047857 100%);
     box-shadow: 0 2px 4px rgba(16, 185, 129, 0.15);
+    animation: salary-glow 4s ease-in-out infinite;
   }
   
-  .salary-range__icon {
-    @apply flex items-center justify-center;
-    @apply w-4 h-4 opacity-75;
+  .salary-range--prominent :global(.info-badge__value) {
+    @apply text-white tabular-nums;
   }
   
-  .salary-range--lg .salary-range__icon {
-    @apply w-5 h-5;
-  }
-  
-  .salary-range__text {
-    @apply font-semibold tabular-nums;
-  }
-  
-  /* Hover эффекты */
-  .salary-range:hover {
-    @apply transform -translate-y-1;
-  }
-  
-  .salary-range--default:hover {
-    @apply bg-green-100 border-green-300;
-    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.1);
-  }
-  
-  .salary-range--prominent:hover {
+  /* Hover эффекты для prominent */
+  .salary-range--prominent :global(.info-badge--link:hover) {
     @apply transform scale-105;
     box-shadow: 0 4px 8px rgba(16, 185, 129, 0.25), 0 2px 4px rgba(16, 185, 129, 0.15);
   }
   
   /* Анимация пульсации для prominent варианта */
-  .salary-range--prominent {
-    animation: salary-glow 4s ease-in-out infinite;
-  }
-  
   @keyframes salary-glow {
     0%, 100% {
       box-shadow: 0 2px 4px rgba(16, 185, 129, 0.15);
@@ -103,33 +71,25 @@
     }
   }
   
+  /* Табличные цифры для всех вариантов */
+  .salary-range :global(.info-badge__value) {
+    @apply tabular-nums;
+  }
+  
   /* Accessibility */
   @media (prefers-reduced-motion: reduce) {
-    .salary-range {
+    .salary-range--prominent :global(.info-badge) {
       animation: none;
-      transition: none;
     }
     
-    .salary-range:hover {
-      @apply transform-none;
-    }
-    
-    .salary-range--prominent:hover {
+    .salary-range--prominent :global(.info-badge--link:hover) {
       @apply transform-none;
     }
   }
   
   /* Высококонтрастный режим */
   @media (prefers-contrast: high) {
-    .salary-range {
-      @apply border-2;
-    }
-    
-    .salary-range--default {
-      @apply border-green-600 bg-green-100;
-    }
-    
-    .salary-range--prominent {
+    .salary-range--prominent :global(.info-badge) {
       @apply text-green-900;
       background: theme('colors.green.400');
     }

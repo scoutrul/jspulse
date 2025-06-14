@@ -5,22 +5,40 @@
   export let size: 'sm' | 'md' | 'lg' = 'md';
   export let icon: string | undefined = undefined;
   export let hideLabel: boolean = false;
+  export let href: string | undefined = undefined; // Если передан, элемент становится ссылкой
 </script>
 
-<div class="info-badge info-badge--{variant} info-badge--{size}">
-  {#if icon}
-    <span class="info-badge__icon" aria-hidden="true">
-      {@html icon}
-    </span>
-  {/if}
-  
-  <div class="info-badge__content">
-    {#if !hideLabel}
-      <span class="info-badge__label">{label}:</span>
+{#if href}
+  <a {href} class="info-badge info-badge--{variant} info-badge--{size} info-badge--link">
+    {#if icon}
+      <span class="info-badge__icon" aria-hidden="true">
+        {@html icon}
+      </span>
     {/if}
-    <span class="info-badge__value">{value}</span>
+    
+    <div class="info-badge__content">
+      {#if !hideLabel}
+        <span class="info-badge__label">{label}:</span>
+      {/if}
+      <span class="info-badge__value">{value}</span>
+    </div>
+  </a>
+{:else}
+  <div class="info-badge info-badge--{variant} info-badge--{size}">
+    {#if icon}
+      <span class="info-badge__icon" aria-hidden="true">
+        {@html icon}
+      </span>
+    {/if}
+    
+    <div class="info-badge__content">
+      {#if !hideLabel}
+        <span class="info-badge__label">{label}:</span>
+      {/if}
+      <span class="info-badge__value">{value}</span>
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
   .info-badge {
@@ -70,7 +88,7 @@
   }
   
   .info-badge__content {
-    @apply flex gap-1;
+    @apply flex gap-1 whitespace-nowrap;
   }
   
   .info-badge--sm .info-badge__content {
@@ -94,10 +112,14 @@
     @apply w-5 h-5;
   }
   
-  /* Hover эффекты */
-  .info-badge:hover {
-    @apply transform -translate-y-1;
+  /* Hover эффекты только для ссылок */
+  .info-badge--link:hover {
+    @apply transform -translate-y-1 cursor-pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .info-badge--link {
+    @apply no-underline; /* Убираем подчеркивание для ссылок */
   }
   
   /* Accessibility */
@@ -106,7 +128,7 @@
       transition: none;
     }
     
-    .info-badge:hover {
+    .info-badge--link:hover {
       @apply transform-none;
       box-shadow: none;
     }
