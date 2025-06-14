@@ -15,7 +15,7 @@
         </div>
       </a>
       
-      <div class="beta-badge">
+      <div class="beta-badge ml-auto">
         <span>Beta</span>
       </div>
     </div>
@@ -42,8 +42,6 @@
   
   .main-row {
     @apply flex items-center justify-between w-full gap-2;
-    /* На десктопе main-row становится частью общего ряда */
-    @apply sm:w-auto sm:justify-start;
   }
 
   .header-link {

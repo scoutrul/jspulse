@@ -422,47 +422,46 @@
   <title>JS Пульс - вакансии по фронтенду</title>
 </svelte:head>
 
-<main>
-  <!-- Визуализация тегов во всю ширину -->
-  {#if browser && skillsStats.length > 0}
-    <section class="tags-visualization-section">
-      <div class="tags-canvas-container">
-        <TagBubblesCanvas
-          tags={tagsForBubbles}
-          on:tagClick={(e) => handleTagClick(e)}
-          on:tagHover={(e) => console.log('Hovered:', e.detail)}
-        />
-      </div>
-    </section>
-  {/if}
 
-  <Filters {availableSkills} selectedSkills={store.selectedSkills} totalVacancies={store.total} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
+<!-- Визуализация тегов во всю ширину -->
+{#if browser && skillsStats.length > 0}
+  <section class="tags-visualization-section">
+    <div class="tags-canvas-container">
+      <TagBubblesCanvas
+        tags={tagsForBubbles}
+        on:tagClick={(e) => handleTagClick(e)}
+        on:tagHover={(e) => console.log('Hovered:', e.detail)}
+      />
+    </div>
+  </section>
+{/if}
 
-  {#if store.loading && store.vacancies.length === 0}
-    <LoadingIndicator text="Применение фильтров..." />
-  {/if}
+<Filters {availableSkills} selectedSkills={store.selectedSkills} totalVacancies={store.total} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
 
-  <ErrorMessage message={store.error} />
+{#if store.loading && store.vacancies.length === 0}
+  <LoadingIndicator text="Применение фильтров..." />
+{/if}
 
-  <VacancyList 
-    vacancies={store.vacancies} 
-    loadingFilter={store.loading && store.vacancies.length === 0} 
-    loadingMore={store.loading && store.vacancies.length > 0}
-    clientError={store.error} 
-    on:skillClick={handleSkillClick} 
-  />
+<ErrorMessage message={store.error} />
 
-  <!-- Пагинация только снизу -->
-  <SimplePagination
-    currentPageSize={store.limit}
-    totalItems={store.total}
-    showingItems={store.vacancies.length}
-    loading={store.loading}
-    on:loadMore={handleLoadMore}
-    on:loadAll={handleLoadAll}
-  />
+<VacancyList 
+  vacancies={store.vacancies} 
+  loadingFilter={store.loading && store.vacancies.length === 0} 
+  loadingMore={store.loading && store.vacancies.length > 0}
+  clientError={store.error} 
+  on:skillClick={handleSkillClick} 
+/>
 
-</main>
+<!-- Пагинация только снизу -->
+<SimplePagination
+  currentPageSize={store.limit}
+  totalItems={store.total}
+  showingItems={store.vacancies.length}
+  loading={store.loading}
+  on:loadMore={handleLoadMore}
+  on:loadAll={handleLoadAll}
+/>
+
 
 <style>
   :root {
@@ -471,18 +470,17 @@
   }
 
   main {
-    @apply max-w-4xl mx-auto my-8 px-4;
+    @apply max-w-4xl mx-auto mb-8 px-4;
   }
 
   .tags-visualization-section {
-    @apply -mx-4 mb-8; /* Выходим за границы main контейнера */
+    @apply -mx-4; /* Выходим за границы main контейнера */
     width: 100vw;
     margin-left: calc(-50vw + 50%);
-    @apply bg-gradient-to-br from-neutral-50 to-neutral-100 py-4;
   }
 
   .tags-canvas-container {
-    @apply max-w-7xl mx-auto px-6;
+    @apply mx-auto;
     height: 400px;
   }
 
@@ -490,7 +488,6 @@
   @media (max-width: 768px) {
     .tags-canvas-container {
       height: 300px;
-      @apply px-4;
     }
   }
 

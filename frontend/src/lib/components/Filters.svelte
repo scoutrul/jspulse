@@ -1,11 +1,16 @@
 <script lang="ts">
-  import { AdjustmentsHorizontal, Tag } from 'svelte-heros-v2';
+  import { AdjustmentsHorizontal, Tag, ChevronDown, ChevronUp } from 'svelte-heros-v2';
   import { createEventDispatcher } from 'svelte';
+  import { slide } from 'svelte/transition';
   import GradientButton from './ui/GradientButton.svelte';
   
   export let availableSkills: string[] = [];
   export let selectedSkills: string[] = [];
   export let totalVacancies: number = 0;
+  
+  // Состояние коллапса (по умолчанию скрыт)
+  let isExpanded: boolean = false;
+  
   const dispatch = createEventDispatcher<{
     change: string[];
     reset: void;
@@ -17,44 +22,66 @@
       : [...selectedSkills, skill];
     dispatch('change', newSkills);
   }
+  
   function handleReset() {
     dispatch('reset');
+  }
+  
+  function toggleExpanded() {
+    isExpanded = !isExpanded;
   }
 </script>
 
 <section class="filters">
   <div class="filters-header">
-    <h2>
-      <AdjustmentsHorizontal size="20" />
-      Фильтр по навыкам ({availableSkills?.length ?? 0})
-    </h2>
+    <button class="filters-toggle" on:click={toggleExpanded} aria-expanded={isExpanded}>
+      <h2>
+        <AdjustmentsHorizontal size="20" />
+        Фильтр по навыкам ({availableSkills?.length ?? 0})
+        {#if selectedSkills.length > 0}
+          <span class="selected-count">({selectedSkills.length})</span>
+        {/if}
+      </h2>
+      <span class="toggle-icon">
+        {#if isExpanded}
+          <ChevronUp size="20" />
+        {:else}
+          <ChevronDown size="20" />
+        {/if}
+      </span>
+    </button>
     {#if totalVacancies > 0}
       <div class="results-legend">
         Найдено: <strong>{totalVacancies.toLocaleString('ru')}</strong> {totalVacancies === 1 ? 'вакансия' : totalVacancies < 5 ? 'вакансии' : 'вакансий'}
       </div>
     {/if}
   </div>
-  {#if availableSkills && availableSkills.length > 0}
-    <div class="skills-list mb-4">
-      {#each availableSkills as skill (skill)}
-        <label>
-          <input type="checkbox" checked={selectedSkills.includes(skill)} on:change={() => handleChange(skill)} />
-          <Tag size="16" />
-          {skill}
-        </label>
-      {/each}
+  
+  {#if isExpanded}
+    <div class="filters-content" transition:slide={{ duration: 300 }}>
+      {#if availableSkills && availableSkills.length > 0}
+        <div class="skills-list mb-4">
+          {#each availableSkills as skill (skill)}
+            <label>
+              <input type="checkbox" checked={selectedSkills.includes(skill)} on:change={() => handleChange(skill)} />
+              <Tag size="16" />
+              {skill}
+            </label>
+          {/each}
+        </div>
+        <GradientButton 
+          variant="primary" 
+          size="md" 
+          fullWidth={true} 
+          hideOnMobile={false} 
+          on:click={handleReset}
+        >
+          Сбросить фильтр
+        </GradientButton>
+      {:else}
+        <p>Нет доступных навыков для фильтрации.</p>
+      {/if}
     </div>
-    <GradientButton 
-      variant="primary" 
-      size="md" 
-      fullWidth={true} 
-      hideOnMobile={false} 
-      on:click={handleReset}
-    >
-      Сбросить фильтр
-    </GradientButton>
-  {:else}
-    <p>Нет доступных навыков для фильтрации.</p>
   {/if}
 </section>
 
@@ -64,11 +91,27 @@
     @apply bg-neutral-50 p-6 rounded-lg mb-8 border border-neutral-300;
   }
   .filters-header {
-    @apply flex justify-between items-center mb-4 flex-wrap gap-4;
+    @apply flex flex-col gap-4;
+  }
+
+  .filters-toggle {
+    @apply w-full flex justify-between items-center p-0 bg-transparent border-none cursor-pointer transition-colors duration-200 hover:bg-neutral-100 rounded-lg px-2 py-1;
   }
 
   .filters h2 {
     @apply m-0 text-xl text-neutral-700 flex items-center gap-2 font-semibold;
+  }
+
+  .selected-count {
+    @apply text-primary-600 bg-primary-100 px-2 py-1 rounded-full text-sm font-medium;
+  }
+
+  .toggle-icon {
+    @apply text-neutral-500 transition-transform duration-200;
+  }
+
+  .filters-content {
+    @apply pt-4;
   }
 
   .results-legend {

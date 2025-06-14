@@ -24,7 +24,7 @@
   }
 
   .content {
-    @apply flex-grow px-4 sm:px-6 lg:px-8 py-6 max-w-7xl mx-auto w-full;
+    @apply flex-grow px-4 sm:px-6 lg:px-8 pb-6 max-w-7xl mx-auto w-full;
   }
 
   /* Стили для футера, если он будет добавлен */
@@ -37,13 +37,13 @@
   /* Улучшенная адаптивность для контента */
   @media (max-width: 640px) {
     .content {
-      @apply px-4 py-4;
+      @apply px-4 pb-4;
     }
   }
 
   @media (max-width: 480px) {
     .content {
-      @apply px-3 py-3;
+      @apply px-3 pb-3;
     }
   }
 </style>

@@ -12,8 +12,8 @@
   export let tags: TagData[] = [];
   export let width: number = 800;
   export let height: number = 600;
-  export let minRadius: number = 20;
-  export let maxRadius: number = 80;
+  export let minRadius: number = 50;
+  export let maxRadius: number = 100;
 
   // Типизация событий
   const dispatch = createEventDispatcher<{
@@ -47,7 +47,6 @@
   let bubbles: Bubble[] = [];
   let animationId: number = 0;
   let simulation: any;
-  let isHovering: boolean = false;
   let hoveredBubble: Bubble | null = null;
 
   // Детерминированная цветовая схема на базе JSPulse палитры
@@ -116,10 +115,11 @@
     const d3 = await import('d3-force');
     
     simulation = d3.forceSimulation(bubbles)
-      .force('center', d3.forceCenter(width / 2, height / 2))
-      .force('collision', d3.forceCollide().radius((d: any) => d.currentRadius + 2))
-      .force('charge', d3.forceManyBody().strength(-50))
-      .alpha(1)
+      .force('center', d3.forceCenter(width / 2, height / 2).strength(0.01))
+      .force('collision', d3.forceCollide().radius((d: any) => d.currentRadius + 5).strength(0.7))
+      .force('charge', d3.forceManyBody().strength(-10)) // Очень слабое отталкивание
+      .force('attract', d3.forceRadial(0, width / 2, height / 2).strength(0.01)) // Слабое притяжение к центру
+      .alpha(0.2)
       .alphaDecay(0); // Бесконечное движение - отключаем затухание
 
     simulation.on('tick', () => {
@@ -132,7 +132,7 @@
       if (simulation && simulation.alpha() < 0.1) {
         simulation.alpha(0.3).restart();
       }
-    }, 5000); // Перезапускаем каждые 5 секунд
+    }, 2000); // Перезапускаем каждые 5 секунд
   }
 
   // Обновление состояния пузырьков
@@ -155,12 +155,80 @@
       
       bubble.x += oscillationX + randomX;
       bubble.y += oscillationY + randomY;
+
+      // Границы canvas с учетом радиуса пузыря и минимальным отступом
+      const minPadding = 2; // Минимальный отступ от края
+      const paddingX = bubble.currentRadius + minPadding;
+      const paddingY = bubble.currentRadius + minPadding;
       
-      // Границы canvas с отступами
-      const padding = bubble.currentRadius + 15; // Увеличенный отступ
-      bubble.x = Math.max(padding, Math.min(width - padding, bubble.x));
-      bubble.y = Math.max(padding, Math.min(height - padding, bubble.y));
+      bubble.x = Math.max(paddingX, Math.min(width - paddingX, bubble.x));
+      bubble.y = Math.max(paddingY, Math.min(height - paddingY, bubble.y));
     });
+  }
+
+  // Функция отрисовки одного пузыря
+  function drawBubble(context: CanvasRenderingContext2D, bubble: Bubble, isHovered: boolean = false) {
+    context.save();
+    
+    // Усиленная тень для ховера
+    if (isHovered) {
+      context.shadowColor = 'rgba(0, 0, 0, 0.25)';
+      context.shadowBlur = 15;
+      context.shadowOffsetX = 5;
+      context.shadowOffsetY = 5;
+    } else {
+      context.shadowColor = 'rgba(0, 0, 0, 0.1)';
+      context.shadowBlur = 5;
+      context.shadowOffsetX = 2;
+      context.shadowOffsetY = 2;
+    }
+    
+    // Основной цвет пузыря
+    context.beginPath();
+    context.arc(bubble.x, bubble.y, bubble.currentRadius, 0, Math.PI * 2);
+    context.fillStyle = bubble.color;
+    context.fill();
+    
+    // Градиент для объема
+    const gradient = context.createRadialGradient(
+      bubble.x - bubble.currentRadius * 0.3,
+      bubble.y - bubble.currentRadius * 0.3,
+      0,
+      bubble.x,
+      bubble.y,
+      bubble.currentRadius
+    );
+    gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
+    gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
+    
+    context.beginPath();
+    context.arc(bubble.x, bubble.y, bubble.currentRadius, 0, Math.PI * 2);
+    context.fillStyle = gradient;
+    context.fill();
+    
+    // Текст тега
+    context.shadowColor = 'transparent';
+    context.fillStyle = 'white';
+    context.font = `bold ${Math.max(10, bubble.currentRadius * 0.3)}px Inter, sans-serif`;
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    
+    // Обрезка текста по размеру пузыря
+    const maxTextWidth = bubble.currentRadius * 1.6;
+    let text = bubble.name;
+    let textWidth = context.measureText(text).width;
+    
+    if (textWidth > maxTextWidth) {
+      while (textWidth > maxTextWidth && text.length > 1) {
+        text = text.slice(0, -1);
+        textWidth = context.measureText(text + '...').width;
+      }
+      text = text + '...';
+    }
+    
+    context.fillText(text, bubble.x, bubble.y);
+    
+    context.restore();
   }
 
   // Отрисовка на Canvas
@@ -172,63 +240,17 @@
     // Очистка canvas
     context.clearRect(0, 0, width, height);
 
-    // Отрисовка пузырьков
+    // Сначала отрисовываем все обычные пузыри
     bubbles.forEach(bubble => {
-      context.save();
-      
-      // Тень для объема
-      context.shadowColor = 'rgba(0, 0, 0, 0.1)';
-      context.shadowBlur = 5;
-      context.shadowOffsetX = 2;
-      context.shadowOffsetY = 2;
-      
-      // Основной цвет пузыря
-      context.beginPath();
-      context.arc(bubble.x, bubble.y, bubble.currentRadius, 0, Math.PI * 2);
-      context.fillStyle = bubble.color;
-      context.fill();
-      
-      // Градиент для объема
-      const gradient = context.createRadialGradient(
-        bubble.x - bubble.currentRadius * 0.3,
-        bubble.y - bubble.currentRadius * 0.3,
-        0,
-        bubble.x,
-        bubble.y,
-        bubble.currentRadius
-      );
-      gradient.addColorStop(0, 'rgba(255, 255, 255, 0.3)');
-      gradient.addColorStop(1, 'rgba(0, 0, 0, 0.1)');
-      
-      context.beginPath();
-      context.arc(bubble.x, bubble.y, bubble.currentRadius, 0, Math.PI * 2);
-      context.fillStyle = gradient;
-      context.fill();
-      
-      // Текст тега
-      context.shadowColor = 'transparent';
-      context.fillStyle = 'white';
-      context.font = `bold ${Math.max(10, bubble.currentRadius * 0.3)}px Inter, sans-serif`;
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      
-      // Обрезка текста по размеру пузыря
-      const maxTextWidth = bubble.currentRadius * 1.6;
-      let text = bubble.name;
-      let textWidth = context.measureText(text).width;
-      
-      if (textWidth > maxTextWidth) {
-        while (textWidth > maxTextWidth && text.length > 1) {
-          text = text.slice(0, -1);
-          textWidth = context.measureText(text + '...').width;
-        }
-        text = text + '...';
+      if (bubble !== hoveredBubble) {
+        drawBubble(context, bubble, false);
       }
-      
-      context.fillText(text, bubble.x, bubble.y);
-      
-      context.restore();
     });
+
+    // Затем отрисовываем ховерный пузырь поверх всех остальных
+    if (hoveredBubble) {
+      drawBubble(context, hoveredBubble, true);
+    }
   }
 
   // Обработка движения мыши
@@ -270,8 +292,6 @@
         }
       });
     }
-
-
   }
 
   // Обработка кликов
@@ -321,6 +341,7 @@
     // Обновление симуляции
     if (simulation) {
       simulation.force('center', simulation.force('center').x(width / 2).y(height / 2));
+      simulation.force('attract', simulation.force('attract').x(width / 2).y(height / 2));
       simulation.alpha(0.3).restart();
     }
   }
@@ -389,7 +410,7 @@
 
 <style>
   .bubbles-container {
-    @apply relative w-full h-full min-h-96 bg-neutral-50 rounded-lg border border-neutral-200 overflow-hidden;
+    @apply relative w-full h-full min-h-96 bg-neutral-50 overflow-hidden;
   }
 
   .bubbles-canvas {

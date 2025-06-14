@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/stores';
   import GradientButton from '../ui/GradientButton.svelte';
   
   export let url: string | undefined = undefined;
@@ -7,52 +8,53 @@
   export let backLabel: string = 'Вернуться к поиску';
 </script>
 
+{#if $page.url.pathname !== '/'}
 <div class="vacancy-actions">
   <div class="actions-container">
-    {#if url}
-      <div class="primary-action">
-        <a 
-          href={url} 
-          target="_blank" 
-          rel="noopener noreferrer"
-          class="action-link"
-        >
-          <GradientButton variant="primary" size="lg">
+      <div class="secondary-action">
+        <a href={backUrl} class="action-link">
+          <GradientButton variant="outline" size="lg">
             <span class="button-content">
-              <span class="button-text">
-                Посмотреть на {source || 'сайте'}
-              </span>
               <span class="button-icon" aria-hidden="true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M7 17L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M7 7H17V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                 </svg>
+              </span>
+              <span class="button-text">
+                {backLabel}
               </span>
             </span>
           </GradientButton>
         </a>
       </div>
-    {/if}
-    
-    <div class="secondary-action">
-      <a href={backUrl} class="action-link">
-        <GradientButton variant="outline" size="lg">
-          <span class="button-content">
-            <span class="button-icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </span>
-            <span class="button-text">
-              {backLabel}
-            </span>
-          </span>
-        </GradientButton>
-      </a>
+      {#if url}
+        <div class="primary-action ml-auto">
+          <a 
+            href={url} 
+            target="_blank" 
+            rel="noopener noreferrer"
+            class="action-link"
+          >
+            <GradientButton variant="primary" size="lg">
+              <span class="button-content">
+                <span class="button-text">
+                  Посмотреть на {source || 'сайте'}
+                </span>
+                <span class="button-icon" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M7 17L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M7 7H17V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              </span>
+            </GradientButton>
+          </a>
+        </div>
+      {/if}
     </div>
   </div>
-</div>
+{/if}
 
 <style>
   .vacancy-actions {
