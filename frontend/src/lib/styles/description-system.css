@@ -1,0 +1,521 @@
+/* 🎨 JSPULSE DESCRIPTION SYSTEM - Advanced Design Integration */
+
+/* ===== DESIGN TOKENS ===== */
+:root {
+  /* Description color palette */
+  --description-primary: theme('colors.warning.600');
+  --description-primary-light: theme('colors.warning.500');
+  --description-primary-lighter: theme('colors.warning.400');
+  --description-secondary: theme('colors.neutral.700');
+  --description-muted: theme('colors.neutral.500');
+  
+  /* Interactive colors */
+  --description-hover: theme('colors.primary.600');
+  --description-focus: theme('colors.primary.500');
+  --description-active: theme('colors.primary.700');
+  
+  /* Spacing scale */
+  --description-spacing-xs: 0.25rem;
+  --description-spacing-sm: 0.5rem;
+  --description-spacing-md: 0.75rem;
+  --description-spacing-lg: 1rem;
+  --description-spacing-xl: 1.5rem;
+  
+  /* Typography scale */
+  --description-text-xs: 0.75rem;
+  --description-text-sm: 0.875rem;
+  --description-text-base: 1rem;
+  --description-text-lg: 1.125rem;
+  --description-text-xl: 1.25rem;
+  
+  /* Animation timings */
+  --description-animation-fast: 0.15s;
+  --description-animation-normal: 0.2s;
+  --description-animation-slow: 0.3s;
+  --description-animation-slower: 0.4s;
+}
+
+/* ===== CORE COMPONENT STYLES ===== */
+
+/* Description Container Foundation */
+.description-system {
+  /* Base styling */
+  @apply relative;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.6;
+  color: var(--description-secondary);
+  
+  /* Enhanced text rendering */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* Preview Variant Styles */
+.description-preview-enhanced {
+  @apply bg-gradient-to-br from-neutral-50 to-neutral-100;
+  @apply rounded-lg p-4 border border-neutral-200;
+  @apply shadow-sm;
+  
+  /* Subtle animation */
+  transition: all 0.2s ease-in-out;
+}
+
+.description-preview-enhanced:hover {
+  @apply shadow-md border-neutral-300;
+  @apply bg-gradient-to-br from-neutral-100 to-neutral-200;
+  transform: translateY(-1px);
+}
+
+/* Full Description Enhanced */
+.description-full-enhanced {
+  @apply bg-white;
+  @apply rounded-lg p-4 border border-neutral-200;
+  @apply shadow-sm;
+  
+  transition: all 0.2s ease-in-out;
+}
+
+.description-full-enhanced:hover {
+  @apply shadow-md border-neutral-300;
+}
+
+/* ===== CONTENT STYLING ===== */
+
+/* Headings with JSPulse gradient system */
+.description-heading-enhanced {
+  @apply font-bold mb-4 mt-6 first:mt-0;
+  
+  /* JSPulse signature gradient */
+  background: linear-gradient(135deg, 
+    var(--description-primary) 0%, 
+    var(--description-primary-light) 50%, 
+    var(--description-primary-lighter) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  
+  /* Enhanced typography */
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  
+  /* Subtle animations */
+  transition: all 0.2s ease-in-out;
+}
+
+.description-heading-enhanced:hover {
+  transform: translateX(2px);
+}
+
+/* Size variants */
+.description-heading-enhanced--xl {
+  @apply text-xl;
+  font-weight: 800;
+}
+
+.description-heading-enhanced--lg {
+  @apply text-lg;
+  font-weight: 700;
+}
+
+.description-heading-enhanced--md {
+  @apply text-base;
+  font-weight: 600;
+}
+
+.description-heading-enhanced--sm {
+  @apply text-sm;
+  font-weight: 600;
+}
+
+/* Paragraphs with enhanced readability */
+.description-paragraph-enhanced {
+  @apply mb-4 text-neutral-800 leading-relaxed;
+  
+  /* Enhanced readability */
+  word-spacing: 0.05em;
+  text-align: justify;
+  hyphens: auto;
+}
+
+.description-paragraph-enhanced + .description-paragraph-enhanced {
+  @apply mt-4;
+}
+
+/* Lists with JSPulse styling */
+.description-list-enhanced {
+  @apply pl-6 my-4 space-y-2;
+}
+
+.description-list-enhanced--ordered {
+  @apply list-none;
+  counter-reset: item;
+}
+
+.description-list-enhanced--ordered .description-item-enhanced {
+  @apply relative;
+  counter-increment: item;
+}
+
+.description-list-enhanced--ordered .description-item-enhanced::before {
+  content: counter(item);
+  @apply absolute -left-6 top-0;
+  @apply flex items-center justify-center;
+  @apply w-5 h-5 text-xs font-bold text-white;
+  @apply rounded-full;
+  
+  /* JSPulse gradient background */
+  background: linear-gradient(135deg, 
+    var(--description-primary) 0%, 
+    var(--description-primary-light) 100%);
+  box-shadow: 0 2px 4px rgba(251, 191, 36, 0.3);
+}
+
+/* Unordered list bullets */
+.description-list-enhanced:not(.description-list-enhanced--ordered) .description-item-enhanced::before {
+  content: '▶';
+  @apply absolute -left-6 top-0;
+  @apply text-warning-500 font-bold;
+  @apply transition-all duration-200;
+}
+
+.description-list-enhanced:not(.description-list-enhanced--ordered) .description-item-enhanced:hover::before {
+  @apply text-warning-600 scale-110;
+  transform: translateX(2px) scale(1.1);
+}
+
+/* List items */
+.description-item-enhanced {
+  @apply relative;
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.description-item-enhanced:hover {
+  @apply text-neutral-900;
+  transform: translateX(2px);
+}
+
+/* Emphasis styles */
+.description-emphasis-enhanced {
+  @apply font-semibold text-neutral-900;
+  @apply bg-warning-50 px-1 py-0.5 rounded;
+  @apply transition-all duration-200 ease-in-out;
+  
+  /* Subtle border */
+  border: 1px solid rgba(251, 191, 36, 0.2);
+}
+
+.description-emphasis-enhanced:hover {
+  @apply bg-warning-100;
+  border-color: rgba(251, 191, 36, 0.3);
+  box-shadow: 0 1px 3px rgba(251, 191, 36, 0.2);
+}
+
+/* Italic emphasis */
+.description-emphasis-enhanced--italic {
+  @apply italic text-neutral-800 font-medium;
+  @apply bg-neutral-100 border-neutral-300;
+}
+
+.description-emphasis-enhanced--italic:hover {
+  @apply bg-neutral-200;
+}
+
+/* Links with enhanced interactivity */
+.description-link-enhanced {
+  @apply text-primary-600 font-medium;
+  @apply decoration-2 underline-offset-2;
+  @apply transition-all duration-200 ease-in-out;
+  @apply relative;
+  
+  /* Gradient underline */
+  background-image: linear-gradient(90deg, var(--description-hover), var(--description-focus));
+  background-repeat: no-repeat;
+  background-size: 0% 2px;
+  background-position: 0% 100%;
+  text-decoration: none;
+}
+
+.description-link-enhanced:hover {
+  @apply text-primary-700;
+  background-size: 100% 2px;
+}
+
+.description-link-enhanced:focus {
+  @apply outline-2 outline-offset-2 outline-primary-500;
+  background-size: 100% 2px;
+}
+
+/* Blockquotes with JSPulse styling */
+.description-quote-enhanced {
+  @apply border-l-4 border-warning-400 pl-6 my-6;
+  @apply bg-gradient-to-r from-warning-50 via-neutral-50 to-neutral-100;
+  @apply p-4 rounded-r-lg;
+  @apply text-neutral-700 italic;
+  @apply shadow-sm;
+  @apply relative;
+  
+  /* Quote icon */
+}
+
+.description-quote-enhanced::before {
+  content: '"';
+  @apply absolute -top-2 -left-2;
+  @apply text-4xl font-bold text-warning-400;
+  @apply leading-none;
+  font-family: Georgia, serif;
+}
+
+/* ===== TOGGLE BUTTON ENHANCED ===== */
+
+.description-toggle-enhanced {
+  @apply relative flex items-center gap-3 px-6 py-3;
+  @apply text-sm font-semibold;
+  @apply rounded-xl transition-all duration-300 ease-in-out;
+  @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
+  @apply cursor-pointer overflow-hidden;
+  
+  /* JSPulse gradient background */
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.1) 0%, 
+    rgba(251, 191, 36, 0.1) 50%,
+    rgba(16, 185, 129, 0.1) 100%);
+  
+  /* Border with gradient */
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+.description-toggle-enhanced::before {
+  content: '';
+  @apply absolute inset-0 opacity-0;
+  @apply transition-opacity duration-300 ease-in-out;
+  
+  /* Hover gradient overlay */
+  background: linear-gradient(135deg, 
+    rgba(59, 130, 246, 0.15) 0%, 
+    rgba(251, 191, 36, 0.15) 50%,
+    rgba(16, 185, 129, 0.15) 100%);
+}
+
+.description-toggle-enhanced:hover::before {
+  @apply opacity-100;
+}
+
+.description-toggle-enhanced:hover {
+  @apply shadow-lg;
+  transform: translateY(-1px);
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+.description-toggle-enhanced:active {
+  transform: translateY(0px);
+  @apply shadow-md;
+}
+
+/* Toggle text with color transitions */
+.description-toggle-enhanced .toggle-text {
+  @apply relative z-10;
+  @apply transition-colors duration-200 ease-in-out;
+  color: var(--description-hover);
+}
+
+.description-toggle-enhanced:hover .toggle-text {
+  color: var(--description-active);
+}
+
+/* Toggle icon with enhanced animations */
+.description-toggle-enhanced .toggle-icon {
+  @apply relative z-10 flex items-center justify-center;
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.description-toggle-enhanced:hover .toggle-icon {
+  @apply scale-110;
+}
+
+.description-toggle-enhanced .toggle-icon svg {
+  @apply transition-transform duration-300 ease-in-out;
+}
+
+.description-toggle-enhanced .toggle-icon svg.rotated {
+  @apply rotate-180;
+}
+
+/* ===== CONTENT METRICS STYLING ===== */
+
+.description-metrics-enhanced {
+  @apply flex items-center justify-center gap-4;
+  @apply text-xs text-neutral-500;
+  @apply pt-4 mt-4;
+  @apply bg-gradient-to-r from-transparent via-neutral-200 to-transparent;
+  background-size: 100% 1px;
+  background-repeat: no-repeat;
+  background-position: top center;
+}
+
+.description-metrics-enhanced .metrics-item {
+  @apply flex items-center gap-1;
+  @apply px-2 py-1 rounded-full;
+  @apply bg-neutral-100 border border-neutral-200;
+  @apply transition-all duration-200 ease-in-out;
+}
+
+.description-metrics-enhanced .metrics-item:hover {
+  @apply bg-neutral-200 border-neutral-300;
+  @apply scale-105;
+}
+
+.description-metrics-enhanced .metric-value {
+  @apply font-semibold text-neutral-700;
+}
+
+.description-metrics-enhanced .metrics-separator {
+  @apply text-neutral-300 text-base;
+}
+
+/* ===== RESPONSIVE DESIGN ===== */
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .description-full-enhanced {
+    @apply p-4 rounded-lg;
+  }
+  
+  .description-toggle-enhanced {
+    @apply px-4 py-2 text-xs;
+  }
+  
+  .description-heading-enhanced {
+    @apply text-sm;
+  }
+  
+  .description-heading-enhanced--xl {
+    @apply text-lg;
+  }
+  
+  .description-heading-enhanced--lg {
+    @apply text-base;
+  }
+  
+  .description-metrics-enhanced {
+    @apply flex-wrap gap-2;
+  }
+}
+
+/* Small mobile */
+@media (max-width: 480px) {
+  .description-preview-enhanced,
+  .description-full-enhanced {
+    @apply p-3 rounded-lg;
+  }
+  
+  .description-list-enhanced {
+    @apply pl-4;
+  }
+  
+  .description-quote-enhanced {
+    @apply pl-4 p-3;
+  }
+}
+
+/* ===== ACCESSIBILITY ENHANCEMENTS ===== */
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .description-system *,
+  .description-system *::before,
+  .description-system *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  
+  .description-toggle-enhanced:hover,
+  .description-item-enhanced:hover {
+    transform: none !important;
+  }
+}
+
+/* High contrast mode */
+@media (prefers-contrast: high) {
+  .description-heading-enhanced {
+    @apply text-neutral-900;
+    -webkit-text-fill-color: theme('colors.neutral.900');
+    background: none;
+  }
+  
+  .description-emphasis-enhanced {
+    @apply bg-neutral-200 text-neutral-900 border-neutral-400;
+  }
+  
+  .description-toggle-enhanced {
+    @apply border-2 border-neutral-600 bg-neutral-100;
+  }
+  
+  .description-quote-enhanced {
+    @apply border-l-4 border-neutral-600 bg-neutral-100;
+  }
+}
+
+/* Focus improvements for keyboard navigation */
+@media (prefers-reduced-motion: no-preference) {
+  .description-link-enhanced:focus,
+  .description-toggle-enhanced:focus {
+    animation: focus-pulse 0.6s ease-in-out;
+  }
+  
+  @keyframes focus-pulse {
+    0%, 100% { 
+      box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.7);
+    }
+    50% { 
+      box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.3);
+    }
+  }
+}
+
+/* Print styles */
+@media print {
+  .description-system {
+    @apply text-black bg-white;
+  }
+  
+  .description-heading-enhanced {
+    @apply text-black;
+    -webkit-text-fill-color: black;
+    background: none;
+  }
+  
+  .description-toggle-enhanced,
+  .description-metrics-enhanced {
+    @apply hidden;
+  }
+  
+  .description-full-enhanced,
+  .description-preview-enhanced {
+    @apply bg-white border border-neutral-300 shadow-none;
+  }
+}
+
+/* ===== DARK MODE PREPARATION ===== */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --description-secondary: theme('colors.neutral.700');
+    --description-muted: theme('colors.neutral.500');
+  }
+  
+  .description-system {
+    @apply text-neutral-800;
+  }
+  
+  .description-full-enhanced {
+    @apply bg-white;
+    @apply border-neutral-200;
+  }
+  
+  .description-preview-enhanced {
+    @apply bg-gradient-to-br from-neutral-50 to-neutral-100;
+    @apply border-neutral-200;
+  }
+} 

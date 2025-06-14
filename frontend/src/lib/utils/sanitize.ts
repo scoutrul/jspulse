@@ -1,6 +1,9 @@
 /**
  * Утилиты для санитизации и обработки HTML контента
+ * Расширенная версия с поддержкой системы обработки описаний JSPulse
  */
+
+import { DescriptionProcessor } from '../services/DescriptionProcessor';
 
 /**
  * Основная функция санитизации описания вакансии
@@ -93,4 +96,69 @@ export function truncateText(text: string, maxLength: number = 150): string {
   }
 
   return truncated + '...';
+}
+
+/**
+ * Интеллектуальная обработка описания с использованием DescriptionProcessor
+ * 
+ * @param html HTML описание
+ * @param mode Режим обработки: 'preview' или 'full'
+ * @param maxPreviewLength Максимальная длина превью
+ * @returns Обработанное описание
+ */
+export function processDescription(
+  html: string,
+  mode: 'preview' | 'full' = 'preview',
+  maxPreviewLength: number = 200
+): string {
+  if (!html) return '';
+
+  const processor = new DescriptionProcessor();
+  return processor.processHtml(html, mode);
+}
+
+/**
+ * Создает полный объект описания с различными представлениями
+ * 
+ * @param rawHtml Исходный HTML
+ * @returns Объект с различными версиями описания
+ */
+export function createDescriptionVariants(rawHtml: string) {
+  if (!rawHtml) {
+    return {
+      raw: '',
+      preview: '',
+      processed: '',
+      textOnly: ''
+    };
+  }
+
+  const processor = new DescriptionProcessor();
+  return processor.createDescriptionContent(rawHtml);
+}
+
+/**
+ * Безопасная санитизация с адаптацией под дизайн-систему
+ * Интегрирует старую функциональность с новым DescriptionProcessor
+ * 
+ * @param html HTML для обработки
+ * @param adaptForDesignSystem Применять ли адаптацию под дизайн-систему
+ * @returns Санитизированный HTML
+ */
+export function advancedSanitizeDescription(
+  html: string,
+  adaptForDesignSystem: boolean = true
+): string {
+  if (!html) return '';
+
+  // Сначала базовая санитизация
+  const basicSanitized = sanitizeDescription(html);
+
+  if (!adaptForDesignSystem) {
+    return basicSanitized;
+  }
+
+  // Затем адаптация под дизайн-систему
+  const processor = new DescriptionProcessor();
+  return processor.serializeForDesignSystem(basicSanitized);
 } 
