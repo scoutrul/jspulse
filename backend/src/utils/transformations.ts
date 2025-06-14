@@ -1,5 +1,45 @@
 // import { parseHTML } from "linkedom"; // Удаляем импорт, если пакет не установлен
-import type { BaseVacancy, HHVacancyRaw, HHSkill } from "@jspulse/shared";
+import ky, { HTTPError } from "ky";
+import type { DescriptionContent } from "../types/DescriptionContent.js";
+
+// Временные локальные типы до исправления shared
+interface BaseVacancy {
+  externalId: string;
+  title: string;
+  company: string;
+  location: string;
+  url: string;
+  source: string;
+}
+
+interface HHSkill {
+  name: string;
+}
+
+interface HHVacancyRaw {
+  id: string;
+  name: string;
+  employer?: { name: string };
+  area?: { name: string };
+  alternate_url: string;
+  published_at: string;
+  snippet?: {
+    responsibility?: string;
+    requirement?: string;
+  };
+  description?: string;
+  key_skills?: HHSkill[];
+  salary?: {
+    from?: number;
+    to?: number;
+    currency?: string;
+  };
+  experience?: { name: string };
+  employment?: { name: string };
+  address?: { raw: string };
+}
+import { HH_API_BASE_URL } from "../config/api.js";
+import { DescriptionService } from "../services/DescriptionService.js";
 
 // Основано на https://github.com/hhru/api/blob/master/docs_eng/vacancies.md
 
@@ -7,10 +47,53 @@ import type { BaseVacancy, HHVacancyRaw, HHSkill } from "@jspulse/shared";
 const SOURCE_HH = "hh.ru";
 
 /**
+ * Интерфейс для полной информации о вакансии с HH.ru
+ */
+interface HHVacancyFull extends HHVacancyRaw {
+  description: string; // Полное HTML описание
+  branded_description?: string; // Брендированное описание
+}
+
+/**
  * Нормализует строку навыка: удаляет лишние пробелы и приводит к нижнему регистру
  */
 function normalizeSkill(skill: string): string {
   return skill.trim().toLowerCase();
+}
+
+/**
+ * Получает полную информацию о вакансии с HH.ru API
+ */
+export async function fetchFullVacancyDescription(vacancyId: string): Promise<string | null> {
+  try {
+    console.log(`🔍 Получаю полное описание для вакансии ${vacancyId}...`);
+
+    const fullVacancy = await ky
+      .get(`${HH_API_BASE_URL}/vacancies/${vacancyId}`, {
+        headers: {
+          "User-Agent": "JSPulse",
+          "HH-User-Agent": "JSPulse",
+        },
+        timeout: 10000,
+      })
+      .json<HHVacancyFull>();
+
+    if (fullVacancy.description) {
+      console.log(`✅ Получено полное описание для вакансии ${vacancyId} (${fullVacancy.description.length} символов)`);
+      return fullVacancy.description;
+    }
+
+    console.log(`⚠️ Полное описание для вакансии ${vacancyId} отсутствует`);
+    return null;
+  } catch (error) {
+    console.error(`❌ Ошибка при получении полного описания для вакансии ${vacancyId}:`, error);
+
+    if (error instanceof HTTPError) {
+      console.error(`📋 Ответ сервера (${error.response.status}):`, await error.response.text());
+    }
+
+    return null;
+  }
 }
 
 /**
@@ -22,6 +105,8 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Omit<
 > & {
   skills: string[];
   description?: string;
+  fullDescription?: DescriptionContent;
+  processedHtml?: string;
   salaryFrom?: number;
   salaryTo?: number;
   salaryCurrency?: string;
@@ -36,12 +121,12 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Omit<
     ? hhVacancy.key_skills.map((skill: HHSkill) => normalizeSkill(skill.name))
     : [];
 
-  // Формируем описание из разных источников (предпочитая полное описание)
-  const description =
-    hhVacancy.description ??
-    hhVacancy.snippet?.responsibility ??
-    hhVacancy.snippet?.requirement ??
-    "Описание отсутствует";
+  // Обрабатываем описания с помощью DescriptionService
+  const processedDescriptions = DescriptionService.processHHVacancyDescription({
+    snippet: hhVacancy.snippet,
+    description: hhVacancy.description,
+    fullDescription: undefined // Будет заполнено позже через API
+  });
 
   // Приводим данные к нашему формату
   const transformed = {
@@ -54,8 +139,10 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Omit<
     publishedAt: new Date(hhVacancy.published_at),
     source: SOURCE_HH,
 
-    // Дополнительные поля
-    description,
+    // Дополнительные поля с обработанными описаниями
+    description: processedDescriptions.description,
+    fullDescription: processedDescriptions.fullDescription,
+    processedHtml: processedDescriptions.processedHtml,
     skills,
     salaryFrom: hhVacancy.salary?.from ?? undefined,
     salaryTo: hhVacancy.salary?.to ?? undefined,
@@ -69,6 +156,35 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Omit<
   };
 
   return transformed;
+}
+
+/**
+ * Расширенная трансформация с получением полного описания
+ */
+export async function transformHHVacancyWithFullDescription(
+  hhVacancy: HHVacancyRaw,
+  fetchFullDescription: boolean = true
+): Promise<ReturnType<typeof transformHHVacancyToIVacancy>> {
+  const baseTransform = transformHHVacancyToIVacancy(hhVacancy);
+
+  if (fetchFullDescription && !baseTransform.fullDescription) {
+    // Получаем полное описание через отдельный API call
+    const fullDescriptionHtml = await fetchFullVacancyDescription(hhVacancy.id);
+    if (fullDescriptionHtml) {
+      // Обрабатываем полное описание с помощью DescriptionService
+      const processedDescriptions = DescriptionService.processHHVacancyDescription({
+        snippet: hhVacancy.snippet,
+        description: baseTransform.description,
+        fullDescription: fullDescriptionHtml
+      });
+
+      // Обновляем данные с обработанным полным описанием
+      baseTransform.fullDescription = processedDescriptions.fullDescription;
+      baseTransform.processedHtml = processedDescriptions.processedHtml;
+    }
+  }
+
+  return baseTransform;
 }
 
 /**

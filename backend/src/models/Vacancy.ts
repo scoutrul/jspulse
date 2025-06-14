@@ -1,5 +1,25 @@
 import mongoose, { Schema, Document } from "mongoose";
-import { IVacancy } from "@jspulse/shared";
+import type { DescriptionContent } from "../types/DescriptionContent.js";
+
+// Временный локальный интерфейс до исправления shared
+interface IVacancy {
+  externalId: string;
+  title: string;
+  company: string;
+  location: string;
+  url: string;
+  publishedAt: Date;
+  source: string;
+  description?: string;
+  fullDescription?: DescriptionContent;
+  skills: string[];
+  salaryFrom?: number;
+  salaryTo?: number;
+  salaryCurrency?: string;
+  experience?: string;
+  employment?: string;
+  address?: string;
+}
 
 /**
  * Интерфейс для документа вакансии в MongoDB.
@@ -17,6 +37,8 @@ export interface IVacancyDocument extends IVacancy, Document {
   publishedAt: Date;
   source: string;
   description?: string;
+  fullDescription?: DescriptionContent;       // Объект DescriptionContent с полным описанием
+  processedHtml?: string;      // Кэшированный обработанный HTML
   schedule?: string;
   skills: string[];
   salaryFrom?: number;
@@ -45,6 +67,16 @@ const vacancySchema = new Schema<IVacancyDocument>(
     publishedAt: { type: Date, required: true },
     source: { type: String, required: true },
     description: { type: String },
+    fullDescription: {
+      type: {
+        raw: { type: String },
+        preview: { type: String },
+        processed: { type: String },
+        textOnly: { type: String }
+      },
+      default: undefined
+    },  // Объект DescriptionContent
+    processedHtml: { type: String },      // Кэшированный обработанный HTML  
     schedule: { type: String },
     // Массив строк для эффективного поиска по навыкам
     skills: [{ type: String }],

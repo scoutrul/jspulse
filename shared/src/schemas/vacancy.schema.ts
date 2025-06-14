@@ -32,6 +32,9 @@ export const BaseVacancySchema = z.object({
 export const VacancyDTOSchema = BaseVacancySchema.extend({
   _id: z.string().optional(),
   description: z.string().optional(),
+  fullDescription: z.string().optional(),       // JSON строка с полным описанием
+  testFullDesc: z.string().optional(),          // Тестовое поле
+  processedHtml: z.string().optional(),         // Кэшированный обработанный HTML
   schedule: z.string().optional(),
   skills: z.array(z.string()).default([]),
   salaryFrom: z.number().optional().nullable(),
@@ -41,6 +44,7 @@ export const VacancyDTOSchema = BaseVacancySchema.extend({
   employment: z.string().optional().nullable(),
   address: z.string().optional().nullable(),
   htmlDescription: z.string().optional().nullable(),
+  fullHtmlDescription: z.string().optional(),   // Полное HTML для frontend
 });
 
 /**
@@ -70,6 +74,9 @@ export type BaseVacancy = z.infer<typeof BaseVacancySchema>;
 export type VacancyDTO = Omit<z.infer<typeof BaseVacancySchema>, 'publishedAt'> & {
   _id?: string;
   description?: string;
+  fullDescription?: string;        // JSON строка с полным описанием
+  testFullDesc?: string;           // Тестовое поле
+  processedHtml?: string;          // Кэшированный обработанный HTML
   schedule?: string;
   skills: string[];
   salaryFrom?: number | null;
@@ -79,6 +86,7 @@ export type VacancyDTO = Omit<z.infer<typeof BaseVacancySchema>, 'publishedAt'> 
   employment?: string | null;
   address?: string | null;
   htmlDescription?: string | null;
+  fullHtmlDescription?: string;    // Полное HTML для frontend
   publishedAt: Date;
 };
 export type CreateVacancy = z.infer<typeof CreateVacancySchema>;

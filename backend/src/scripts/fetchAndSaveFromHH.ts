@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
 import ky, { HTTPError } from "ky";
 import { Vacancy } from "../models/Vacancy.js";
-import { transformHHVacancyToIVacancy } from "../utils/transformations.js";
+import { transformHHVacancyToIVacancy, transformHHVacancyWithFullDescription } from "../utils/transformations.js";
 import type { HHResponseRaw } from "@jspulse/shared";
 import dotenv from "dotenv";
 dotenv.config();
@@ -11,10 +11,12 @@ const SOURCE_HH = "hh.ru";
 const MAX_VACANCIES_PER_PAGE = 10; // HH API limit
 const MAX_PAGES_TO_FETCH = 20; // Увеличено с 5 до 20 для получения 200 вакансий
 const SEARCH_TEXT = "JavaScript Developer OR Frontend Developer";
+const FETCH_FULL_DESCRIPTIONS = process.env.FETCH_FULL_DESCRIPTIONS === "true"; // Контроль через env
 
 async function fetchAndSaveHHVacancies() {
   console.log("🚀 Запускаю incremental импорт вакансий с HeadHunter...");
   console.log(`📊 Настройки: ${MAX_PAGES_TO_FETCH} страниц × ${MAX_VACANCIES_PER_PAGE} = до ${MAX_PAGES_TO_FETCH * MAX_VACANCIES_PER_PAGE} вакансий`);
+  console.log(`🔍 Получение полных описаний: ${FETCH_FULL_DESCRIPTIONS ? 'ВКЛЮЧЕНО' : 'ВЫКЛЮЧЕНО'}`);
 
   // Принудительно используем локальный MongoDB
   const mongoUrl = "mongodb://localhost:27017/jspulse";
@@ -77,7 +79,18 @@ async function fetchAndSaveHHVacancies() {
         let pageSkipped = 0;
 
         for (const hhVacancy of data.items) {
-          const transformedData = transformHHVacancyToIVacancy(hhVacancy);
+          let transformedData;
+
+          if (FETCH_FULL_DESCRIPTIONS) {
+            // Используем расширенную трансформацию с получением полного описания
+            transformedData = await transformHHVacancyWithFullDescription(hhVacancy, true);
+            // Добавляем небольшую задержку между запросами к деталям вакансий
+            await new Promise(resolve => setTimeout(resolve, 200));
+          } else {
+            // Используем базовую трансформацию
+            transformedData = transformHHVacancyToIVacancy(hhVacancy);
+          }
+
           if (!transformedData) {
             pageSkipped++;
             continue;
