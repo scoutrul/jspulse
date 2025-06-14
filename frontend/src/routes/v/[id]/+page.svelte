@@ -22,16 +22,18 @@
   <meta property="og:type" content="article" />
 </svelte:head>
 
-{#if vacancy}
-  <VacancyCard {vacancy} />
+<main>
+  {#if vacancy}
+  <VacancyCard {vacancy} isDetailPage={true} />
 {:else}
-  <div class="loading-placeholder">
-    <div class="loading-content">
-      <div class="loading-spinner" aria-hidden="true"></div>
-      <p>Загрузка...</p>
+    <div class="loading-placeholder">
+      <div class="loading-content">
+        <div class="loading-spinner" aria-hidden="true"></div>
+        <p>Загрузка...</p>
+      </div>
     </div>
-  </div>
-{/if}
+  {/if}
+</main>
 
 <style>
   .loading-placeholder {

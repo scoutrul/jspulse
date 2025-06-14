@@ -3,7 +3,7 @@
   import Header from "$lib/components/Header.svelte";
 </script>
 
-<div class="app-container">
+<div class="app-container flex flex-col min-h-screen gap-4">
   <Header />
 
   <main class="content">

@@ -273,6 +273,9 @@
     if (newHoveredBubble !== hoveredBubble) {
       hoveredBubble = newHoveredBubble || null;
       
+      // Изменение курсора в зависимости от наличия пузыря под курсором
+      canvas.style.cursor = hoveredBubble ? 'pointer' : 'default';
+      
       if (hoveredBubble) {
         // Увеличение пузыря при hover
         hoveredBubble.targetRadius = hoveredBubble.radius * 1.2;
@@ -316,8 +319,6 @@
       });
     }
   }
-
-
 
   // Обработка изменения размера
   function handleResize() {
@@ -391,22 +392,24 @@
   }
 </script>
 
-<div bind:this={container} class="bubbles-container">
-  <canvas
-    bind:this={canvas}
-    class="bubbles-canvas"
-    aria-label="Интерактивная визуализация тегов вакансий"
-  ></canvas>
-  
-
-  
-  <!-- SVG для accessibility (скрытый) -->
-  <svg class="sr-only" aria-label="Теги вакансий">
-    {#each tags as tag}
-      <text>{tag.name}: {tag.count} вакансий</text>
-    {/each}
-  </svg>
-</div>
+<section class="tags-visualization-section -mt-4">
+  <div class="tags-canvas-container">
+    <div bind:this={container} class="bubbles-container">
+      <canvas
+        bind:this={canvas}
+        class="bubbles-canvas"
+        aria-label="Интерактивная визуализация тегов вакансий"
+      ></canvas>
+      
+      <!-- SVG для accessibility (скрытый) -->
+      <svg class="sr-only" aria-label="Теги вакансий">
+        {#each tags as tag}
+          <text>{tag.name}: {tag.count} вакансий</text>
+        {/each}
+      </svg>
+    </div>
+  </div>
+</section>
 
 <style>
   .bubbles-container {
@@ -414,11 +417,28 @@
   }
 
   .bubbles-canvas {
-    @apply w-full h-full cursor-pointer;
+    @apply w-full h-full;
     display: block;
+    cursor: default;
   }
 
+  .tags-visualization-section {
+    @apply -mx-4; /* Выходим за границы main контейнера */
+    width: 100vw;
+    margin-left: calc(-50vw + 50%);
+  }
 
+  .tags-canvas-container {
+    @apply mx-auto;
+    height: 400px;
+  }
+
+  /* Мобильная адаптация */
+  @media (max-width: 768px) {
+    .tags-canvas-container {
+      height: 300px;
+    }
+  }
 
   /* Screen reader only content */
   .sr-only {
