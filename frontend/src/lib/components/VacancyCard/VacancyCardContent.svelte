@@ -63,32 +63,35 @@
 </script>
 
 <div class="vacancy-content">
-  <!-- Требования и навыки в одном блоке -->
+  <!-- Два блока: Требования и Навыки -->
   {#if hasRequirementsOrSkills}
-    <section class="content-section requirements-section">
-      <h3 class="section-title">Требования</h3>
-      
+    <div class="requirements-container">
+      <!-- Блок 1: Требования (опыт + занятость) -->
       {#if hasRequirements}
-        <div class="requirements-grid">
-          {#if experience}
-            <div class="requirement-item">
-              <span class="requirement-label">Опыт работы:</span>
-              <span class="requirement-value">{experience}</span>
-            </div>
-          {/if}
-          
-          {#if employment}
-            <div class="requirement-item">
-              <span class="requirement-label">Тип занятости:</span>
-              <span class="requirement-value">{employment}</span>
-            </div>
-          {/if}
-        </div>
+        <section class="content-section requirements-section">
+          <h3 class="section-title">Требования</h3>
+          <div class="requirements-grid">
+            {#if experience}
+              <div class="requirement-item">
+                <span class="requirement-label">Опыт работы:</span>
+                <span class="requirement-value">{experience}</span>
+              </div>
+            {/if}
+            
+            {#if employment}
+              <div class="requirement-item">
+                <span class="requirement-label">Тип занятости:</span>
+                <span class="requirement-value">{employment}</span>
+              </div>
+            {/if}
+          </div>
+        </section>
       {/if}
       
+      <!-- Блок 2: Навыки -->
       {#if hasSkills}
-        <div class="skills-subsection">
-          <h4 class="subsection-title">Требуемые навыки</h4>
+        <section class="content-section skills-section">
+          <h3 class="section-title">Требуемые навыки</h3>
           <div class="skills-container">
             {#each skills as skill}
               <SkillTag 
@@ -100,9 +103,9 @@
               />
             {/each}
           </div>
-        </div>
+        </section>
       {/if}
-    </section>
+    </div>
   {/if}
 
   <!-- Описание без заголовка и с кликабельным контейнером -->
@@ -138,7 +141,12 @@
 
 <style>
   .vacancy-content {
-    @apply flex flex-col gap-6;
+    @apply flex flex-col gap-6 w-full;
+  }
+  
+  /* Контейнер для требований и навыков в строку */
+  .requirements-container {
+    @apply flex flex-wrap gap-6 w-full;
   }
   
   .content-section {
@@ -156,15 +164,22 @@
     background-clip: text;
   }
   
-  .subsection-title {
-    @apply text-sm font-medium mb-2 mt-4 m-0;
-    @apply text-neutral-700;
-  }
+
   
-  /* Требования и навыки */
+  /* Блок требований (опыт + занятость) */
   .requirements-section {
     @apply bg-neutral-50 border border-neutral-200 rounded-lg p-4;
     @apply border-l-4 border-l-primary-500;
+    @apply flex-1 min-w-80;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+  
+  /* Блок навыков */
+  .skills-section {
+    @apply bg-neutral-50 border border-neutral-200 rounded-lg p-4;
+    @apply border-l-4 border-l-success-500;
+    @apply flex-1 min-w-80;
     background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
@@ -186,56 +201,55 @@
     @apply font-semibold text-neutral-800;
   }
   
-  .skills-subsection {
-    @apply mt-4 pt-4;
-    @apply border-t border-neutral-300;
-  }
+
   
   .skills-container {
     @apply flex flex-wrap gap-2;
   }
   
-  /* Описание без заголовка - кликабельный контейнер */
+  /* Описание - выделенный блок */
   .description-container {
     @apply relative transition-all duration-200 ease-in-out;
+    @apply bg-gradient-to-br from-blue-50 to-indigo-50;
+    @apply border border-blue-200 rounded-lg p-4;
+    @apply border-l-4 border-l-info-500;
+    background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 50%, #f0f9ff 100%);
+    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.08);
   }
   
   .description-container.clickable {
     @apply cursor-pointer;
-    @apply hover:bg-neutral-50 active:bg-neutral-100;
-    @apply rounded-lg p-3 -mx-3;
     @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
-    @apply border border-transparent hover:border-neutral-200;
-    box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.04);
+    @apply hover:border-blue-300 hover:shadow-md;
     transition: all 0.2s ease-in-out;
   }
   
   .description-container.clickable:hover {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
     transform: translateY(-1px);
-  }
-  
-  .description-container.clickable:active {
-    transform: translateY(0);
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
-  }
-  
-  /* Индикатор кликабельности */
-  .description-container.clickable::after {
-    content: "";
-    @apply absolute top-2 right-2 w-2 h-2;
-    @apply bg-primary-400 rounded-full;
-    @apply opacity-0 transition-opacity duration-200;
-  }
-  
-  .description-container.clickable:hover::after {
-    @apply opacity-60;
   }
   
   /* Responsive design */
   @media (max-width: 640px) {
     .vacancy-content {
       @apply gap-4;
+    }
+    
+    .requirements-container {
+      @apply flex-col gap-4;
+    }
+    
+    .requirements-section,
+    .skills-section {
+      @apply min-w-0;
+    }
+    
+    .description-container {
+      @apply min-w-0;
+    }
+    
+    .description-container.clickable:hover {
+      transform: none;
     }
     
     .content-section {
@@ -256,6 +270,15 @@
     .content-section {
       transition: none;
     }
+    
+    .description-container {
+      transition: none;
+    }
+    
+    .description-container.clickable:hover {
+      transform: none;
+      box-shadow: 0 1px 3px rgba(59, 130, 246, 0.08);
+    }
   }
   
   /* Высококонтрастный режим */
@@ -273,8 +296,8 @@
       @apply border-2 border-primary-600 bg-neutral-100;
     }
     
-    .skills-subsection {
-      @apply border-t-2 border-neutral-600;
+    .skills-section {
+      @apply border-2 border-success-600 bg-neutral-100;
     }
   }
 </style> 
