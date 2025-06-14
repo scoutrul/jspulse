@@ -8,8 +8,11 @@
   export let selectedSkills: string[] = [];
   export let totalVacancies: number = 0;
   
-  // Состояние коллапса (по умолчанию скрыт)
+  // Состояние коллапса - автоматически открывается при активных фильтрах
   let isExpanded: boolean = false;
+  
+  // Реактивный watcher: держим панель открытой, если есть активные фильтры
+  $: isExpanded = selectedSkills.length > 0;
   
   const dispatch = createEventDispatcher<{
     change: string[];
@@ -28,7 +31,10 @@
   }
   
   function toggleExpanded() {
-    isExpanded = !isExpanded;
+    // Позволяем ручное управление только если нет активных фильтров
+    if (selectedSkills.length === 0) {
+      isExpanded = !isExpanded;
+    }
   }
 </script>
 
