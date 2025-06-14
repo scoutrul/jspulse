@@ -413,13 +413,6 @@
     }
   }
 
-  /* Поддержка для пользователей с ограниченными возможностями */
-  @media (prefers-reduced-motion: reduce) {
-    .bubbles-canvas {
-      /* Уменьшение анимаций для пользователей с motion sensitivity */
-    }
-  }
-
   /* Высококонтрастный режим */
   @media (prefers-contrast: high) {
     .bubbles-container {

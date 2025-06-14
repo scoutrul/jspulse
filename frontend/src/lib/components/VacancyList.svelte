@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { VacancyWithHtml } from "@jspulse/shared";
-  import VacancyCard from "$lib/components/VacancyCard.svelte";
+  import VacancyCard from "$lib/components/VacancyCard/VacancyCard.svelte";
   import MagnifyingGlass from 'svelte-heros-v2/MagnifyingGlass.svelte';
   import { createEventDispatcher } from 'svelte';
 
@@ -29,9 +29,11 @@
         Вакансий по выбранным фильтрам не найдено
       </p>
     {:else if showVacancyList}
-      <ul class:loading-more={loadingMore}>
+      <ul class="vacancy-list" class:loading-more={loadingMore}>
         {#each vacancies as vacancy (vacancy._id)}
-          <VacancyCard {vacancy} on:skillClick={handleSkillClick} />
+          <li class="vacancy-item">
+            <VacancyCard {vacancy} showDetailLink={true} on:skillClick={handleSkillClick} />
+          </li>
         {/each}
       </ul>
     {/if}
@@ -46,16 +48,20 @@
     @apply opacity-50 pointer-events-none;
   }
 
-  ul.loading-more {
+  .vacancy-list {
+    @apply list-none p-0 m-0;
+    @apply space-y-4; /* Отступы между карточками */
+  }
+
+  .vacancy-list.loading-more {
     @apply opacity-80;
+  }
+
+  .vacancy-item {
+    @apply w-full;
   }
 
   .no-vacancies {
     @apply text-center text-neutral-500 mt-8 flex flex-col items-center gap-4;
   }
-
-  ul {
-    @apply list-none p-0;
-  }
-  /* Стили для li перенесены в VacancyCard.svelte */
 </style>
