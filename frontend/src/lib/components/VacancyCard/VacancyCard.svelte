@@ -55,6 +55,8 @@
       employment={vacancy.employment || undefined}
       skills={vacancy.skills || []}
       description={sanitizedDescription}
+      fullDescription={vacancy.fullDescription}
+      processedHtml={vacancy.processedHtml}
       {isDetailPage}
       on:skillClick={handleSkillClick}
       on:descriptionClick={handleDescriptionClick}

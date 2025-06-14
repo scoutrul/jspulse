@@ -16,10 +16,40 @@
     descriptionClick: void;
   }>();
   
+  // Парсим fullDescription если это JSON строка
+  $: parsedFullDescription = (() => {
+    if (!fullDescription) return undefined;
+    
+    // Если уже объект, возвращаем как есть
+    if (typeof fullDescription === 'object') {
+      console.log('✅ fullDescription уже объект:', fullDescription);
+      return fullDescription;
+    }
+    
+    // Если строка, пытаемся парсить JSON
+    if (typeof fullDescription === 'string') {
+      try {
+        const parsed = JSON.parse(fullDescription);
+        console.log('✅ Успешно распарсили fullDescription:', {
+          hasRaw: !!parsed.raw,
+          hasProcessed: !!parsed.processed,
+          hasPreview: !!parsed.preview,
+          processedLength: parsed.processed?.length
+        });
+        return parsed;
+      } catch (e) {
+        console.error('❌ Failed to parse fullDescription JSON:', e);
+        return undefined;
+      }
+    }
+    
+    return undefined;
+  })();
+  
   $: hasRequirements = experience || employment;
   $: hasSkills = skills && skills.length > 0;
   $: hasRequirementsOrSkills = hasRequirements || hasSkills;
-  $: hasDescription = description || fullDescription || processedHtml;
+  $: hasDescription = description || parsedFullDescription || processedHtml;
   
   function handleSkillClick(skill: string) {
     dispatch('skillClick', skill);
@@ -94,7 +124,7 @@
     >
       <DescriptionRenderer 
         content={processedHtml || description || ''}
-        processedContent={fullDescription}
+        processedContent={parsedFullDescription}
         mode={isDetailPage ? 'full' : 'auto'}
         maxPreviewLength={220}
         allowToggle={false}

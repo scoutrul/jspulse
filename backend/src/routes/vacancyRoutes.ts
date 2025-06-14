@@ -215,19 +215,9 @@ router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Resp
       return;
     }
 
-    // Принудительно добавляем поле для тестирования
-    const testVacancy = {
-      ...vacancy,
-      fullDescription: "FORCED_FULL_DESCRIPTION_TEST",
-      testFullDesc: "FORCED_TEST_VALUE"
-    };
-
-    console.log('🚨 FORCED DEBUG: Поля вакансии:', Object.keys(testVacancy));
-    console.log('🚨 FORCED DEBUG: fullDescription:', testVacancy.fullDescription);
-
     res.json({
       success: true,
-      data: testVacancy
+      data: vacancy
     });
   } catch (error) {
     console.error(`Ошибка при получении вакансии ${id}:`, error);
