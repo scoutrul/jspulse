@@ -1,5 +1,6 @@
 <script lang="ts">
   import InfoBadge from '../ui/InfoBadge.svelte';
+  import SalaryRange from '../ui/SalaryRange.svelte';
   
   export let title: string;
   export let company: string;
@@ -7,8 +8,12 @@
   export let publishedAt: string | undefined = undefined;
   export let vacancyId: string | undefined = undefined;
   export let showDetailLink: boolean = false;
+  export let salaryFrom: number | undefined | null = undefined;
+  export let salaryTo: number | undefined | null = undefined;
+  export let salaryCurrency: string | undefined = undefined;
   
   $: formattedDate = publishedAt ? new Date(publishedAt).toLocaleDateString('ru-RU') : '';
+  $: hasSalary = salaryFrom !== undefined || salaryTo !== undefined;
 </script>
 
 <header class="vacancy-header">
@@ -47,7 +52,18 @@
         size="sm"
       />
     {/if}
+    <!-- Зарплата в хедере -->
+    {#if hasSalary}
+      <SalaryRange 
+        {salaryFrom} 
+        {salaryTo} 
+        currency={salaryCurrency || 'руб.'} 
+        variant="prominent" 
+        size="sm" 
+      />
+    {/if}
   </div>
+  
 </header>
 
 <style>
@@ -89,6 +105,14 @@
   .vacancy-meta {
     @apply flex flex-wrap gap-2;
     @apply items-center;
+    @apply mb-3;
+  }
+  
+  .salary-container {
+    @apply bg-green-50 border border-green-200 rounded-lg p-3;
+    @apply text-center;
+    background: linear-gradient(135deg, rgba(236, 253, 245, 1) 0%, rgba(209, 250, 229, 0.5) 100%);
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.08);
   }
   
   /* Responsive design */
@@ -99,6 +123,10 @@
     
     .vacancy-meta {
       @apply flex-col items-start gap-2;
+    }
+    
+    .salary-container {
+      @apply p-2;
     }
   }
   
@@ -124,6 +152,10 @@
     .title-link {
       @apply text-warning-700;
       -webkit-text-fill-color: theme('colors.warning.700');
+    }
+    
+    .salary-container {
+      @apply border-2 border-green-600 bg-green-100;
     }
   }
 </style> 

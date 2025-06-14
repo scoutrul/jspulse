@@ -23,11 +23,7 @@
 
 {#if hasRange}
   <div class="salary-range salary-range--{variant} salary-range--{size}">
-    <span class="salary-range__icon" aria-hidden="true">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <path d="M12 2V22M17 5H9.5C8.11929 5 7 6.11929 7 7.5C7 8.88071 8.11929 10 9.5 10H14.5C15.8807 10 17 11.1193 17 12.5C17 13.8807 15.8807 15 14.5 15H7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-    </span>
+
     
     <span class="salary-range__text">
       {salaryText}

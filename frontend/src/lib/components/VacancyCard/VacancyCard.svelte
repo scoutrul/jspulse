@@ -33,6 +33,9 @@
       publishedAt={typeof vacancy.publishedAt === 'string' ? vacancy.publishedAt : vacancy.publishedAt?.toISOString()}
       vacancyId={vacancy._id}
       {showDetailLink}
+      salaryFrom={vacancy.salaryFrom || undefined}
+      salaryTo={vacancy.salaryTo || undefined}
+      salaryCurrency={vacancy.salaryCurrency || undefined}
     />
     
     <!-- Content Section -->
@@ -41,9 +44,6 @@
       employment={vacancy.employment || undefined}
       skills={vacancy.skills || []}
       description={sanitizedDescription}
-      salaryFrom={vacancy.salaryFrom || undefined}
-      salaryTo={vacancy.salaryTo || undefined}
-      salaryCurrency={vacancy.salaryCurrency || undefined}
       on:skillClick={handleSkillClick}
     />
     

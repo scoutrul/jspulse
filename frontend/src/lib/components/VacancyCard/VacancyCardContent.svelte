@@ -1,15 +1,11 @@
 <script lang="ts">
   import SkillTag from '../ui/SkillTag.svelte';
-  import SalaryRange from '../ui/SalaryRange.svelte';
   import { createEventDispatcher } from 'svelte';
   
   export let experience: string | undefined = undefined;
   export let employment: string | undefined = undefined;
   export let skills: string[] = [];
   export let description: string | undefined = undefined;
-  export let salaryFrom: number | undefined | null = undefined;
-  export let salaryTo: number | undefined | null = undefined;
-  export let salaryCurrency: string | undefined = undefined;
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
@@ -17,7 +13,7 @@
   
   $: hasRequirements = experience || employment;
   $: hasSkills = skills && skills.length > 0;
-  $: hasSalary = salaryFrom !== undefined || salaryTo !== undefined;
+  $: hasRequirementsOrSkills = hasRequirements || hasSkills;
   
   function handleSkillClick(skill: string) {
     dispatch('skillClick', skill);
@@ -25,62 +21,48 @@
 </script>
 
 <div class="vacancy-content">
-  <!-- Требования -->
-  {#if hasRequirements}
+  <!-- Требования и навыки в одном блоке -->
+  {#if hasRequirementsOrSkills}
     <section class="content-section requirements-section">
       <h3 class="section-title">Требования</h3>
-      <div class="requirements-grid">
-        {#if experience}
-          <div class="requirement-item">
-            <span class="requirement-label">Опыт работы:</span>
-            <span class="requirement-value">{experience}</span>
+      
+      {#if hasRequirements}
+        <div class="requirements-grid">
+          {#if experience}
+            <div class="requirement-item">
+              <span class="requirement-label">Опыт работы:</span>
+              <span class="requirement-value">{experience}</span>
+            </div>
+          {/if}
+          
+          {#if employment}
+            <div class="requirement-item">
+              <span class="requirement-label">Тип занятости:</span>
+              <span class="requirement-value">{employment}</span>
+            </div>
+          {/if}
+        </div>
+      {/if}
+      
+      {#if hasSkills}
+        <div class="skills-subsection">
+          <h4 class="subsection-title">Требуемые навыки</h4>
+          <div class="skills-container">
+            {#each skills as skill}
+              <SkillTag 
+                {skill} 
+                variant="outline" 
+                size="md" 
+                interactive={true}
+                onClick={handleSkillClick}
+              />
+            {/each}
           </div>
-        {/if}
-        
-        {#if employment}
-          <div class="requirement-item">
-            <span class="requirement-label">Тип занятости:</span>
-            <span class="requirement-value">{employment}</span>
-          </div>
-        {/if}
-        
+        </div>
+      {/if}
+    </section>
+  {/if}
 
-      </div>
-    </section>
-  {/if}
-  
-  <!-- Навыки -->
-  {#if hasSkills}
-    <section class="content-section skills-section">
-      <h3 class="section-title">Требуемые навыки</h3>
-      <div class="skills-container">
-        {#each skills as skill}
-          <SkillTag 
-            {skill} 
-            variant="outline" 
-            size="md" 
-            interactive={true}
-            onClick={handleSkillClick}
-          />
-        {/each}
-      </div>
-    </section>
-  {/if}
-  
-  <!-- Зарплата -->
-  {#if hasSalary}
-    <section class="content-section salary-section">
-      <h3 class="section-title">Зарплата</h3>
-      <SalaryRange 
-        {salaryFrom} 
-        {salaryTo} 
-        currency={salaryCurrency || 'руб.'} 
-        variant="prominent" 
-        size="lg" 
-      />
-    </section>
-  {/if}
-  
   <!-- Описание -->
   {#if description}
     <section class="content-section description-section">
@@ -112,7 +94,12 @@
     background-clip: text;
   }
   
-  /* Требования */
+  .subsection-title {
+    @apply text-sm font-medium mb-2 mt-4 m-0;
+    @apply text-neutral-700;
+  }
+  
+  /* Требования и навыки */
   .requirements-section {
     @apply bg-neutral-50 border border-neutral-200 rounded-lg p-4;
     @apply border-l-4 border-l-primary-500;
@@ -137,23 +124,13 @@
     @apply font-semibold text-neutral-800;
   }
   
-  /* Навыки */
-  .skills-section {
-    @apply bg-white border border-warning-200 rounded-lg p-4;
-    background: linear-gradient(135deg, rgba(255, 255, 255, 1) 0%, rgba(254, 252, 232, 0.5) 100%);
-    box-shadow: 0 1px 3px rgba(251, 191, 36, 0.08);
+  .skills-subsection {
+    @apply mt-4 pt-4;
+    @apply border-t border-neutral-300;
   }
   
   .skills-container {
     @apply flex flex-wrap gap-2;
-  }
-  
-  /* Зарплата */
-  .salary-section {
-    @apply bg-green-50 border border-green-200 rounded-lg p-4;
-    @apply text-center;
-    background: linear-gradient(135deg, rgba(236, 253, 245, 1) 0%, rgba(209, 250, 229, 0.5) 100%);
-    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.08);
   }
   
   /* Описание */
@@ -242,12 +219,8 @@
       @apply border-2 border-primary-600 bg-neutral-100;
     }
     
-    .skills-section {
-      @apply border-2 border-warning-600 bg-warning-50;
-    }
-    
-    .salary-section {
-      @apply border-2 border-green-600 bg-green-100;
+    .skills-subsection {
+      @apply border-t-2 border-neutral-600;
     }
   }
 </style> 
