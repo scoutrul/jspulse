@@ -9,7 +9,9 @@
   import TagBubblesCanvas from "$lib/components/TagBubblesCanvas.svelte";
   import { vacancyService } from "$lib/services/vacancy.service";
   import { vacancyStore } from "$lib/stores/vacancyStore";
-  import { onMount } from 'svelte';
+  import { restoreScrollPosition } from "$lib/stores/scrollStore";
+  import { onMount, beforeUpdate } from 'svelte';
+  import { afterNavigate } from '$app/navigation';
   import { page } from '$app/stores';
   import { browser } from '$app/environment';
   import { PAGINATION } from '$lib/config/pagination.constants';
@@ -65,6 +67,16 @@
 
   // Reactive переменные для UI
   $: isMobile = browser && window.innerWidth < 768;
+  
+  // Восстанавливаем позицию скролла после навигации
+  afterNavigate(() => {
+    if (browser) {
+      // Небольшая задержка для того, чтобы DOM успел обновиться
+      setTimeout(() => {
+        restoreScrollPosition();
+      }, 0);
+    }
+  });
   
   // Загружаем данные при монтировании
   onMount(async () => {
@@ -425,15 +437,12 @@
 
 <!-- Визуализация тегов во всю ширину -->
 {#if browser && skillsStats.length > 0}
-  <section class="tags-visualization-section">
-    <div class="tags-canvas-container">
-      <TagBubblesCanvas
-        tags={tagsForBubbles}
-        on:tagClick={(e) => handleTagClick(e)}
-        on:tagHover={(e) => console.log('Hovered:', e.detail)}
-      />
-    </div>
-  </section>
+  <TagBubblesCanvas
+    tags={tagsForBubbles}
+    on:tagClick={(e) => handleTagClick(e)}
+    on:tagHover={(e) => console.log('Hovered:', e.detail)}
+  />
+
 {/if}
 
 <Filters {availableSkills} selectedSkills={store.selectedSkills} totalVacancies={store.total} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
@@ -467,28 +476,6 @@
   :root {
     --animation-duration: 1.2s;
     --animation-easing: ease-out;
-  }
-
-  main {
-    @apply max-w-4xl mx-auto mb-8 px-4;
-  }
-
-  .tags-visualization-section {
-    @apply -mx-4; /* Выходим за границы main контейнера */
-    width: 100vw;
-    margin-left: calc(-50vw + 50%);
-  }
-
-  .tags-canvas-container {
-    @apply mx-auto;
-    height: 400px;
-  }
-
-  /* Мобильная адаптация */
-  @media (max-width: 768px) {
-    .tags-canvas-container {
-      height: 300px;
-    }
   }
 
   /* Анимация появления новых элементов с оранжевым фоном */
