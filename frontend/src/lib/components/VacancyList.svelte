@@ -57,6 +57,7 @@
   }
 
   .vacancy-list {
+    @apply align-baseline;
     @apply list-none p-0 m-0;
     @apply space-y-8; /* Увеличенные отступы между карточками на мобильных */
   }
