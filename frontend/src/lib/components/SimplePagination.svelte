@@ -155,11 +155,23 @@
 
   .simple-pagination {
     @apply flex flex-col items-center gap-6 my-8 p-6 rounded-lg bg-neutral-50 border border-neutral-200;
+    @apply transition-colors duration-300;
     padding-bottom: var(--bottom-padding, 50vh);
+  }
+
+  /* Темная тема для пагинации */
+  :global(.dark) .simple-pagination {
+    @apply bg-slate-800 border-slate-700;
   }
 
   .pagination-info {
     @apply text-sm text-neutral-600 text-center font-medium px-4 py-2 bg-white rounded-md border border-neutral-200;
+    @apply transition-colors duration-300;
+  }
+
+  /* Темная тема для информации о пагинации */
+  :global(.dark) .pagination-info {
+    @apply text-slate-300 bg-slate-700 border-slate-600;
   }
 
   .pagination-buttons {
@@ -178,7 +190,13 @@
   /* Enhanced status messages */
   .all-loaded {
     @apply text-sm text-neutral-600 text-center font-medium px-5 py-3 bg-gradient-to-r from-info-50 to-info-100 rounded-xl border border-info-200 relative;
+    @apply transition-colors duration-300;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Темная тема для "все загружено" */
+  :global(.dark) .all-loaded {
+    @apply text-blue-200 bg-gradient-to-r from-blue-900/30 to-blue-800/30 border-blue-400/30;
   }
 
   .all-loaded::before {
@@ -189,7 +207,13 @@
 
   .no-results {
     @apply text-sm text-neutral-600 text-center font-medium px-5 py-3 bg-gradient-to-r from-warning-50 to-warning-100 rounded-xl border border-warning-300;
+    @apply transition-colors duration-300;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Темная тема для "нет результатов" */
+  :global(.dark) .no-results {
+    @apply text-yellow-200 bg-gradient-to-r from-yellow-900/30 to-yellow-800/30 border-yellow-400/30;
   }
 
   .no-results::before {

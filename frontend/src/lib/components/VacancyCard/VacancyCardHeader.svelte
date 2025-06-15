@@ -17,7 +17,7 @@
   $: hasSalary = salaryFrom !== undefined || salaryTo !== undefined;
 </script>
 
-<header class="vacancy-header flex flex-col gap-4" class:dark-theme={theme === 'dark'}>
+<header class="vacancy-header flex flex-col gap-4" class:dark-theme={theme === 'dark'} class:light-theme={theme === 'light'}>
   <div class="flex gap-2 justify-between items-baseline">
     {#if showDetailLink && vacancyId}
       <h1 class="vacancy-title">
@@ -87,14 +87,30 @@
 <style>
   .vacancy-header {
     @apply relative;
-    @apply border-b border-neutral-200;
+    /* По умолчанию темная тема */
+    @apply border-b border-slate-600;
     @apply pb-4 mb-4;
     @apply transition-all duration-300 ease-in-out;
   }
 
-  /* Темная тема для хедера */
+  /* Светлая тема для хедера */
+  :global(:not(.dark)) .vacancy-header {
+    @apply border-b border-neutral-200;
+  }
+
+  /* Глобальная темная тема для хедера */
+  :global(.dark) .vacancy-header {
+    @apply border-b border-slate-600;
+  }
+
+  /* Локальная темная тема для хедера */
   .vacancy-header.dark-theme {
     @apply border-b border-slate-600;
+  }
+
+  /* Локальная светлая тема для хедера (переопределение глобальной темной) */
+  :global(.dark) .vacancy-header.light-theme {
+    @apply border-b border-neutral-200;
   }
   
   .vacancy-title {
@@ -102,17 +118,42 @@
     @apply m-0;
     @apply transition-all duration-300 ease-in-out;
     
-    /* Применяем warning gradient как в дизайн-системе */
+    /* По умолчанию темная тема - фиолетово-синий градиент */
+    background: linear-gradient(135deg, theme('colors.purple.400') 0%, theme('colors.indigo.400') 50%, theme('colors.blue.400') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Светлая тема для заголовка */
+  :global(:not(.dark)) .vacancy-title {
     background: linear-gradient(135deg, theme('colors.warning.600') 0%, theme('colors.warning.500') 50%, theme('colors.warning.400') 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
 
-  /* Темная тема для заголовка */
+  /* Глобальная темная тема для заголовка */
+  :global(.dark) .vacancy-title {
+    /* Градиент в стиле темной темы: фиолетово-синий */
+    background: linear-gradient(135deg, theme('colors.purple.400') 0%, theme('colors.indigo.400') 50%, theme('colors.blue.400') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Локальная темная тема для заголовка */
   .vacancy-header.dark-theme .vacancy-title {
     /* Градиент в стиле темной темы: фиолетово-синий */
     background: linear-gradient(135deg, theme('colors.purple.400') 0%, theme('colors.indigo.400') 50%, theme('colors.blue.400') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Локальная светлая тема для заголовка (переопределение глобальной темной) */
+  :global(.dark) .vacancy-header.light-theme .vacancy-title {
+    background: linear-gradient(135deg, theme('colors.warning.600') 0%, theme('colors.warning.500') 50%, theme('colors.warning.400') 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -121,7 +162,8 @@
   .title-link {
     @apply no-underline;
     @apply transition-all duration-200;
-    @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
+    /* По умолчанию темная тема */
+    @apply focus:outline-2 focus:outline-offset-2 focus:outline-purple-400;
     @apply rounded-sm;
     
     /* Наследуем градиент от родителя */
@@ -131,9 +173,24 @@
     background-clip: text;
   }
 
-  /* Темная тема для ссылки заголовка */
+  /* Светлая тема для ссылки заголовка */
+  :global(:not(.dark)) .title-link {
+    @apply focus:outline-primary-500;
+  }
+
+  /* Глобальная темная тема для ссылки заголовка */
+  :global(.dark) .title-link {
+    @apply focus:outline-purple-400;
+  }
+
+  /* Локальная темная тема для ссылки заголовка */
   .vacancy-header.dark-theme .title-link {
     @apply focus:outline-purple-400;
+  }
+
+  /* Локальная светлая тема для ссылки заголовка (переопределение глобальной темной) */
+  :global(.dark) .vacancy-header.light-theme .title-link {
+    @apply focus:outline-primary-500;
   }
   
   .title-link:hover {
@@ -176,8 +233,16 @@
       @apply border-b-2 border-neutral-600;
     }
     
+    :global(.dark) .vacancy-header {
+      @apply border-b-2 border-slate-400;
+    }
+    
     .vacancy-header.dark-theme {
       @apply border-b-2 border-slate-400;
+    }
+    
+    :global(.dark) .vacancy-header.light-theme {
+      @apply border-b-2 border-neutral-600;
     }
     
     .vacancy-title,
@@ -186,10 +251,22 @@
       -webkit-text-fill-color: theme('colors.warning.700');
     }
     
+    :global(.dark) .vacancy-title,
+    :global(.dark) .title-link {
+      @apply text-purple-300;
+      -webkit-text-fill-color: theme('colors.purple.300');
+    }
+    
     .vacancy-header.dark-theme .vacancy-title,
     .vacancy-header.dark-theme .title-link {
       @apply text-purple-300;
       -webkit-text-fill-color: theme('colors.purple.300');
+    }
+    
+    :global(.dark) .vacancy-header.light-theme .vacancy-title,
+    :global(.dark) .vacancy-header.light-theme .title-link {
+      @apply text-warning-700;
+      -webkit-text-fill-color: theme('colors.warning.700');
     }
   }
 </style> 

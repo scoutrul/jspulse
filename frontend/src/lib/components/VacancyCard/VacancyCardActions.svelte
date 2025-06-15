@@ -67,6 +67,12 @@
   .vacancy-actions {
     @apply mt-6 pt-4;
     @apply border-t border-neutral-200;
+    @apply transition-colors duration-300;
+  }
+
+  /* Темная тема для actions */
+  :global(.dark) .vacancy-actions {
+    @apply border-slate-600;
   }
   
   .actions-container {
@@ -144,6 +150,10 @@
   @media (prefers-contrast: high) {
     .vacancy-actions {
       @apply border-t-2 border-neutral-600;
+    }
+
+    :global(.dark) .vacancy-actions {
+      @apply border-slate-400;
     }
   }
   

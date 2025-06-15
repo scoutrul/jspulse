@@ -3,6 +3,7 @@
   import VacancyCard from "$lib/components/VacancyCard/VacancyCard.svelte";
   import MagnifyingGlass from 'svelte-heros-v2/MagnifyingGlass.svelte';
   import { createEventDispatcher } from 'svelte';
+  import { theme } from '$lib/stores/themeStore';
 
   export let vacancies: VacancyWithHtml[] = [];
   export let loadingFilter: boolean = false;
@@ -19,6 +20,8 @@
   function handleSkillClick(event: CustomEvent<string>) {
     dispatch('skillClick', event.detail);
   }
+
+
 </script>
 
 <div class="vacancies" class:loading={loadingFilter}>
@@ -35,16 +38,7 @@
             <VacancyCard 
               {vacancy} 
               showDetailLink={true} 
-              theme={(() => {
-                // Шахматный паттерн для двухколоночной сетки:
-                // row = 0: [light, dark]   (индексы 0,1)
-                // row = 1: [dark, light]   (индексы 2,3) 
-                // row = 2: [light, dark]   (индексы 4,5)
-                // Формула: (row + col) % 2 определяет цвет
-                const row = Math.floor(index / 2);
-                const col = index % 2;
-                return (row + col) % 2 === 0 ? 'light' : 'dark';
-              })()}
+              theme={$theme}
               on:skillClick={handleSkillClick} 
             />
           </li>
@@ -64,7 +58,7 @@
 
   .vacancy-list {
     @apply list-none p-0 m-0;
-    @apply space-y-4; /* Отступы между карточками на мобильных */
+    @apply space-y-8; /* Увеличенные отступы между карточками на мобильных */
   }
   
   /* Двухколоночная сетка на широких экранах (xl и выше) */
@@ -72,21 +66,21 @@
     .vacancy-list {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 1.5rem; /* gap-6 */
+      gap: 2rem; /* Увеличенный gap */
       margin: 0;
       padding: 0;
       list-style: none;
     }
     
     .vacancy-list > * + * {
-      margin-top: 0; /* Убираем space-y-4 */
+      margin-top: 0; /* Убираем space-y-8 */
     }
   }
   
-  /* На очень широких экранах увеличиваем gap */
+  /* На очень широких экранах еще больше увеличиваем gap */
   @media (min-width: 1536px) {
     .vacancy-list {
-      gap: 2rem; /* gap-8 */
+      gap: 2.5rem; /* gap-10 */
     }
   }
 

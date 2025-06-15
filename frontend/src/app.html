@@ -4,6 +4,48 @@
     <meta charset="utf-8" />
     <link rel="icon" href="%sveltekit.assets%/jspulse.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="dark light" />
+    
+    <!-- Загружаем константы темы -->
+    <script src="%sveltekit.assets%/constants/theme-constants.js"></script>
+    
+    <!-- Инициализация темы до загрузки JS для предотвращения FOUC -->
+    <script>
+      (function() {
+        const { DEFAULT_THEME, THEME_STORAGE_KEY } = window.THEME_CONSTANTS;
+        
+        // Функция для получения сохраненной темы или темной темы по умолчанию
+        function getInitialTheme() {
+          try {
+            const savedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+            if (savedTheme && (savedTheme === 'light' || savedTheme === 'dark')) {
+              return savedTheme;
+            }
+          } catch (e) {
+            // localStorage может быть недоступен
+          }
+          
+          // По умолчанию используем константу
+          return DEFAULT_THEME;
+        }
+        
+        const theme = getInitialTheme();
+        if (theme === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+        
+        // Добавляем класс для отключения анимаций при загрузке
+        document.documentElement.classList.add('no-transitions');
+        
+        // Убираем класс после загрузки DOM
+        document.addEventListener('DOMContentLoaded', function() {
+          setTimeout(function() {
+            document.documentElement.classList.remove('no-transitions');
+          }, 100);
+        });
+      })();
+    </script>
+    
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

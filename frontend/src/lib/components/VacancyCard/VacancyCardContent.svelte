@@ -12,7 +12,7 @@
   export let processedHtml: string | undefined = undefined;
   export let isDetailPage: boolean = false;
   export let vacancyId: string | undefined = undefined; // Добавляем ID для префетча
-  export let theme: 'light' | 'dark' = 'light';
+  export let theme: 'light' | 'dark' = 'dark';
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
@@ -96,7 +96,7 @@
   }
 </script>
 
-<div class="vacancy-content" class:dark-theme={theme === 'dark'}>
+<div class="vacancy-content" class:dark-theme={theme === 'dark'} class:light-theme={theme === 'light'}>
   <!-- Два блока: Требования и Навыки -->
   {#if hasRequirementsOrSkills}
     <div class="requirements-container">
@@ -158,7 +158,7 @@
           handleDescriptionClick();
         }
       }}
-      tabindex={!isDetailPage ? 0 : null}
+      tabindex={!isDetailPage ? 0 : undefined}
       role={!isDetailPage ? 'button' : 'region'}
       aria-label={!isDetailPage ? 'Нажмите для просмотра полного описания вакансии' : 'Описание вакансии'}
     >
@@ -190,29 +190,55 @@
   
   .section-title {
     @apply text-base font-semibold mb-3 m-0;
-    @apply text-neutral-800;
+    /* По умолчанию темная тема */
+    @apply text-slate-200;
     
-    /* Subtle gradient для заголовков секций */
+    /* Темный градиент для заголовков секций */
+    background: linear-gradient(135deg, theme('colors.slate.200') 0%, theme('colors.slate.300') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Светлая тема для заголовков секций */
+  :global(:not(.dark)) .section-title {
+    @apply text-neutral-800;
     background: linear-gradient(135deg, theme('colors.neutral.800') 0%, theme('colors.neutral.600') 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
   }
   
-  /* Блок требований (опыт + занятость) */
+  /* Блок требований (опыт + занятость) - по умолчанию темная тема */
   .requirements-section {
-    @apply bg-neutral-50 border border-neutral-200 rounded-lg p-4;
-    @apply border-l-4 border-l-primary-500;
+    @apply bg-slate-700 border-slate-600 rounded-lg p-4;
+    @apply border-l-4 border-l-purple-400;
     @apply flex-1 min-w-80;
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Светлая тема для блока требований */
+  :global(:not(.dark)) .requirements-section {
+    @apply bg-neutral-50 border border-neutral-200;
+    @apply border-l-4 border-l-primary-500;
     background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
   
-  /* Блок навыков */
+  /* Блок навыков - по умолчанию темная тема */
   .skills-section {
-    @apply bg-neutral-50 border border-neutral-200 rounded-lg p-4;
-    @apply border-l-4 border-l-success-500;
+    @apply bg-slate-700 border-slate-600 rounded-lg p-4;
+    @apply border-l-4 border-l-blue-400;
     @apply flex-1 min-w-80;
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Светлая тема для блока навыков */
+  :global(:not(.dark)) .skills-section {
+    @apply bg-neutral-50 border border-neutral-200;
+    @apply border-l-4 border-l-success-500;
     background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
@@ -226,22 +252,44 @@
   }
   
   .requirement-label {
-    @apply font-medium text-neutral-600 text-sm;
+    @apply font-medium text-sm;
     @apply sm:min-w-32;
+    /* По умолчанию темная тема */
+    @apply text-slate-300;
+  }
+
+  /* Светлая тема для лейблов */
+  :global(:not(.dark)) .requirement-label {
+    @apply text-neutral-600;
   }
   
   .requirement-value {
-    @apply font-semibold text-neutral-800;
+    @apply font-semibold;
+    /* По умолчанию темная тема */
+    @apply text-slate-100;
+  }
+
+  /* Светлая тема для значений */
+  :global(:not(.dark)) .requirement-value {
+    @apply text-neutral-800;
   }
   
   .skills-container {
     @apply flex flex-wrap gap-2;
   }
   
-  /* Описание - выделенный блок с серой палитрой (как у требований) */
+  /* Описание - по умолчанию темная тема */
   .description-container {
     @apply relative transition-all duration-200 ease-in-out;
-    @apply bg-neutral-50 border border-neutral-200 rounded-lg p-4;
+    @apply bg-slate-700 border-slate-600 rounded-lg p-4;
+    @apply border-l-4 border-l-indigo-400;
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Светлая тема для описания */
+  :global(:not(.dark)) .description-container {
+    @apply bg-neutral-50 border border-neutral-200;
     @apply border-l-4 border-l-primary-500;
     background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
@@ -249,14 +297,27 @@
   
   .description-container.clickable {
     @apply cursor-pointer;
-    @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
-    @apply hover:border-neutral-300 hover:shadow-md;
+    /* По умолчанию темная тема */
+    @apply focus:outline-2 focus:outline-offset-2 focus:outline-indigo-400;
+    @apply hover:border-slate-500 hover:shadow-md;
     transition: all 0.2s ease-in-out;
+  }
+
+  /* Светлая тема для кликабельного описания */
+  :global(:not(.dark)) .description-container.clickable {
+    @apply focus:outline-primary-500;
+    @apply hover:border-neutral-300;
   }
   
   .description-container.clickable:hover {
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    /* По умолчанию темная тема */
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     transform: translateY(-1px);
+  }
+
+  /* Светлая тема для hover эффекта */
+  :global(:not(.dark)) .description-container.clickable:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
   }
   
   /* Контент описания */
@@ -277,7 +338,9 @@
   }
   
   .description-text {
-    @apply text-neutral-700 leading-relaxed m-0;
+    @apply leading-relaxed m-0;
+    /* По умолчанию темная тема */
+    @apply text-slate-200;
     /* Line clamp для карточек */
     display: -webkit-box;
     -webkit-line-clamp: 4;
@@ -285,18 +348,39 @@
     overflow: hidden;
     line-height: 1.6;
   }
+
+  /* Светлая тема для текста описания */
+  :global(:not(.dark)) .description-text {
+    @apply text-neutral-700;
+  }
   
-  /* Стили для HTML контента */
+  /* Стили для HTML контента - по умолчанию темная тема */
   .description-content :global(p) {
-    @apply text-neutral-700 leading-relaxed m-0;
+    @apply leading-relaxed m-0;
     @apply mb-2 last:mb-0;
+    /* По умолчанию темная тема */
+    @apply text-slate-200;
+  }
+
+  /* Светлая тема для параграфов */
+  :global(:not(.dark)) .description-content :global(p) {
+    @apply text-neutral-700;
   }
   
   .description-content :global(h1),
   .description-content :global(h2),
   .description-content :global(h3) {
-    @apply text-neutral-800 font-semibold mb-2 mt-3 first:mt-0;
+    @apply font-semibold mb-2 mt-3 first:mt-0;
     @apply text-sm;
+    /* По умолчанию темная тема */
+    @apply text-slate-100;
+  }
+
+  /* Светлая тема для заголовков */
+  :global(:not(.dark)) .description-content :global(h1),
+  :global(:not(.dark)) .description-content :global(h2),
+  :global(:not(.dark)) .description-content :global(h3) {
+    @apply text-neutral-800;
   }
   
   .description-content :global(ul),
@@ -305,13 +389,28 @@
   }
   
   .description-content :global(li) {
-    @apply text-neutral-700 mb-1 last:mb-0;
+    @apply mb-1 last:mb-0;
     @apply text-sm leading-relaxed;
+    /* По умолчанию темная тема */
+    @apply text-slate-200;
+  }
+
+  /* Светлая тема для списков */
+  :global(:not(.dark)) .description-content :global(li) {
+    @apply text-neutral-700;
   }
   
   .description-content :global(strong),
   .description-content :global(b) {
-    @apply font-semibold text-neutral-800;
+    @apply font-semibold;
+    /* По умолчанию темная тема */
+    @apply text-slate-100;
+  }
+
+  /* Светлая тема для жирного текста */
+  :global(:not(.dark)) .description-content :global(strong),
+  :global(:not(.dark)) .description-content :global(b) {
+    @apply text-neutral-800;
   }
   
   .description-content :global(em),
@@ -387,7 +486,16 @@
     }
   }
 
-  /* === ТЕМНАЯ ТЕМА === */
+  /* === ГЛОБАЛЬНАЯ ТЕМНАЯ ТЕМА === */
+  :global(.dark) .section-title {
+    @apply text-slate-200;
+    background: linear-gradient(135deg, theme('colors.slate.200') 0%, theme('colors.slate.300') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* === ЛОКАЛЬНАЯ ТЕМНАЯ ТЕМА === */
   .vacancy-content.dark-theme .section-title {
     @apply text-slate-200;
     background: linear-gradient(135deg, theme('colors.slate.200') 0%, theme('colors.slate.300') 100%);
@@ -396,6 +504,31 @@
     background-clip: text;
   }
 
+  /* === ЛОКАЛЬНАЯ СВЕТЛАЯ ТЕМА (переопределение глобальной темной) === */
+  :global(.dark) .vacancy-content.light-theme .section-title {
+    @apply text-neutral-800;
+    background: linear-gradient(135deg, theme('colors.neutral.800') 0%, theme('colors.neutral.600') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Глобальная темная тема для секций */
+  :global(.dark) .requirements-section {
+    @apply bg-slate-700 border-slate-600;
+    @apply border-l-purple-400;
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  :global(.dark) .skills-section {
+    @apply bg-slate-700 border-slate-600;
+    @apply border-l-blue-400;
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  /* Локальная темная тема для секций */
   .vacancy-content.dark-theme .requirements-section {
     @apply bg-slate-700 border-slate-600;
     @apply border-l-purple-400;
@@ -410,6 +543,70 @@
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
+  /* Локальная светлая тема для секций (переопределение глобальной темной) */
+  :global(.dark) .vacancy-content.light-theme .requirements-section {
+    @apply bg-neutral-50 border border-neutral-200;
+    @apply border-l-4 border-l-primary-500;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  :global(.dark) .vacancy-content.light-theme .skills-section {
+    @apply bg-neutral-50 border border-neutral-200;
+    @apply border-l-4 border-l-success-500;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Глобальная темная тема для текстов и контейнеров */
+  :global(.dark) .requirement-label {
+    @apply text-slate-300;
+  }
+
+  :global(.dark) .requirement-value {
+    @apply text-slate-100;
+  }
+
+  :global(.dark) .description-container {
+    @apply bg-slate-700 border-slate-600;
+    @apply border-l-indigo-400;
+    background: linear-gradient(135deg, #374151 0%, #4b5563 50%, #374151 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  :global(.dark) .description-container.clickable {
+    @apply hover:border-slate-500;
+    @apply focus:outline-indigo-400;
+  }
+
+  :global(.dark) .description-container.clickable:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  :global(.dark) .description-text {
+    @apply text-slate-200;
+  }
+
+  :global(.dark) .description-content :global(p) {
+    @apply text-slate-200;
+  }
+
+  :global(.dark) .description-content :global(h1),
+  :global(.dark) .description-content :global(h2),
+  :global(.dark) .description-content :global(h3) {
+    @apply text-slate-100;
+  }
+
+  :global(.dark) .description-content :global(li) {
+    @apply text-slate-200;
+  }
+
+  :global(.dark) .description-content :global(strong),
+  :global(.dark) .description-content :global(b) {
+    @apply text-slate-100;
+  }
+
+  /* Локальная темная тема для текстов и контейнеров */
   .vacancy-content.dark-theme .requirement-label {
     @apply text-slate-300;
   }
@@ -456,6 +653,54 @@
   .vacancy-content.dark-theme .description-content :global(b) {
     @apply text-slate-100;
   }
+
+  /* Локальная светлая тема (переопределение глобальной темной) */
+  :global(.dark) .vacancy-content.light-theme .requirement-label {
+    @apply text-neutral-600;
+  }
+
+  :global(.dark) .vacancy-content.light-theme .requirement-value {
+    @apply text-neutral-800;
+  }
+
+  :global(.dark) .vacancy-content.light-theme .description-container {
+    @apply bg-neutral-50 border border-neutral-200;
+    @apply border-l-4 border-l-primary-500;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+  }
+
+  :global(.dark) .vacancy-content.light-theme .description-container.clickable {
+    @apply hover:border-neutral-300;
+    @apply focus:outline-primary-500;
+  }
+
+  :global(.dark) .vacancy-content.light-theme .description-container.clickable:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  }
+
+  :global(.dark) .vacancy-content.light-theme .description-text {
+    @apply text-neutral-700;
+  }
+
+  :global(.dark) .vacancy-content.light-theme .description-content :global(p) {
+    @apply text-neutral-700;
+  }
+
+  :global(.dark) .vacancy-content.light-theme .description-content :global(h1),
+  :global(.dark) .vacancy-content.light-theme .description-content :global(h2),
+  :global(.dark) .vacancy-content.light-theme .description-content :global(h3) {
+    @apply text-neutral-800;
+  }
+
+  :global(.dark) .vacancy-content.light-theme .description-content :global(li) {
+    @apply text-neutral-700;
+  }
+
+  :global(.dark) .vacancy-content.light-theme .description-content :global(strong),
+  :global(.dark) .vacancy-content.light-theme .description-content :global(b) {
+    @apply text-neutral-800;
+  }
   
   /* Высококонтрастный режим */
   @media (prefers-contrast: high) {
@@ -468,33 +713,67 @@
       -webkit-text-fill-color: theme('colors.neutral.900');
     }
     
+    :global(.dark) .section-title {
+      @apply text-slate-100;
+      -webkit-text-fill-color: theme('colors.slate.100');
+    }
+
     .vacancy-content.dark-theme .section-title {
       @apply text-slate-100;
       -webkit-text-fill-color: theme('colors.slate.100');
+    }
+
+    :global(.dark) .vacancy-content.light-theme .section-title {
+      @apply text-neutral-900;
+      -webkit-text-fill-color: theme('colors.neutral.900');
     }
     
     .requirements-section {
       @apply border-2 border-primary-600 bg-neutral-100;
     }
     
+    :global(.dark) .requirements-section {
+      @apply border-2 border-purple-400 bg-slate-600;
+    }
+    
     .vacancy-content.dark-theme .requirements-section {
       @apply border-2 border-purple-400 bg-slate-600;
+    }
+
+    :global(.dark) .vacancy-content.light-theme .requirements-section {
+      @apply border-2 border-primary-600 bg-neutral-100;
     }
     
     .skills-section {
       @apply border-2 border-success-600 bg-neutral-100;
     }
     
+    :global(.dark) .skills-section {
+      @apply border-2 border-blue-400 bg-slate-600;
+    }
+    
     .vacancy-content.dark-theme .skills-section {
       @apply border-2 border-blue-400 bg-slate-600;
+    }
+
+    :global(.dark) .vacancy-content.light-theme .skills-section {
+      @apply border-2 border-success-600 bg-neutral-100;
     }
     
     .description-container {
       @apply border-2 border-primary-600 bg-neutral-100;
     }
     
+    :global(.dark) .description-container {
+      @apply border-2 border-indigo-400 bg-slate-600;
+    }
+    
     .vacancy-content.dark-theme .description-container {
       @apply border-2 border-indigo-400 bg-slate-600;
+    }
+
+    :global(.dark) .vacancy-content.light-theme .description-container {
+      @apply border-2 border-primary-600 bg-neutral-100;
     }
   }
 </style> 

@@ -1,6 +1,22 @@
 <script>
   import "../app.css";
   import Header from "$lib/components/Header.svelte";
+  import { theme } from '$lib/stores/themeStore';
+  import { onMount } from 'svelte';
+  
+  // Синхронизация стора с DOM после загрузки
+  onMount(() => {
+    // Стор уже инициализирован, просто подписываемся на изменения
+    const unsubscribe = theme.subscribe(currentTheme => {
+      if (currentTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+      } else {
+        document.documentElement.classList.remove('dark');
+      }
+    });
+    
+    return unsubscribe;
+  });
 </script>
 
 <div class="app-container flex flex-col min-h-screen gap-4">
@@ -21,6 +37,7 @@
 <style>
   .app-container {
     @apply flex flex-col min-h-screen;
+    @apply transition-colors duration-300;
   }
 
   .content {
