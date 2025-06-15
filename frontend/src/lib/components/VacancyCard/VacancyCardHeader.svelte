@@ -11,12 +11,13 @@
   export let salaryFrom: number | undefined | null = undefined;
   export let salaryTo: number | undefined | null = undefined;
   export let salaryCurrency: string | undefined = undefined;
+  export let theme: 'light' | 'dark' = 'light';
   
   $: formattedDate = publishedAt ? new Date(publishedAt).toLocaleDateString('ru-RU') : '';
   $: hasSalary = salaryFrom !== undefined || salaryTo !== undefined;
 </script>
 
-<header class="vacancy-header flex flex-col gap-4">
+<header class="vacancy-header flex flex-col gap-4" class:dark-theme={theme === 'dark'}>
   <div class="flex gap-2 justify-between items-baseline">
     {#if showDetailLink && vacancyId}
       <h1 class="vacancy-title">
@@ -35,6 +36,7 @@
         currency={salaryCurrency || 'руб.'} 
         variant="prominent" 
         size="sm" 
+        darkTheme={theme === 'dark'}
       />
     {:else}
       <InfoBadge 
@@ -43,6 +45,7 @@
         value="Оплата не указана"    
         size="sm"
         variant="flat" 
+        darkTheme={theme === 'dark'}
       />
     {/if}
   </div>  
@@ -53,6 +56,7 @@
       value={company} 
       variant="primary" 
       size="sm"
+      darkTheme={theme === 'dark'}
     />
     
     {#if location}
@@ -61,6 +65,7 @@
         value={location} 
         variant="info" 
         size="sm"
+        darkTheme={theme === 'dark'}
       />
     {/if}
     
@@ -71,6 +76,7 @@
         value={formattedDate} 
         variant="flat" 
         size="sm"
+        darkTheme={theme === 'dark'}
       />
     </div>
     {/if}
@@ -83,14 +89,30 @@
     @apply relative;
     @apply border-b border-neutral-200;
     @apply pb-4 mb-4;
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Темная тема для хедера */
+  .vacancy-header.dark-theme {
+    @apply border-b border-slate-600;
   }
   
   .vacancy-title {
     @apply text-xl sm:text-2xl font-bold leading-tight;
     @apply m-0;
+    @apply transition-all duration-300 ease-in-out;
     
     /* Применяем warning gradient как в дизайн-системе */
     background: linear-gradient(135deg, theme('colors.warning.600') 0%, theme('colors.warning.500') 50%, theme('colors.warning.400') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Темная тема для заголовка */
+  .vacancy-header.dark-theme .vacancy-title {
+    /* Градиент в стиле темной темы: фиолетово-синий */
+    background: linear-gradient(135deg, theme('colors.purple.400') 0%, theme('colors.indigo.400') 50%, theme('colors.blue.400') 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
@@ -107,6 +129,11 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* Темная тема для ссылки заголовка */
+  .vacancy-header.dark-theme .title-link {
+    @apply focus:outline-purple-400;
   }
   
   .title-link:hover {
@@ -149,10 +176,20 @@
       @apply border-b-2 border-neutral-600;
     }
     
+    .vacancy-header.dark-theme {
+      @apply border-b-2 border-slate-400;
+    }
+    
     .vacancy-title,
     .title-link {
       @apply text-warning-700;
       -webkit-text-fill-color: theme('colors.warning.700');
+    }
+    
+    .vacancy-header.dark-theme .vacancy-title,
+    .vacancy-header.dark-theme .title-link {
+      @apply text-purple-300;
+      -webkit-text-fill-color: theme('colors.purple.300');
     }
   }
 </style> 

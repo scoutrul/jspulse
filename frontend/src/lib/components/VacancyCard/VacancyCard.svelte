@@ -14,6 +14,7 @@
   export let backLabel: string = 'Вернуться к списку';
   export let showDetailLink: boolean = false; // Для отображения ссылки на детальную страницу
   export let isDetailPage: boolean = false; // Указывает, что это детальная страница
+  export let theme: 'light' | 'dark' = 'light'; // Тема карточки для шахматной схемы
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
@@ -34,7 +35,7 @@
   }
 </script>
 
-<article class="vacancy-card">
+<article class="vacancy-card" class:dark-theme={theme === 'dark'}>
   <div class="vacancy-card__container">
     <!-- Header Section -->
     <VacancyCardHeader 
@@ -47,6 +48,7 @@
       salaryFrom={vacancy.salaryFrom || undefined}
       salaryTo={vacancy.salaryTo || undefined}
       salaryCurrency={vacancy.salaryCurrency || undefined}
+      {theme}
     />
     
     <!-- Content Section -->
@@ -59,6 +61,7 @@
       processedHtml={vacancy.processedHtml}
       vacancyId={vacancy._id}
       {isDetailPage}
+      {theme}
       on:skillClick={handleSkillClick}
       on:descriptionClick={handleDescriptionClick}
     />
@@ -82,6 +85,7 @@
     @apply bg-white border border-neutral-200 rounded-lg;
     @apply shadow-sm;
     @apply overflow-hidden;
+    @apply transition-all duration-300 ease-in-out;
     
     /* Используем дизайн-систему без излишеств */
     box-shadow: 
@@ -90,6 +94,20 @@
     
     /* Subtle gradient background */
     background: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+  }
+
+  /* Темная тема карточки */
+  .vacancy-card.dark-theme {
+    @apply bg-slate-800 border-slate-700;
+    
+    /* Темная цветовая схема */
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    
+    /* Подстроенная тень для темной темы */
+    box-shadow: 
+      0 1px 3px rgba(0, 0, 0, 0.2), 
+      0 1px 2px rgba(0, 0, 0, 0.15),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
   
   .vacancy-card__container {
@@ -104,6 +122,16 @@
       theme('colors.warning.500') 50%, 
       theme('colors.warning.600') 100%);
     opacity: 0.7;
+    transition: all 0.3s ease-in-out;
+  }
+
+  /* Градиент для темной темы */
+  .vacancy-card.dark-theme .vacancy-card__gradient {
+    background: linear-gradient(90deg, 
+      theme('colors.purple.400') 0%, 
+      theme('colors.indigo.500') 50%, 
+      theme('colors.blue.600') 100%);
+    opacity: 0.8;
   }
   
   /* Focus state для accessibility */
@@ -141,13 +169,28 @@
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
     }
     
+    .vacancy-card.dark-theme {
+      @apply border-2 border-slate-400;
+      background: #1e293b;
+      box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
+    }
+    
     .vacancy-card__gradient {
       @apply bg-warning-600;
       background: theme('colors.warning.600');
     }
     
+    .vacancy-card.dark-theme .vacancy-card__gradient {
+      @apply bg-purple-500;
+      background: theme('colors.purple.500');
+    }
+    
     .vacancy-card:focus-within {
       @apply border-2 border-primary-600;
+    }
+    
+    .vacancy-card.dark-theme:focus-within {
+      @apply border-2 border-purple-400;
     }
   }
   

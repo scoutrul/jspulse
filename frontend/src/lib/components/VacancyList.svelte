@@ -30,9 +30,14 @@
       </p>
     {:else if showVacancyList}
       <ul class="vacancy-list" class:loading-more={loadingMore}>
-        {#each vacancies as vacancy (vacancy._id)}
+        {#each vacancies as vacancy, index (vacancy._id)}
           <li class="vacancy-item">
-            <VacancyCard {vacancy} showDetailLink={true} on:skillClick={handleSkillClick} />
+            <VacancyCard 
+              {vacancy} 
+              showDetailLink={true} 
+              theme={index % 2 === 0 ? 'light' : 'dark'}
+              on:skillClick={handleSkillClick} 
+            />
           </li>
         {/each}
       </ul>

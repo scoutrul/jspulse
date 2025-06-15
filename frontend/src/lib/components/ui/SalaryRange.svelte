@@ -7,6 +7,7 @@
   export let size: 'sm' | 'md' | 'lg' = 'md';
   export let variant: 'default' | 'prominent' = 'default';
   export let href: string | undefined = undefined; // Пропускаем href в InfoBadge
+  export let darkTheme: boolean = false;
   
   $: hasRange = salaryFrom !== undefined || salaryTo !== undefined;
   $: formattedFrom = salaryFrom?.toLocaleString('ru-RU');
@@ -34,6 +35,7 @@
       variant="success"
       {size}
       {href}
+      {darkTheme}
     />
   </div>
 {/if}

@@ -12,6 +12,7 @@
   export let processedHtml: string | undefined = undefined;
   export let isDetailPage: boolean = false;
   export let vacancyId: string | undefined = undefined; // Добавляем ID для префетча
+  export let theme: 'light' | 'dark' = 'light';
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
@@ -95,7 +96,7 @@
   }
 </script>
 
-<div class="vacancy-content">
+<div class="vacancy-content" class:dark-theme={theme === 'dark'}>
   <!-- Два блока: Требования и Навыки -->
   {#if hasRequirementsOrSkills}
     <div class="requirements-container">
@@ -129,10 +130,11 @@
             {#each skills as skill}
               <SkillTag 
                 {skill} 
-                variant="outline" 
+                variant={theme === 'dark' ? 'primary' : 'outline'} 
                 size="md" 
                 interactive={true}
                 onClick={handleSkillClick}
+                darkTheme={theme === 'dark'}
               />
             {/each}
           </div>
@@ -143,9 +145,8 @@
 
   <!-- Описание без лишней вложенности -->
   {#if hasDescription}
-    <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
     <div 
-      id={isDetailPage ? 'vacancy-description' : undefined}
+      id={isDetailPage ? 'vacancy-description' : undefined} 
       class="description-container" 
       class:clickable={!isDetailPage}
       class:detail-page={isDetailPage}
@@ -157,7 +158,7 @@
           handleDescriptionClick();
         }
       }}
-      tabindex={!isDetailPage ? 0 : undefined}
+      tabindex={!isDetailPage ? 0 : null}
       role={!isDetailPage ? 'button' : 'region'}
       aria-label={!isDetailPage ? 'Нажмите для просмотра полного описания вакансии' : 'Описание вакансии'}
     >
@@ -236,25 +237,24 @@
     @apply flex flex-wrap gap-2;
   }
   
-  /* Описание - выделенный блок с красной палитрой */
+  /* Описание - выделенный блок с серой палитрой (как у требований) */
   .description-container {
     @apply relative transition-all duration-200 ease-in-out;
-    @apply bg-gradient-to-br from-red-50 to-rose-50;
-    @apply border border-red-200 rounded-lg p-4;
-    @apply border-l-4 border-l-danger-500;
-    background: linear-gradient(135deg, #fef2f2 0%, #fdf2f8 50%, #fff1f2 100%);
-    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.08);
+    @apply bg-neutral-50 border border-neutral-200 rounded-lg p-4;
+    @apply border-l-4 border-l-primary-500;
+    background: linear-gradient(135deg, #f8f9fa 0%, #f1f3f4 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   }
   
   .description-container.clickable {
     @apply cursor-pointer;
-    @apply focus:outline-2 focus:outline-offset-2 focus:outline-danger-500;
-    @apply hover:border-red-300 hover:shadow-md;
+    @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
+    @apply hover:border-neutral-300 hover:shadow-md;
     transition: all 0.2s ease-in-out;
   }
   
   .description-container.clickable:hover {
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.12);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
     transform: translateY(-1px);
   }
   
@@ -382,8 +382,78 @@
     
     .description-container.clickable:hover {
       transform: none;
-      box-shadow: 0 1px 3px rgba(239, 68, 68, 0.08);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
     }
+  }
+
+  /* === ТЕМНАЯ ТЕМА === */
+  .vacancy-content.dark-theme .section-title {
+    @apply text-slate-200;
+    background: linear-gradient(135deg, theme('colors.slate.200') 0%, theme('colors.slate.300') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .vacancy-content.dark-theme .requirements-section {
+    @apply bg-slate-700 border-slate-600;
+    @apply border-l-purple-400;
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .vacancy-content.dark-theme .skills-section {
+    @apply bg-slate-700 border-slate-600;
+    @apply border-l-blue-400;
+    background: linear-gradient(135deg, #334155 0%, #475569 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .vacancy-content.dark-theme .requirement-label {
+    @apply text-slate-300;
+  }
+
+  .vacancy-content.dark-theme .requirement-value {
+    @apply text-slate-100;
+  }
+
+  .vacancy-content.dark-theme .description-container {
+    @apply bg-slate-700 border-slate-600;
+    @apply border-l-indigo-400;
+    background: linear-gradient(135deg, #374151 0%, #4b5563 50%, #374151 100%);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+
+  .vacancy-content.dark-theme .description-container.clickable {
+    @apply hover:border-slate-500;
+    @apply focus:outline-indigo-400;
+  }
+
+  .vacancy-content.dark-theme .description-container.clickable:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  }
+
+  .vacancy-content.dark-theme .description-text {
+    @apply text-slate-200;
+  }
+
+  .vacancy-content.dark-theme .description-content :global(p) {
+    @apply text-slate-200;
+  }
+
+  .vacancy-content.dark-theme .description-content :global(h1),
+  .vacancy-content.dark-theme .description-content :global(h2),
+  .vacancy-content.dark-theme .description-content :global(h3) {
+    @apply text-slate-100;
+  }
+
+  .vacancy-content.dark-theme .description-content :global(li) {
+    @apply text-slate-200;
+  }
+
+  .vacancy-content.dark-theme .description-content :global(strong),
+  .vacancy-content.dark-theme .description-content :global(b) {
+    @apply text-slate-100;
   }
   
   /* Высококонтрастный режим */
@@ -397,16 +467,33 @@
       -webkit-text-fill-color: theme('colors.neutral.900');
     }
     
+    .vacancy-content.dark-theme .section-title {
+      @apply text-slate-100;
+      -webkit-text-fill-color: theme('colors.slate.100');
+    }
+    
     .requirements-section {
       @apply border-2 border-primary-600 bg-neutral-100;
+    }
+    
+    .vacancy-content.dark-theme .requirements-section {
+      @apply border-2 border-purple-400 bg-slate-600;
     }
     
     .skills-section {
       @apply border-2 border-success-600 bg-neutral-100;
     }
     
+    .vacancy-content.dark-theme .skills-section {
+      @apply border-2 border-blue-400 bg-slate-600;
+    }
+    
     .description-container {
-      @apply border-2 border-red-600 bg-neutral-100;
+      @apply border-2 border-primary-600 bg-neutral-100;
+    }
+    
+    .vacancy-content.dark-theme .description-container {
+      @apply border-2 border-indigo-400 bg-slate-600;
     }
   }
 </style> 
