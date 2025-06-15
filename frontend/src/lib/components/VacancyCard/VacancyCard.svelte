@@ -87,6 +87,9 @@
     @apply overflow-hidden;
     @apply transition-all duration-300 ease-in-out;
     
+    /* Поддержка растягивания по высоте в сетке */
+    @apply flex flex-col;
+    
     /* Используем дизайн-систему без излишеств */
     box-shadow: 
       0 1px 3px rgba(0, 0, 0, 0.04), 
@@ -113,6 +116,7 @@
   .vacancy-card__container {
     @apply relative p-4 sm:p-5;
     @apply z-10;
+    @apply flex-1 flex flex-col; /* Растягиваем контейнер и делаем его flex */
   }
   
   .vacancy-card__gradient {

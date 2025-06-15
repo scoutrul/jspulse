@@ -176,6 +176,7 @@
 <style>
   .vacancy-content {
     @apply flex flex-col gap-6 w-full;
+    @apply flex-1; /* Растягиваем контент на всю доступную высоту */
   }
   
   /* Контейнер для требований и навыков в строку */

@@ -35,7 +35,16 @@
             <VacancyCard 
               {vacancy} 
               showDetailLink={true} 
-              theme={index % 2 === 0 ? 'light' : 'dark'}
+              theme={(() => {
+                // Шахматный паттерн для двухколоночной сетки:
+                // row = 0: [light, dark]   (индексы 0,1)
+                // row = 1: [dark, light]   (индексы 2,3) 
+                // row = 2: [light, dark]   (индексы 4,5)
+                // Формула: (row + col) % 2 определяет цвет
+                const row = Math.floor(index / 2);
+                const col = index % 2;
+                return (row + col) % 2 === 0 ? 'light' : 'dark';
+              })()}
               on:skillClick={handleSkillClick} 
             />
           </li>
@@ -55,7 +64,30 @@
 
   .vacancy-list {
     @apply list-none p-0 m-0;
-    @apply space-y-4; /* Отступы между карточками */
+    @apply space-y-4; /* Отступы между карточками на мобильных */
+  }
+  
+  /* Двухколоночная сетка на широких экранах (xl и выше) */
+  @media (min-width: 1280px) {
+    .vacancy-list {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1.5rem; /* gap-6 */
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
+    
+    .vacancy-list > * + * {
+      margin-top: 0; /* Убираем space-y-4 */
+    }
+  }
+  
+  /* На очень широких экранах увеличиваем gap */
+  @media (min-width: 1536px) {
+    .vacancy-list {
+      gap: 2rem; /* gap-8 */
+    }
   }
 
   .vacancy-list.loading-more {
@@ -64,6 +96,17 @@
 
   .vacancy-item {
     @apply w-full;
+  }
+  
+  /* Обеспечиваем равную высоту карточек в сетке */
+  @media (min-width: 1280px) {
+    .vacancy-item {
+      display: flex;
+    }
+    
+    .vacancy-item :global(.vacancy-card) {
+      flex: 1;
+    }
   }
 
   .no-vacancies {
