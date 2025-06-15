@@ -1,0 +1,254 @@
+/* 🎨 JSPULSE DESIGN SYSTEM - Единая система цветовых схем и паттернов */
+
+/* ===== CSS ПЕРЕМЕННЫЕ ===== */
+:root {
+  /* === СВЕТЛАЯ ТЕМА === */
+  
+  /* Основные цвета фона */
+  --bg-primary: #ffffff;
+  --bg-secondary: #fefefe;
+  --bg-tertiary: #f8fafc;
+  --bg-page: #f1f5f9;
+  
+  /* Цвета карточек */
+  --card-bg: #ffffff;
+  --card-bg-secondary: #fefefe;
+  --card-border: #e2e8f0;
+  --card-border-hover: #cbd5e1;
+  
+  /* Цвета текста */
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-tertiary: #64748b;
+  --text-muted: #94a3b8;
+  
+  /* Акцентные цвета */
+  --accent-primary: #f59e0b;
+  --accent-secondary: #d97706;
+  --accent-tertiary: #b45309;
+  
+  /* Градиенты */
+  --gradient-primary: linear-gradient(135deg, #ffffff 0%, #fefefe 100%);
+  --gradient-accent: linear-gradient(90deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  --gradient-page: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+  --gradient-hero: radial-gradient(circle at 20% 80%, rgba(245, 158, 11, 0.1) 0%, transparent 50%), 
+                   radial-gradient(circle at 80% 20%, rgba(217, 119, 6, 0.1) 0%, transparent 50%);
+  
+  /* Тени */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.04), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.05), 0 2px 4px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.08), 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+/* === ТЕМНАЯ ТЕМА === */
+:root.dark,
+.dark {
+  /* Основные цвета фона */
+  --bg-primary: #1e293b;
+  --bg-secondary: #334155;
+  --bg-tertiary: #475569;
+  --bg-page: #0f172a;
+  
+  /* Цвета карточек */
+  --card-bg: #1e293b;
+  --card-bg-secondary: #334155;
+  --card-border: #475569;
+  --card-border-hover: #64748b;
+  
+  /* Цвета текста */
+  --text-primary: #f8fafc;
+  --text-secondary: #e2e8f0;
+  --text-tertiary: #cbd5e1;
+  --text-muted: #94a3b8;
+  
+  /* Акцентные цвета */
+  --accent-primary: #8b5cf6;
+  --accent-secondary: #7c3aed;
+  --accent-tertiary: #6d28d9;
+  
+  /* Градиенты */
+  --gradient-primary: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+  --gradient-accent: linear-gradient(90deg, #8b5cf6 0%, #7c3aed 50%, #6d28d9 100%);
+  --gradient-page: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  --gradient-hero: radial-gradient(circle at 20% 80%, rgba(139, 92, 246, 0.15) 0%, transparent 50%), 
+                   radial-gradient(circle at 80% 20%, rgba(109, 40, 217, 0.15) 0%, transparent 50%);
+  
+  /* Тени */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2), 0 1px 2px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.4), 0 4px 6px rgba(0, 0, 0, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+/* ===== УТИЛИТАРНЫЕ КЛАССЫ ===== */
+
+/* Фоны */
+.bg-page {
+  background: var(--bg-page);
+}
+
+.bg-page-gradient {
+  background: var(--gradient-page);
+}
+
+.bg-hero {
+  background: var(--gradient-page);
+  background-image: var(--gradient-hero);
+}
+
+.bg-card {
+  background: var(--gradient-primary);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.bg-card:hover {
+  border-color: var(--card-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+/* Текст */
+.text-primary {
+  color: var(--text-primary);
+}
+
+.text-secondary {
+  color: var(--text-secondary);
+}
+
+.text-tertiary {
+  color: var(--text-tertiary);
+}
+
+.text-muted {
+  color: var(--text-muted);
+}
+
+.text-accent {
+  color: var(--accent-primary);
+}
+
+.text-accent-gradient {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Градиентные элементы */
+.gradient-accent {
+  background: var(--gradient-accent);
+}
+
+.gradient-border {
+  position: relative;
+}
+
+.gradient-border::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--gradient-accent);
+  opacity: 0.8;
+}
+
+/* ===== КОМПОНЕНТНЫЕ КЛАССЫ ===== */
+
+/* Карточки */
+.card {
+  @apply relative rounded-lg overflow-hidden transition-all duration-300;
+  background: var(--gradient-primary);
+  border: 1px solid var(--card-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.card:hover {
+  border-color: var(--card-border-hover);
+  box-shadow: var(--shadow-md);
+}
+
+.card-content {
+  @apply relative p-4 sm:p-5 z-10;
+}
+
+.card-gradient {
+  @apply absolute bottom-0 left-0 right-0 h-0.5;
+  background: var(--gradient-accent);
+  opacity: 0.8;
+}
+
+/* Страницы */
+.page {
+  background: var(--bg-page);
+  min-height: 100vh;
+}
+
+.page-hero {
+  background: var(--gradient-page);
+  background-image: var(--gradient-hero);
+}
+
+.page-content {
+  background: var(--bg-page);
+}
+
+/* Заголовки */
+.heading-gradient {
+  background: var(--gradient-accent);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ===== АНИМАЦИИ ===== */
+@keyframes gradient-shift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.gradient-animated {
+  background-size: 200% 100%;
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+/* ===== АДАПТИВНОСТЬ ===== */
+@media (max-width: 768px) {
+  .card-content {
+    @apply p-3 sm:p-4;
+  }
+}
+
+/* ===== ACCESSIBILITY ===== */
+@media (prefers-reduced-motion: reduce) {
+  .gradient-animated {
+    animation: none;
+  }
+  
+  .card {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: high) {
+  :root {
+    --card-border: #64748b;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  :root.dark,
+  .dark {
+    --card-border: #94a3b8;
+    --shadow-sm: 0 2px 8px rgba(255, 255, 255, 0.1);
+  }
+  
+  .text-accent-gradient,
+  .heading-gradient {
+    -webkit-text-fill-color: var(--accent-primary);
+  }
+} 
