@@ -57,6 +57,7 @@
       description={sanitizedDescription}
       fullDescription={vacancy.fullDescription}
       processedHtml={vacancy.processedHtml}
+      vacancyId={vacancy._id}
       {isDetailPage}
       on:skillClick={handleSkillClick}
       on:descriptionClick={handleDescriptionClick}

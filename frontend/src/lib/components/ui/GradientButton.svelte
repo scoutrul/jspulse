@@ -10,11 +10,18 @@
   
   const dispatch = createEventDispatcher<{
     click: MouseEvent;
+    mouseenter: MouseEvent;
   }>();
   
   function handleClick(event: MouseEvent) {
     if (!disabled) {
       dispatch('click', event);
+    }
+  }
+
+  function handleMouseEnter(event: MouseEvent) {
+    if (!disabled) {
+      dispatch('mouseenter', event);
     }
   }
   
@@ -39,6 +46,7 @@
     class="rounded-md cursor-pointer font-medium transition-all duration-200 border-0 relative gradient-border-content {variantClasses[variant]} {sizeClasses[size]} {fullWidth ? 'w-full' : ''} focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 active:bg-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
     {disabled}
     on:click={handleClick}
+    on:mouseenter={handleMouseEnter}
   >
     <slot />
   </button>

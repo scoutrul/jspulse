@@ -2,6 +2,7 @@
   import SkillTag from '../ui/SkillTag.svelte';
   import { createEventDispatcher } from 'svelte';
   import { processDescription } from '$lib/utils/sanitize';
+  import { preloadData } from '$app/navigation';
   
   export let experience: string | undefined = undefined;
   export let employment: string | undefined = undefined;
@@ -10,6 +11,7 @@
   export let fullDescription: any = undefined; // DescriptionContent из backend
   export let processedHtml: string | undefined = undefined;
   export let isDetailPage: boolean = false;
+  export let vacancyId: string | undefined = undefined; // Добавляем ID для префетча
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
@@ -78,6 +80,19 @@
       dispatch('descriptionClick');
     }
   }
+  
+  // Префетч страницы при наведении для оптимизации
+  async function handleDescriptionHover() {
+    if (!isDetailPage && hasDescription && vacancyId) {
+      try {
+        await preloadData(`/v/${vacancyId}`);
+        console.debug('✅ Prefetched vacancy page:', vacancyId);
+      } catch (error) {
+        // Игнорируем ошибки префетча - это не критично
+        console.debug('❌ Prefetch failed for vacancy:', vacancyId, error);
+      }
+    }
+  }
 </script>
 
 <div class="vacancy-content">
@@ -135,6 +150,7 @@
       class:clickable={!isDetailPage}
       class:detail-page={isDetailPage}
       on:click={handleDescriptionClick}
+      on:mouseenter={handleDescriptionHover}
       on:keydown={(e) => {
         if ((e.key === 'Enter' || e.key === ' ') && !isDetailPage) {
           e.preventDefault();
@@ -181,8 +197,6 @@
     background-clip: text;
   }
   
-
-  
   /* Блок требований (опыт + занятость) */
   .requirements-section {
     @apply bg-neutral-50 border border-neutral-200 rounded-lg p-4;
@@ -217,8 +231,6 @@
   .requirement-value {
     @apply font-semibold text-neutral-800;
   }
-  
-
   
   .skills-container {
     @apply flex flex-wrap gap-2;

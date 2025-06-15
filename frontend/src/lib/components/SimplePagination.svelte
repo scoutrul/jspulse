@@ -3,6 +3,7 @@
   import { ArrowDown, ArrowPathRoundedSquare } from 'svelte-heros-v2';
   import { PAGINATION, LOCALE } from '../config/pagination.constants';
   import GradientButton from '$lib/components/ui/GradientButton.svelte';
+  import { page } from '$app/stores';
 
   export let currentPageSize: number = PAGINATION.DEFAULT_PAGE_SIZE;
   export let totalItems: number = 0;
@@ -70,6 +71,21 @@
       dispatch('loadAll');
     }
   }
+
+  async function handlePrefetch() {
+    try {
+      const params = new URLSearchParams($page.url.search);
+      const nextLimit = currentPageSize + getAdditionalItems(currentPageSize, totalItems, showingItems, isOffsetMode);
+      params.set('limit', nextLimit.toString());
+      
+      const backendUrl = import.meta.env.VITE_PUBLIC_BACKEND_URL || 'http://localhost:3001';
+      const prefetchUrl = `${backendUrl}/api/vacancies?${params.toString()}`;
+      await fetch(prefetchUrl);
+      console.debug('✅ Prefetched data:', prefetchUrl);
+    } catch (error) {
+      console.debug('❌ Prefetch failed:', error);
+    }
+  }
 </script>
 
 <div class="simple-pagination">
@@ -82,6 +98,7 @@
       <div class="pagination-buttons">
         <GradientButton 
           on:click={handleLoadMore} 
+          on:mouseenter={handlePrefetch}
           disabled={loading}
           variant="primary"
           size="lg"
@@ -100,6 +117,7 @@
         {#if showLoadAllButton}
           <GradientButton 
             on:click={handleLoadAll} 
+            on:mouseenter={handlePrefetch}
             disabled={loading}
             variant="secondary"
             size="lg"
