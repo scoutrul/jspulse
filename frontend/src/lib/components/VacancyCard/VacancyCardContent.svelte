@@ -1,7 +1,7 @@
 <script lang="ts">
   import SkillTag from '../ui/SkillTag.svelte';
-  import DescriptionRenderer from '../Description/DescriptionRenderer.svelte';
   import { createEventDispatcher } from 'svelte';
+  import { processDescription } from '$lib/utils/sanitize';
   
   export let experience: string | undefined = undefined;
   export let employment: string | undefined = undefined;
@@ -46,10 +46,28 @@
     return undefined;
   })();
   
+  // Обработка контента для отображения
+  $: displayContent = (() => {
+    if (isDetailPage) {
+      // Для страницы деталей показываем полный контент
+      return parsedFullDescription?.processed || processedHtml || description || '';
+    } else {
+      // Для карточки показываем preview
+      if (parsedFullDescription?.preview) {
+        return parsedFullDescription.preview;
+      } else if (processedHtml || description) {
+        // Создаем preview из имеющегося контента
+        const content = processedHtml || description || '';
+        return processDescription(content, 'preview', 220);
+      }
+      return '';
+    }
+  })();
+  
   $: hasRequirements = experience || employment;
   $: hasSkills = skills && skills.length > 0;
   $: hasRequirementsOrSkills = hasRequirements || hasSkills;
-  $: hasDescription = description || parsedFullDescription || processedHtml;
+  $: hasDescription = displayContent && displayContent.trim().length > 0;
   
   function handleSkillClick(skill: string) {
     dispatch('skillClick', skill);
@@ -108,12 +126,14 @@
     </div>
   {/if}
 
-  <!-- Описание без заголовка и с кликабельным контейнером -->
+  <!-- Описание без лишней вложенности -->
   {#if hasDescription}
     <!-- svelte-ignore a11y-no-noninteractive-tabindex -->
     <div 
+      id={isDetailPage ? 'vacancy-description' : undefined}
       class="description-container" 
       class:clickable={!isDetailPage}
+      class:detail-page={isDetailPage}
       on:click={handleDescriptionClick}
       on:keydown={(e) => {
         if ((e.key === 'Enter' || e.key === ' ') && !isDetailPage) {
@@ -125,16 +145,13 @@
       role={!isDetailPage ? 'button' : 'region'}
       aria-label={!isDetailPage ? 'Нажмите для просмотра полного описания вакансии' : 'Описание вакансии'}
     >
-      <DescriptionRenderer 
-        content={processedHtml || description || ''}
-        processedContent={parsedFullDescription}
-        mode={isDetailPage ? 'full' : 'auto'}
-        maxPreviewLength={220}
-        allowToggle={false}
-        showToggleButton={false}
-        variant="enhanced"
-        showMetrics={false}
-      />
+      <div class="description-content">
+        {#if displayContent.includes('<')}
+          {@html displayContent}
+        {:else}
+          <p class="description-text">{displayContent}</p>
+        {/if}
+      </div>
     </div>
   {/if}
 </div>
@@ -207,27 +224,95 @@
     @apply flex flex-wrap gap-2;
   }
   
-  /* Описание - выделенный блок */
+  /* Описание - выделенный блок с красной палитрой */
   .description-container {
     @apply relative transition-all duration-200 ease-in-out;
-    @apply bg-gradient-to-br from-blue-50 to-indigo-50;
-    @apply border border-blue-200 rounded-lg p-4;
-    @apply border-l-4 border-l-info-500;
-    background: linear-gradient(135deg, #eff6ff 0%, #e0e7ff 50%, #f0f9ff 100%);
-    box-shadow: 0 1px 3px rgba(59, 130, 246, 0.08);
+    @apply bg-gradient-to-br from-red-50 to-rose-50;
+    @apply border border-red-200 rounded-lg p-4;
+    @apply border-l-4 border-l-danger-500;
+    background: linear-gradient(135deg, #fef2f2 0%, #fdf2f8 50%, #fff1f2 100%);
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.08);
   }
   
   .description-container.clickable {
     @apply cursor-pointer;
-    @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
-    @apply hover:border-blue-300 hover:shadow-md;
+    @apply focus:outline-2 focus:outline-offset-2 focus:outline-danger-500;
+    @apply hover:border-red-300 hover:shadow-md;
     transition: all 0.2s ease-in-out;
   }
   
   .description-container.clickable:hover {
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.12);
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.12);
     transform: translateY(-1px);
   }
+  
+  /* Контент описания */
+  .description-content {
+    @apply w-full;
+    /* Убираем все возможные hover эффекты у дочерних элементов */
+    pointer-events: none;
+  }
+  
+  .description-content * {
+    /* Отключаем интерактивность дочерних элементов */
+    pointer-events: none !important;
+    /* Убираем возможные фоновые эффекты */
+    background-color: transparent !important;
+    /* Сбрасываем все transitions */
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  .description-text {
+    @apply text-neutral-700 leading-relaxed m-0;
+    /* Line clamp для карточек */
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.6;
+  }
+  
+  /* Стили для HTML контента */
+  .description-content :global(p) {
+    @apply text-neutral-700 leading-relaxed m-0;
+    @apply mb-2 last:mb-0;
+  }
+  
+  .description-content :global(h1),
+  .description-content :global(h2),
+  .description-content :global(h3) {
+    @apply text-neutral-800 font-semibold mb-2 mt-3 first:mt-0;
+    @apply text-sm;
+  }
+  
+  .description-content :global(ul),
+  .description-content :global(ol) {
+    @apply mb-2 last:mb-0 pl-4;
+  }
+  
+  .description-content :global(li) {
+    @apply text-neutral-700 mb-1 last:mb-0;
+    @apply text-sm leading-relaxed;
+  }
+  
+  .description-content :global(strong),
+  .description-content :global(b) {
+    @apply font-semibold text-neutral-800;
+  }
+  
+  .description-content :global(em),
+  .description-content :global(i) {
+    @apply italic;
+  }
+  
+  /* Ограничение высоты для карточек (не для detail page) */
+  .description-container:not(.detail-page) .description-content {
+    max-height: 6.4em; /* ~4 lines at 1.6 line-height */
+    overflow: hidden;
+    position: relative;
+  }
+
   
   /* Responsive design */
   @media (max-width: 640px) {
@@ -250,6 +335,14 @@
     
     .description-container.clickable:hover {
       transform: none;
+    }
+    
+    .description-text {
+      -webkit-line-clamp: 3;
+    }
+    
+    .description-container:not(.detail-page) .description-content {
+      max-height: 4.8em; /* ~3 lines */
     }
     
     .content-section {
@@ -277,7 +370,7 @@
     
     .description-container.clickable:hover {
       transform: none;
-      box-shadow: 0 1px 3px rgba(59, 130, 246, 0.08);
+      box-shadow: 0 1px 3px rgba(239, 68, 68, 0.08);
     }
   }
   
@@ -298,6 +391,10 @@
     
     .skills-section {
       @apply border-2 border-success-600 bg-neutral-100;
+    }
+    
+    .description-container {
+      @apply border-2 border-red-600 bg-neutral-100;
     }
   }
 </style> 

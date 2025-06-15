@@ -2,10 +2,31 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import VacancyCard from '$lib/components/VacancyCard/VacancyCard.svelte';
+  import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
   
   export let data: PageData;
   
   $: vacancy = data.vacancy;
+  
+  // Скроллим к описанию при загрузке страницы
+  onMount(() => {
+    if (browser) {
+      // Небольшая задержка для рендеринга DOM
+      setTimeout(() => {
+        const descriptionElement = document.getElementById('vacancy-description');
+        if (descriptionElement) {
+          descriptionElement.scrollIntoView({ 
+            behavior: 'smooth', 
+            block: 'start' 
+          });
+        } else {
+          // Fallback - скроллим к началу страницы
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+      }, 100);
+    }
+  });
 </script>
 
 <svelte:head>
