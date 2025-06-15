@@ -23,9 +23,9 @@
       
       <div class="header-actions">
         <ThemeToggle />
-        
-        <div class="beta-badge">
-          <span>Beta</span>
+      
+      <div class="beta-badge">
+        <span>Beta</span>
         </div>
       </div>
     </div>

@@ -18,7 +18,7 @@
       dispatch('click', event);
     }
   }
-
+  
   function handleMouseEnter(event: MouseEvent) {
     if (!disabled) {
       dispatch('mouseenter', event);
@@ -50,7 +50,7 @@
   >
     <slot />
   </button>
-</div>
+</div> 
 
 <style>
   /* Темная тема для кнопок */

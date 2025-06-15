@@ -160,7 +160,7 @@
     @apply bg-transparent border-none text-slate-300;
     @apply hover:bg-transparent hover:border-none;
   }
-
+  
   /* Высококонтрастный режим */
   @media (prefers-contrast: high) {
     .info-badge {
