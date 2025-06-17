@@ -1,9 +1,42 @@
+@import './lib/styles/design-system.css';
 @import './gradients.css';
 @import './lib/styles/description-system.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Отключение анимаций при загрузке для предотвращения FOUC */
+.no-transitions *,
+.no-transitions *::before,
+.no-transitions *::after {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+  animation-duration: 0s !important;
+  animation-delay: 0s !important;
+}
+
+/* Глобальные стили для темной темы */
+:root {
+  color-scheme: dark; /* По умолчанию темная тема */
+}
+
+:root:not(.dark) {
+  color-scheme: light;
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+/* Основные стили для body */
+body {
+  @apply bg-white text-neutral-900 transition-colors duration-300;
+}
+
+.dark body {
+  @apply bg-slate-900 text-slate-100;
+}
 
 /* Глобальные стили для спиннеров */
 .spinner {

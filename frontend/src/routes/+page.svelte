@@ -216,9 +216,6 @@
     // Проверяем, является ли этот навык единственным выбранным
     const currentSkills = store.selectedSkills;
     
-    // Запоминаем текущее количество вакансий для анимации
-    const currentCount = store.vacancies.length;
-    
     if (currentSkills.length === 1 && currentSkills[0] === skillName) {
       // Если уже выбран только этот навык, сбрасываем фильтры
       await handleSkillsChange([]);
@@ -253,7 +250,7 @@
     
     if (targetElement) {
       targetElement.scrollIntoView({ 
-        behavior: 'smooth', 
+        behavior: 'instant', 
         block: 'start'
       });
     }

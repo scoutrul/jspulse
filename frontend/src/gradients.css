@@ -41,3 +41,29 @@
   margin: 1px;
   z-index: 1;
 } 
+
+/* === ТЕМНАЯ ТЕМА === */
+
+/* Темная градиентная анимация */
+.dark .gradient-animated {
+  background: linear-gradient(90deg, 
+    #8b5cf6 0%, 
+    #6366f1 25%, 
+    #3b82f6 50%, 
+    #06b6d4 75%, 
+    #8b5cf6 100%);
+  background-size: 200% 100%;
+  animation: gradient-shift 8s ease-in-out infinite;
+}
+
+/* Темный контейнер для анимированного бордера */
+.dark .gradient-border {
+  background: linear-gradient(90deg, 
+    #8b5cf6 0%, 
+    #6366f1 25%, 
+    #3b82f6 50%, 
+    #06b6d4 75%, 
+    #8b5cf6 100%);
+  background-size: 200% 100%;
+  animation: gradient-shift 8s ease-in-out infinite;
+} 

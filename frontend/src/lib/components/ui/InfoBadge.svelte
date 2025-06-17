@@ -5,22 +5,41 @@
   export let size: 'sm' | 'md' | 'lg' = 'md';
   export let icon: string | undefined = undefined;
   export let hideLabel: boolean = false;
+  export let href: string | undefined = undefined; // Если передан, элемент становится ссылкой
+  export let darkTheme: boolean = false;
 </script>
 
-<div class="info-badge info-badge--{variant} info-badge--{size}">
-  {#if icon}
-    <span class="info-badge__icon" aria-hidden="true">
-      {@html icon}
-    </span>
-  {/if}
-  
-  <div class="info-badge__content">
-    {#if !hideLabel}
-      <span class="info-badge__label">{label}:</span>
+{#if href}
+  <a {href} class="info-badge info-badge--{variant} info-badge--{size} info-badge--link" class:info-badge--dark={darkTheme}>
+    {#if icon}
+      <span class="info-badge__icon" aria-hidden="true">
+        {@html icon}
+      </span>
     {/if}
-    <span class="info-badge__value">{value}</span>
+    
+    <div class="info-badge__content">
+      {#if !hideLabel}
+        <span class="info-badge__label">{label}:</span>
+      {/if}
+      <span class="info-badge__value">{value}</span>
+    </div>
+  </a>
+{:else}
+  <div class="info-badge info-badge--{variant} info-badge--{size}" class:info-badge--dark={darkTheme}>
+    {#if icon}
+      <span class="info-badge__icon" aria-hidden="true">
+        {@html icon}
+      </span>
+    {/if}
+    
+    <div class="info-badge__content">
+      {#if !hideLabel}
+        <span class="info-badge__label">{label}:</span>
+      {/if}
+      <span class="info-badge__value">{value}</span>
+    </div>
   </div>
-</div>
+{/if}
 
 <style>
   .info-badge {
@@ -70,7 +89,7 @@
   }
   
   .info-badge__content {
-    @apply flex gap-1;
+    @apply flex gap-1 whitespace-nowrap;
   }
   
   .info-badge--sm .info-badge__content {
@@ -94,10 +113,14 @@
     @apply w-5 h-5;
   }
   
-  /* Hover эффекты */
-  .info-badge:hover {
-    @apply transform -translate-y-1;
+  /* Hover эффекты только для ссылок */
+  .info-badge--link:hover {
+    @apply transform -translate-y-1 cursor-pointer;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+  
+  .info-badge--link {
+    @apply no-underline; /* Убираем подчеркивание для ссылок */
   }
   
   /* Accessibility */
@@ -106,10 +129,36 @@
       transition: none;
     }
     
-    .info-badge:hover {
+    .info-badge--link:hover {
       @apply transform-none;
       box-shadow: none;
     }
+  }
+  
+  /* === ТЕМНАЯ ТЕМА === */
+  .info-badge--dark.info-badge--default {
+    @apply bg-slate-600 border-slate-500 text-slate-200;
+    @apply hover:bg-slate-500 hover:border-slate-400;
+  }
+  
+  .info-badge--dark.info-badge--primary {
+    @apply bg-purple-900/50 border-purple-400 text-purple-200;
+    @apply hover:bg-purple-900/70 hover:border-purple-300;
+  }
+  
+  .info-badge--dark.info-badge--success {
+    @apply bg-green-900/50 border-green-400 text-green-200;
+    @apply hover:bg-green-900/70 hover:border-green-300;
+  }
+  
+  .info-badge--dark.info-badge--info {
+    @apply bg-blue-900/50 border-blue-400 text-blue-200;
+    @apply hover:bg-blue-900/70 hover:border-blue-300;
+  }
+
+  .info-badge--dark.info-badge--flat {
+    @apply bg-transparent border-none text-slate-300;
+    @apply hover:bg-transparent hover:border-none;
   }
   
   /* Высококонтрастный режим */
@@ -128,6 +177,22 @@
     
     .info-badge--info {
       @apply border-blue-600 bg-blue-100;
+    }
+
+    .info-badge--dark.info-badge--primary {
+      @apply border-purple-300 bg-purple-800 text-purple-100;
+    }
+    
+    .info-badge--dark.info-badge--success {
+      @apply border-green-300 bg-green-800 text-green-100;
+    }
+    
+    .info-badge--dark.info-badge--info {
+      @apply border-blue-300 bg-blue-800 text-blue-100;
+    }
+
+    .info-badge--dark.info-badge--flat {
+      @apply text-slate-100;
     }
   }
 </style> 

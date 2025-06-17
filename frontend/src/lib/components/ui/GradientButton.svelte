@@ -10,6 +10,7 @@
   
   const dispatch = createEventDispatcher<{
     click: MouseEvent;
+    mouseenter: MouseEvent;
   }>();
   
   function handleClick(event: MouseEvent) {
@@ -18,7 +19,13 @@
     }
   }
   
-  // Классы для разных вариантов кнопок
+  function handleMouseEnter(event: MouseEvent) {
+    if (!disabled) {
+      dispatch('mouseenter', event);
+    }
+  }
+  
+  // Классы для разных вариантов кнопок (светлая тема)
   const variantClasses = {
     primary: 'bg-neutral-100 text-neutral-700 hover:bg-neutral-50 hover:text-neutral-800',
     secondary: 'bg-primary-50 text-primary-700 hover:bg-primary-100 hover:text-primary-800',
@@ -33,13 +40,31 @@
   };
 </script>
 
-<div class="rounded-md relative inline-block gradient-border {hideOnMobile ? 'hidden sm:block' : ''} {fullWidth ? 'w-full' : ''} flex">
+<div class="gradient-button-wrapper rounded-md relative inline-block gradient-border {hideOnMobile ? 'hidden sm:block' : ''} {fullWidth ? 'w-full' : ''} flex">
   <button
     {type}
-    class="rounded-md cursor-pointer font-medium transition-all duration-200 border-0 relative gradient-border-content {variantClasses[variant]} {sizeClasses[size]} {fullWidth ? 'w-full' : ''} focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 active:bg-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+    class="gradient-button rounded-md cursor-pointer font-medium transition-all duration-200 border-0 relative gradient-border-content {variantClasses[variant]} {sizeClasses[size]} {fullWidth ? 'w-full' : ''} focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 active:bg-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
     {disabled}
     on:click={handleClick}
+    on:mouseenter={handleMouseEnter}
   >
     <slot />
   </button>
 </div> 
+
+<style>
+  /* Темная тема для кнопок */
+  :global(.dark) .gradient-button {
+    @apply bg-slate-700 text-slate-200 hover:bg-slate-600 hover:text-slate-100;
+    @apply focus:outline-purple-400;
+  }
+
+  :global(.dark) .gradient-button:active {
+    @apply bg-slate-800;
+  }
+
+  /* Специальные стили для разных вариантов в темной теме */
+  :global(.dark) .gradient-button.bg-primary-50 {
+    @apply bg-purple-900/50 text-purple-200 hover:bg-purple-900/70 hover:text-purple-100;
+  }
+</style> 

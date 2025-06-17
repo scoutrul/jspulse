@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { createEventDispatcher } from 'svelte';
+  import { theme } from '$lib/stores/themeStore';
 
   // Типы для входных данных
   interface TagData {
@@ -50,7 +51,7 @@
   let hoveredBubble: Bubble | null = null;
 
   // Детерминированная цветовая схема на базе JSPulse палитры
-  const colorPalette = [
+  const lightColorPalette = [
     '#3b82f6', // primary-500
     '#10b981', // success-500
     '#f59e0b', // warning-500
@@ -61,6 +62,20 @@
     '#06b6d4', // cyan-500
     '#84cc16', // lime-500
     '#f97316', // orange-500
+  ];
+
+  // Темная цветовая палитра - более яркие и контрастные цвета
+  const darkColorPalette = [
+    '#60a5fa', // blue-400
+    '#34d399', // emerald-400
+    '#fbbf24', // amber-400
+    '#f87171', // red-400
+    '#38bdf8', // sky-400
+    '#a78bfa', // violet-400
+    '#f472b6', // pink-400
+    '#22d3ee', // cyan-400
+    '#a3e635', // lime-400
+    '#fb923c', // orange-400
   ];
 
   // Хеш функция для детерминированного цвета
@@ -74,13 +89,14 @@
     return Math.abs(hash);
   }
 
-  function getColorForTag(tagName: string): string {
+  function getColorForTag(tagName: string, isDark: boolean = false): string {
     const hash = hashCode(tagName);
-    return colorPalette[hash % colorPalette.length];
+    const palette = isDark ? darkColorPalette : lightColorPalette;
+    return palette[hash % palette.length];
   }
 
   // Создание пузырьков из данных тегов
-  function createBubbles(tagData: TagData[]): Bubble[] {
+  function createBubbles(tagData: TagData[], isDark: boolean = false): Bubble[] {
     if (!tagData.length) return [];
 
     const maxCount = Math.max(...tagData.map(t => t.count));
@@ -101,7 +117,7 @@
         y: Math.random() * height,
         vx: 0,
         vy: 0,
-        color: getColorForTag(tag.name),
+        color: getColorForTag(tag.name, isDark),
         oscillationPhase: Math.random() * Math.PI * 2,
         targetRadius: radius,
         currentRadius: radius,
@@ -358,7 +374,7 @@
     handleResize();
     
     // Создание пузырьков
-    bubbles = createBubbles(tags);
+    bubbles = createBubbles(tags, $theme === 'dark');
     
     // Запуск симуляции
     await initSimulation();
@@ -382,9 +398,9 @@
     window.removeEventListener('resize', handleResize);
   });
 
-  // Реактивность на изменение данных
-  $: if (tags && bubbles.length !== tags.length) {
-    bubbles = createBubbles(tags);
+  // Реактивность на изменение данных и темы
+  $: if (tags && (bubbles.length !== tags.length || bubbles.length > 0)) {
+    bubbles = createBubbles(tags, $theme === 'dark');
     if (simulation) {
       simulation.nodes(bubbles);
       simulation.alpha(1).restart();
@@ -414,6 +430,12 @@
 <style>
   .bubbles-container {
     @apply relative w-full h-full min-h-96 bg-neutral-50 overflow-hidden;
+    @apply transition-colors duration-300;
+  }
+
+  /* Темная тема для контейнера пузырей */
+  :global(.dark) .bubbles-container {
+    @apply bg-slate-900;
   }
 
   .bubbles-canvas {

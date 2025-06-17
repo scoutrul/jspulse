@@ -63,7 +63,6 @@
       <DescriptionPreview 
         content={content}
         maxLength={maxPreviewLength}
-        allowHtml={true}
         showEllipsis={!shouldShowToggle}
       />
     {:else if currentMode === 'full'}

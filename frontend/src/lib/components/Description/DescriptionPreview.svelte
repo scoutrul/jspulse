@@ -44,6 +44,23 @@
 <style>
   .description-preview {
     @apply relative overflow-hidden;
+    /* Отключаем все hover эффекты */
+    pointer-events: auto;
+  }
+  
+  .description-preview * {
+    /* Отключаем hover для всех дочерних элементов */
+    transition: none !important;
+    transform: none !important;
+  }
+  
+  .description-preview *:hover {
+    /* Убираем hover эффекты */
+    background-color: inherit !important;
+    color: inherit !important;
+    border-color: inherit !important;
+    box-shadow: none !important;
+    transform: none !important;
   }
   
   .description-preview-default {

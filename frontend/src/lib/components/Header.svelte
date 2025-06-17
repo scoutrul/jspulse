@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ThemeToggle from './ui/ThemeToggle.svelte';
+  
   export const rootPath: string = '/';
 </script>
 
@@ -15,8 +17,16 @@
         </div>
       </a>
       
-      <div class="beta-badge ml-auto">
+      <nav class="header-nav">
+        <a href="/about" class="nav-link">О проекте</a>
+      </nav>
+      
+      <div class="header-actions">
+        <ThemeToggle />
+      
+      <div class="beta-badge">
         <span>Beta</span>
+        </div>
       </div>
     </div>
   </div>
@@ -30,6 +40,14 @@
     @apply relative bg-white border-b border-neutral-200 overflow-hidden;
     background: linear-gradient(135deg, #ffffff 0%, #fafafa 100%);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.08);
+    @apply transition-all duration-300 ease-in-out;
+  }
+
+  /* Темная тема для шапки */
+  :global(.dark) .header {
+    @apply bg-slate-800 border-slate-700;
+    background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2), 0 1px 3px rgba(0, 0, 0, 0.15);
   }
 
   .header-container {
@@ -41,7 +59,30 @@
   }
   
   .main-row {
-    @apply flex items-center justify-between w-full gap-2;
+    @apply flex items-center w-full gap-4;
+  }
+  
+  .header-nav {
+    @apply flex items-center ml-auto mr-4;
+  }
+  
+  .header-actions {
+    @apply flex items-center gap-3;
+  }
+  
+  .nav-link {
+    @apply px-4 py-2 text-sm font-medium text-neutral-600 hover:text-warning-600;
+    @apply bg-transparent hover:bg-warning-50 rounded-lg transition-all duration-200;
+    @apply border border-transparent hover:border-warning-200;
+    @apply no-underline focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
+  }
+
+  /* Темная тема для навигации */
+  :global(.dark) .nav-link {
+    @apply text-slate-300 hover:text-purple-300;
+    @apply hover:bg-purple-900/20;
+    @apply hover:border-purple-400/30;
+    @apply focus:outline-purple-400;
   }
 
   .header-link {
@@ -75,9 +116,22 @@
     background-clip: text;
   }
 
+  /* Темная тема для заголовка */
+  :global(.dark) .title {
+    background: linear-gradient(135deg, theme('colors.purple.400') 0%, theme('colors.indigo.400') 50%, theme('colors.blue.400') 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
   .tagline {
     @apply text-sm font-medium text-neutral-500 mt-0.5 tracking-wide uppercase;
     letter-spacing: 0.5px;
+  }
+
+  /* Темная тема для подзаголовка */
+  :global(.dark) .tagline {
+    @apply text-slate-400;
   }
 
 
@@ -88,6 +142,12 @@
   .beta-badge span {
     @apply inline-flex items-center px-3 py-1.5 text-xs font-semibold text-warning-700 bg-warning-100 border border-warning-300 rounded-full shadow-sm;
     animation: pulse-glow 3s ease-in-out infinite;
+  }
+
+  /* Темная тема для beta badge */
+  :global(.dark) .beta-badge span {
+    @apply text-purple-200 bg-purple-900/50 border-purple-400;
+    animation: pulse-glow-dark 3s ease-in-out infinite;
   }
 
 
@@ -103,12 +163,35 @@
     }
   }
 
+  @keyframes pulse-glow-dark {
+    0%, 100% {
+      @apply shadow-sm;
+      box-shadow: 0 1px 2px rgba(139, 92, 246, 0.15);
+    }
+    50% {
+      @apply shadow-md;
+      box-shadow: 0 4px 8px rgba(139, 92, 246, 0.25), 0 0 12px rgba(139, 92, 246, 0.2);
+    }
+  }
+
 
 
   /* Мобильная адаптация */
   @media (max-width: 640px) {
     .header-container {
       @apply px-4 py-3;
+    }
+    
+    .main-row {
+      @apply flex-wrap gap-2;
+    }
+    
+    .header-nav {
+      @apply order-3 w-full justify-center ml-0 mr-0 mt-2;
+    }
+    
+    .header-actions {
+      @apply order-2 ml-auto gap-2;
     }
   }
 
@@ -161,7 +244,8 @@
   }
 
   /* Фокус-индикаторы для клавиатурной навигации */
-  .header-link:focus-visible {
+  .header-link:focus-visible,
+  .nav-link:focus-visible {
     @apply outline-2 outline-offset-2 outline-primary-500;
   }
 </style> 

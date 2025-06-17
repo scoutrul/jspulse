@@ -4,6 +4,7 @@
   export let size: 'sm' | 'md' | 'lg' = 'md';
   export let interactive: boolean = false;
   export let onClick: ((skill: string) => void) | undefined = undefined;
+  export let darkTheme: boolean = false;
   
   $: isClickable = interactive && onClick;
   
@@ -26,6 +27,7 @@
 <span
   class="skill-tag skill-tag--{variant} skill-tag--{size}"
   class:skill-tag--interactive={isClickable}
+  class:skill-tag--dark={darkTheme}
   on:click={handleClick}
   on:keydown={handleKeyDown}
   tabindex={isClickable ? 0 : undefined}
@@ -103,6 +105,42 @@
     }
     50% {
       box-shadow: 0 4px 8px rgba(251, 191, 36, 0.25), 0 2px 4px rgba(251, 191, 36, 0.15);
+    }
+  }
+
+  /* === ТЕМНАЯ ТЕМА === */
+  .skill-tag--dark.skill-tag--default {
+    @apply text-slate-200 bg-slate-600 border-slate-500;
+    @apply hover:bg-slate-500 hover:border-slate-400;
+  }
+
+  .skill-tag--dark.skill-tag--primary {
+    @apply text-white border-purple-400;
+    background: linear-gradient(135deg, theme('colors.purple.600') 0%, theme('colors.indigo.500') 50%, theme('colors.blue.500') 100%);
+    box-shadow: 0 2px 4px rgba(139, 92, 246, 0.15);
+  }
+
+  .skill-tag--dark.skill-tag--primary:hover {
+    @apply transform scale-105;
+    box-shadow: 0 4px 8px rgba(139, 92, 246, 0.25), 0 2px 4px rgba(139, 92, 246, 0.15);
+  }
+
+  .skill-tag--dark.skill-tag--outline {
+    @apply text-purple-300 bg-transparent border-purple-400;
+    @apply hover:bg-purple-900/20 hover:border-purple-300;
+  }
+
+  /* Анимация для темной темы */
+  .skill-tag--dark.skill-tag--interactive.skill-tag--primary {
+    animation: pulse-glow-dark 3s ease-in-out infinite;
+  }
+
+  @keyframes pulse-glow-dark {
+    0%, 100% {
+      box-shadow: 0 2px 4px rgba(139, 92, 246, 0.15);
+    }
+    50% {
+      box-shadow: 0 4px 8px rgba(139, 92, 246, 0.25), 0 2px 4px rgba(139, 92, 246, 0.15);
     }
   }
   
