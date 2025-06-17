@@ -5,6 +5,7 @@ import { containerFactory } from './container/ContainerFactory.js';
 import { createDIMiddleware, diErrorHandler } from './middleware/diMiddleware.js';
 import vacancyRoutes from './routes/vacancyRoutes.js';
 import schedulerRoutes from './routes/schedulerRoutes.js';
+import adminRoutes from './routes/adminRoutes.js';
 import { SchedulerService } from './services/SchedulerService.js';
 
 /**
@@ -53,6 +54,7 @@ export async function createApp(): Promise<{ app: express.Application; container
   // Регистрация маршрутов
   app.use('/api/vacancies', vacancyRoutes);
   app.use('/api/scheduler', schedulerRoutes);
+  app.use('/api/admin', adminRoutes);
 
   // Health check endpoint
   app.get('/health', async (req, res) => {

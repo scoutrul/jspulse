@@ -19,6 +19,7 @@
       
       <nav class="header-nav">
         <a href="/about" class="nav-link">О проекте</a>
+        <a href="/admin" class="nav-link admin-link">Админка</a>
       </nav>
       
       <div class="header-actions">
@@ -83,6 +84,30 @@
     @apply hover:bg-purple-900/20;
     @apply hover:border-purple-400/30;
     @apply focus:outline-purple-400;
+  }
+
+  /* Стили для админ-ссылки */
+  .admin-link {
+    @apply bg-gradient-to-r from-blue-50 to-purple-50;
+    @apply border-blue-200 text-blue-700;
+    @apply hover:from-blue-100 hover:to-purple-100;
+    @apply hover:border-blue-300 hover:text-blue-800;
+    @apply shadow-sm hover:shadow-md;
+    font-weight: 600;
+  }
+
+  /* Темная тема для админ-ссылки */
+  :global(.dark) .admin-link {
+    @apply bg-gradient-to-r from-blue-900/30 to-purple-900/30;
+    @apply border-blue-400/50 text-blue-300;
+    @apply hover:from-blue-800/40 hover:to-purple-800/40;
+    @apply hover:border-blue-300 hover:text-blue-200;
+    @apply shadow-sm hover:shadow-lg;
+    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.1);
+  }
+
+  :global(.dark) .admin-link:hover {
+    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2), 0 0 8px rgba(59, 130, 246, 0.1);
   }
 
   .header-link {

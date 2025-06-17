@@ -38,6 +38,13 @@
   .app-container {
     @apply flex flex-col min-h-screen;
     @apply transition-colors duration-300;
+    /* Красивый градиент фона для всего приложения */
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  }
+
+  /* Темная тема для градиента */
+  :global(.dark) .app-container {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
   }
 
   .content {

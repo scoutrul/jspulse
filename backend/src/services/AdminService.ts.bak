@@ -1,0 +1,456 @@
+import { AppError } from '../middleware/ApiError.js';
+import { DIContainer } from '../container/DIContainer.js';
+import { IVacancyRepository } from '../../shared/src/types/core/vacancy-repository.interface.js';
+import { MemoryCacheService } from './MemoryCacheService.js';
+import { ICacheStats } from '../../shared/src/types/core/cache.interface.js';
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+
+const execAsync = promisify(exec);
+
+/**
+ * Интерфейс для системной статистики
+ */
+export interface SystemStats {
+  vacancies: {
+    total: number;
+    recent24h: number;
+    withFullDescription: number;
+  };
+  skills: {
+    unique: number;
+    total: number;
+  };
+  cache: {
+    hitRate: number;
+    size: number;
+    totalRequests: number;
+    totalHits: number;
+  };
+  scheduler: {
+    status: string;
+    lastRun: Date | null;
+    nextRun: Date | null;
+  };
+  system: {
+    uptime: number;
+    memoryUsage: NodeJS.MemoryUsage;
+    timestamp: Date;
+  };
+}
+
+/**
+ * Интерфейс для топ навыков
+ */
+export interface TopSkill {
+  skill: string;
+  count: number;
+  percentage: number;
+}
+
+/**
+ * Интерфейс для последних вакансий
+ */
+export interface RecentVacancy {
+  id: string;
+  title: string;
+  companyName: string;
+  skills: string[];
+  createdAt: Date;
+  source: string;
+}
+
+/**
+ * Интерфейс для результата административной операции
+ */
+export interface AdminOperationResult {
+  success: boolean;
+  message: string;
+  details?: unknown;
+  executionTime: number;
+}
+
+/**
+ * Сервис для административных операций JSPulse
+ */
+class AdminService {
+  private readonly container: DIContainer;
+
+  constructor() {
+    this.container = DIContainer.getInstance();
+  }
+
+  /**
+   * Получает репозиторий вакансий из DI контейнера
+   */
+  private getVacancyRepository(): IVacancyRepository {
+    const repository = this.container.resolve<IVacancyRepository>('VacancyRepository');
+    if (!repository) {
+      throw AppError.internal('VacancyRepository not found in DI container');
+    }
+    return repository;
+  }
+
+  /**
+   * Получает сервис кэширования из DI контейнера
+   */
+  private getCacheService(): MemoryCacheService {
+    const cacheService = this.container.resolve<MemoryCacheService>('CacheService');
+    if (!cacheService) {
+      throw AppError.internal('CacheService not found in DI container');
+    }
+    return cacheService;
+  }
+
+  /**
+   * Получает агрегированную статистику системы
+   */
+  async getSystemStats(): Promise<SystemStats> {
+    try {
+      const startTime = Date.now();
+      const repository = this.getVacancyRepository();
+      const cacheService = this.getCacheService();
+
+      // Параллельно получаем различные статистики
+      const [
+        totalVacancies,
+        recentVacancies,
+        vacanciesWithFullDescription,
+        uniqueSkills,
+        totalSkills,
+        cacheStats
+      ] = await Promise.all([
+        repository.count({}),
+        repository.count({
+          createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) }
+        }),
+        repository.count({
+          fullDescription: { $exists: true, $ne: null }
+        }),
+        this.getUniqueSkillsCount(),
+        this.getTotalSkillsCount(),
+        cacheService.getStats()
+      ]);
+
+      const executionTime = Date.now() - startTime;
+
+      return {
+        vacancies: {
+          total: totalVacancies,
+          recent24h: recentVacancies,
+          withFullDescription: vacanciesWithFullDescription
+        },
+        skills: {
+          unique: uniqueSkills,
+          total: totalSkills
+        },
+        cache: {
+          hitRate: cacheStats.hitRate,
+          size: cacheStats.size,
+          totalRequests: cacheStats.requests,
+          totalHits: cacheStats.hits
+        },
+        scheduler: {
+          status: 'unknown', // TODO: интеграция с планировщиком
+          lastRun: null,
+          nextRun: null
+        },
+        system: {
+          uptime: process.uptime(),
+          memoryUsage: process.memoryUsage(),
+          timestamp: new Date()
+        }
+      };
+    } catch (error) {
+      console.error('Error getting system stats:', error);
+      throw AppError.internal('Failed to get system statistics');
+    }
+  }
+
+  /**
+   * Получает количество уникальных навыков
+   */
+  private async getUniqueSkillsCount(): Promise<number> {
+    try {
+      const repository = this.getVacancyRepository();
+      const pipeline = [
+        { $unwind: '$skills' },
+        { $group: { _id: '$skills' } },
+        { $count: 'uniqueSkills' }
+      ];
+
+      const result = await repository.aggregate(pipeline);
+      return result[0]?.uniqueSkills || 0;
+    } catch (error) {
+      console.error('Error getting unique skills count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Получает общее количество навыков
+   */
+  private async getTotalSkillsCount(): Promise<number> {
+    try {
+      const repository = this.getVacancyRepository();
+      const pipeline = [
+        { $unwind: '$skills' },
+        { $count: 'totalSkills' }
+      ];
+
+      const result = await repository.aggregate(pipeline);
+      return result[0]?.totalSkills || 0;
+    } catch (error) {
+      console.error('Error getting total skills count:', error);
+      return 0;
+    }
+  }
+
+  /**
+   * Получает топ навыков с количеством вакансий
+   */
+  async getTopSkills(limit = 10): Promise<TopSkill[]> {
+    try {
+      const repository = this.getVacancyRepository();
+
+      const pipeline = [
+        { $unwind: '$skills' },
+        { $group: { _id: '$skills', count: { $sum: 1 } } },
+        { $sort: { count: -1 } },
+        { $limit: limit }
+      ];
+
+      const results = await repository.aggregate(pipeline);
+      const totalVacancies = await repository.count({});
+
+      return results.map(result => ({
+        skill: result._id,
+        count: result.count,
+        percentage: totalVacancies > 0 ? Math.round((result.count / totalVacancies) * 100) : 0
+      }));
+    } catch (error) {
+      console.error('Error getting top skills:', error);
+      throw AppError.internal('Failed to get top skills');
+    }
+  }
+
+  /**
+   * Получает последние добавленные вакансии
+   */
+  async getRecentVacancies(limit = 10): Promise<RecentVacancy[]> {
+    try {
+      const repository = this.getVacancyRepository();
+
+      const vacancies = await repository.findMany(
+        {},
+        {
+          sort: { createdAt: -1 },
+          limit,
+          lean: true
+        }
+      );
+
+      return vacancies.map(vacancy => ({
+        id: vacancy.id,
+        title: vacancy.title,
+        companyName: vacancy.companyName || 'Unknown Company',
+        skills: vacancy.skills || [],
+        createdAt: vacancy.createdAt,
+        source: vacancy.source || 'unknown'
+      }));
+    } catch (error) {
+      console.error('Error getting recent vacancies:', error);
+      throw AppError.internal('Failed to get recent vacancies');
+    }
+  }
+
+  /**
+   * Запускает парсинг HeadHunter API
+   */
+  async startHHParsing(): Promise<AdminOperationResult> {
+    const startTime = Date.now();
+
+    try {
+      console.log('Starting HeadHunter parsing...');
+
+      // Путь к скрипту парсинга относительно текущей директории
+      const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'fetchAndSaveFromHH.ts');
+
+      // Запускаем скрипт через ts-node
+      const { stdout, stderr } = await execAsync(`npx ts-node ${scriptPath}`, {
+        cwd: process.cwd(),
+        timeout: 300000 // 5 минут timeout
+      });
+
+      const executionTime = Date.now() - startTime;
+
+      console.log('HH parsing completed successfully');
+      console.log('Output:', stdout);
+
+      if (stderr) {
+        console.warn('Warnings:', stderr);
+      }
+
+      return {
+        success: true,
+        message: 'HeadHunter parsing completed successfully',
+        details: {
+          output: stdout,
+          warnings: stderr || null
+        },
+        executionTime
+      };
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+
+      console.error('Error running HH parsing:', error);
+
+      return {
+        success: false,
+        message: 'Failed to run HeadHunter parsing',
+        details: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : null
+        },
+        executionTime
+      };
+    }
+  }
+
+  /**
+   * Очищает базу данных (опасная операция)
+   */
+  async clearDatabase(): Promise<AdminOperationResult> {
+    const startTime = Date.now();
+
+    try {
+      console.log('Starting database cleanup...');
+
+      // Путь к скрипту очистки
+      const scriptPath = path.join(process.cwd(), 'src', 'scripts', 'clearDatabase.ts');
+
+      // Запускаем скрипт через ts-node
+      const { stdout, stderr } = await execAsync(`npx ts-node ${scriptPath}`, {
+        cwd: process.cwd(),
+        timeout: 60000 // 1 минута timeout
+      });
+
+      const executionTime = Date.now() - startTime;
+
+      console.log('Database cleanup completed successfully');
+      console.log('Output:', stdout);
+
+      if (stderr) {
+        console.warn('Warnings:', stderr);
+      }
+
+      // Очищаем кэш после очистки БД
+      const cacheService = this.getCacheService();
+      cacheService.clear();
+
+      return {
+        success: true,
+        message: 'Database cleared successfully',
+        details: {
+          output: stdout,
+          warnings: stderr || null,
+          cacheCleared: true
+        },
+        executionTime
+      };
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+
+      console.error('Error clearing database:', error);
+
+      return {
+        success: false,
+        message: 'Failed to clear database',
+        details: {
+          error: error instanceof Error ? error.message : 'Unknown error',
+          stack: error instanceof Error ? error.stack : null
+        },
+        executionTime
+      };
+    }
+  }
+
+  /**
+   * Получает состояние планировщика (заглушка для будущей интеграции)
+   */
+  async getSchedulerStatus(): Promise<{
+    status: string;
+    lastRun: Date | null;
+    nextRun: Date | null;
+    jobs: Array<{
+      id: string;
+      name: string;
+      status: string;
+      lastRun: Date | null;
+      nextRun: Date | null;
+    }>;
+  }> {
+    try {
+      // TODO: Интеграция с реальным планировщиком
+      return {
+        status: 'running',
+        lastRun: null,
+        nextRun: null,
+        jobs: []
+      };
+    } catch (error) {
+      console.error('Error getting scheduler status:', error);
+      throw AppError.internal('Failed to get scheduler status');
+    }
+  }
+
+  /**
+   * Перезапускает сервис кэширования
+   */
+  async restartCacheService(): Promise<AdminOperationResult> {
+    const startTime = Date.now();
+
+    try {
+      const cacheService = this.getCacheService();
+
+      // Получаем статистику до очистки
+      const statsBefore = cacheService.getStats();
+
+      // Очищаем кэш
+      cacheService.clear();
+
+      // Получаем статистику после очистки
+      const statsAfter = cacheService.getStats();
+
+      const executionTime = Date.now() - startTime;
+
+      return {
+        success: true,
+        message: 'Cache service restarted successfully',
+        details: {
+          before: statsBefore,
+          after: statsAfter,
+          itemsCleared: statsBefore.size
+        },
+        executionTime
+      };
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+
+      console.error('Error restarting cache service:', error);
+
+      return {
+        success: false,
+        message: 'Failed to restart cache service',
+        details: {
+          error: error instanceof Error ? error.message : 'Unknown error'
+        },
+        executionTime
+      };
+    }
+  }
+}
+
+// Экспортируем singleton instance
+export const adminService = new AdminService(); 

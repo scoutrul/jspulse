@@ -1,3 +1,154 @@
+# Задачи JSPulse - Admin Dashboard с Memory Bank Integration
+
+## Статус планирования: ACTIVE DEVELOPMENT - Level 2-3
+**Дата:** Январь 2025  
+**Уровень сложности:** Level 2-3 - New Feature + UI/UX Component + Backend Extension
+
+## 🚀 АКТИВНАЯ ЗАДАЧА: Admin Dashboard с Memory Bank Integration
+
+### Статус: 🚀 ACTIVE DEVELOPMENT - Phase 1 Backend Foundation
+**Дата начала:** Январь 2025  
+**Уровень сложности:** Level 2-3 - New Feature + UI/UX + Backend  
+**Приоритет:** High
+
+### 🎯 Цель проекта
+Создать полнофункциональный административный дашборд для JSPulse с интеграцией Memory Bank документации. Дашборд включает статистику системы, административные функции, аналитические виджеты и браузер документации с Markdown рендерингом.
+
+### 📋 Ключевые функции дашборда
+#### 📊 Статистические блоки:
+- Общее количество вакансий в базе данных
+- Количество уникальных навыков  
+- Статистика кэширования (hit rate, размер кэша)
+- Статус планировщика и здоровье системы
+
+#### ⚡ Административные действия:
+- Кнопка парсинга HH.ru - запуск сбора новых вакансий
+- Очистка базы данных - с подтверждением для безопасности
+- Управление планировщиком - старт/стоп/статус
+- Просмотр логов системы - последние события
+
+#### 📚 Memory Bank Browser:
+- Список всех файлов из `/memory-bank/` с иерархией папок
+- Сортировка по дате изменения - последние обновления сверху
+- Markdown рендеринг для просмотра содержимого файлов
+- Поиск по документации - по названиям файлов и содержимому
+- Быстрый доступ к ключевым файлам (tasks.md, activeContext.md, progress.md)
+
+#### 📊 Аналитические виджеты:
+- ТОП-10 навыков по популярности
+- Последние добавленные вакансии (таблица)
+- Графики активности (опционально в будущем)
+
+### 🏗️ Техническая архитектура
+
+#### Backend API Extensions:
+```
+GET /api/admin/stats           - агрегированная статистика дашборда
+GET /api/admin/top-skills      - топ навыков с количеством вакансий
+GET /api/admin/recent          - последние добавленные вакансии
+POST /api/admin/parse-hh       - запуск парсинга HeadHunter
+DELETE /api/admin/clear-db     - очистка базы данных
+GET /api/admin/docs            - список всех файлов Memory Bank
+GET /api/admin/docs/file/:path - содержимое конкретного файла
+GET /api/admin/docs/recent     - последние обновленные файлы
+GET /api/admin/docs/search?q=  - поиск по документации
+```
+
+#### Frontend Components:
+- `AdminDashboard.svelte` - главная страница дашборда
+- `StatCard.svelte` - переиспользуемые карточки статистики
+- `ActionButton.svelte` - кнопки действий с подтверждением
+- `DocumentationPanel.svelte` - браузер Memory Bank файлов
+- `MarkdownViewer.svelte` - просмотрщик MD файлов с синтаксисом
+- `FileTree.svelte` - навигация по структуре папок
+- `SkillsChart.svelte` - топ навыков
+- `RecentVacancies.svelte` - таблица последних вакансий
+
+#### SvelteKit Integration:
+- Новый маршрут `/admin` в SvelteKit
+- Использование существующих паттернов (Header.svelte design)
+- API клиенты и error handling
+
+### 📝 Фазы реализации
+
+#### Phase 1: Backend API Foundation - 🚀 ACTIVE
+- 📋 **adminRoutes.ts**: создание маршрутов с базовыми endpoints
+- 📋 **DocumentationService**: сервис для работы с файловой системой Memory Bank
+- 📋 **AdminService**: сервис для административных операций  
+- 📋 **Zod схемы**: валидация запросов для административных операций
+- 📋 **Интеграция скриптов**: fetchAndSaveFromHH.ts, clearDatabase.ts через API
+
+#### Phase 2: Базовый Frontend + Memory Bank - 📋 ЗАПЛАНИРОВАНО
+- 📋 **Маршрут /admin**: создание страницы в SvelteKit  
+- 📋 **AdminDashboard.svelte**: главный компонент дашборда
+- 📋 **DocumentationPanel.svelte**: браузер Memory Bank файлов
+- 📋 **StatCard.svelte**: переиспользуемые карточки метрик
+- 📋 **MarkdownViewer.svelte**: рендеринг Markdown содержимого
+
+#### Phase 3: Administrative Actions - 📋 ЗАПЛАНИРОВАНО  
+- 📋 **ActionButton.svelte**: кнопки с подтверждением для опасных операций
+- 📋 **Интеграция действий**: парсинг HH.ru, очистка БД через API
+- 📋 **Loading states**: управление состояниями загрузки
+- 📋 **Error handling**: обработка ошибок административных операций
+
+#### Phase 4: Analytics & Documentation Enhancement - 📋 ЗАПЛАНИРОВАНО
+- 📋 **SkillsChart.svelte**: топ навыков с визуализацией
+- 📋 **RecentVacancies.svelte**: таблица последних вакансий
+- 📋 **FileTree.svelte**: навигация по структуре Memory Bank
+- 📋 **SearchBox.svelte**: поиск по документации
+
+#### Phase 5: UX Enhancement & Design System - 📋 ЗАПЛАНИРОВАНО
+- 📋 **JSPulse дизайн-система**: применение градиентов, анимаций, теней
+- 📋 **Responsive design**: адаптация для мобильных устройств
+- 📋 **Accessibility**: A11Y compliance и keyboard navigation
+- 📋 **Performance optimization**: lazy loading для больших файлов
+
+### 🎨 Дизайн и UX
+**Концептуальная структура:**
+```
+┌─────────────────┬─────────────────┬─────────────────┐
+│ Система JSPulse │  Аналитика      │ Memory Bank     │
+├─────────────────┼─────────────────┼─────────────────┤
+│ 📊 Вакансии: 203│ 🏆 Топ навыки   │ 📁 /docs/       │
+│ 💾 Кэш: 85%     │ React    45     │ 📁 /archive/    │
+│ ⚡ Планировщик  │ Vue.js   32     │ 📄 tasks.md     │
+│                 │ Node.js  28     │ 📄 progress.md  │
+├─────────────────┼─────────────────┼─────────────────┤
+│ 🔄 Парсить HH   │ 📝 Последние:   │ 🔍 Поиск...     │
+│ 🗑️ Очистить БД  │ Frontend Dev... │ ⏰ Обновлено:   │
+│ 📊 Логи         │ React Senior... │ tasks.md 2ч     │
+└─────────────────┴─────────────────┴─────────────────┘
+                  ▼
+            📖 Markdown Viewer Area
+```
+
+**Design System Integration:**
+- Warning градиенты для акцентных элементов
+- Современные анимации и hover effects
+- Карточный дизайн с тенями и borders
+- Консистентная типографика JSPulse
+
+### 📊 Ожидаемые улучшения
+- **Административное управление**: единый центр контроля JSPulse
+- **Memory Bank визуализация**: удобный доступ к документации проекта
+- **System insight**: visual мониторинг состояния системы
+- **Development efficiency**: ускорение administrative задач
+- **Готовность к production**: основа для админки с авторизацией
+
+### ⚠️ Технические вызовы
+- **Файловая система безопасность**: защита от path traversal при чтении Memory Bank
+- **Administrative operations**: безопасное выполнение скриптов через web API
+- **Markdown рендеринг**: syntax highlighting и стилизация в рамках JSPulse design
+- **Performance**: эффективная работа с большими документационными файлами
+
+### 🔄 Dependencies
+- **Существующая архитектура**: VacancyRepository, MemoryCacheService, SchedulerService
+- **Backend infrastructure**: adminRoutes интеграция с app.ts
+- **Memory Bank structure**: файловая система `/memory-bank/` как источник данных
+- **SvelteKit patterns**: использование established routing и component patterns
+
+---
+
 # Задачи JSPulse - Level 3 Description Enhancement System
 
 ## Статус планирования: IMPLEMENT MODE → ACTIVE DEVELOPMENT  

@@ -12,23 +12,52 @@ if (!mongoUrl) {
 }
 
 async function clearDatabase() {
+  const startTime = Date.now();
+  let stats = {
+    deletedVacancies: 0,
+    success: false,
+    executionTime: 0,
+    error: null as string | null
+  };
+
   try {
     await mongoose.connect(mongoUrl as string);
-    console.log("Connected to MongoDB");
+    console.log("✅ Connected to MongoDB for database clearing");
 
-    console.log("Clearing database...");
+    console.log("🗑️ Clearing database...");
+
+    // Получаем количество вакансий до удаления
+    const countBefore = await Vacancy.countDocuments();
+    console.log(`📊 Вакансий в БД до очистки: ${countBefore}`);
 
     // Удаляем все вакансии из базы данных
     const result = await Vacancy.deleteMany({});
-    console.log(`Удалено вакансий: ${result.deletedCount}`);
+    stats.deletedVacancies = result.deletedCount;
 
-    console.log("Database cleared successfully.");
+    console.log(`🗑️ Удалено вакансий: ${result.deletedCount}`);
+    console.log("✅ Database cleared successfully.");
+
+    stats.success = true;
+
   } catch (error) {
-    console.error("Error clearing the database:", error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error("❌ Error clearing the database:", error);
+    stats.error = errorMessage;
   } finally {
     await mongoose.disconnect();
-    console.log("Disconnected from MongoDB");
+    console.log("🔌 Disconnected from MongoDB");
+    stats.executionTime = Date.now() - startTime;
   }
+
+  return stats;
 }
 
-clearDatabase();
+// Запускать только при прямом вызове как CLI скрипт
+if (import.meta.url === `file://${process.argv[1]}`) {
+  clearDatabase().then(stats => {
+    console.log('📊 Final stats:', stats);
+    process.exit(stats.success ? 0 : 1);
+  });
+}
+
+export default clearDatabase;
