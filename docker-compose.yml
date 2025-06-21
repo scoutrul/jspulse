@@ -1,5 +1,6 @@
 version: "3.8"
 
+# Основные сервисы (всегда запускаются)
 services:
   mongodb:
     image: mongo:latest
@@ -15,7 +16,9 @@ services:
       retries: 5
       start_period: 10s
 
+  # BACKEND - Production version
   backend:
+    profiles: ["prod", "production"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -52,7 +55,50 @@ services:
       retries: 5
       start_period: 10s
 
+  # BACKEND - Development version  
+  backend-dev:
+    profiles: ["dev", "development"]
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: backend-dev
+    ports:
+      - "3001:3001"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    volumes:
+      - ./backend/src:/app/backend/src
+      - ./shared/src:/app/shared/src
+      - ./shared/dist:/app/shared/dist
+      - backend_node_modules:/app/backend/node_modules
+      - shared_node_modules:/app/shared/node_modules
+    environment:
+      - PORT=3001
+      - MONGO_URI=mongodb://mongodb:27017/jspulse
+      - NODE_ENV=development
+      - SCHEDULER_HH_PARSER_SCHEDULE=0 */8 * * *
+      - SCHEDULER_HH_PARSER_ENABLED=true
+      - SCHEDULER_CLEANUP_SCHEDULE=0 2 * * 0
+      - SCHEDULER_CLEANUP_ENABLED=true
+      - SCHEDULER_CLEANUP_DAYS_THRESHOLD=30
+      - SCHEDULER_HEALTH_CHECK_SCHEDULE=*/30 * * * *
+      - SCHEDULER_HEALTH_CHECK_ENABLED=true
+      - SCHEDULER_MAX_RETRIES=3
+      - SCHEDULER_RETRY_DELAY=60000
+      - SCHEDULER_ENABLE_NOTIFICATIONS=true
+      - SCHEDULER_LOG_TO_FILE=true
+    restart: unless-stopped
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # FRONTEND - Production version
   frontend:
+    profiles: ["prod", "production"]
     build:
       context: .
       dockerfile: Dockerfile
@@ -72,5 +118,39 @@ services:
       - VITE_PUBLIC_BACKEND_URL=http://localhost:3001
       - INTERNAL_BACKEND_URL=http://backend:3001
 
+  # FRONTEND - Development version
+  frontend-dev:
+    profiles: ["dev", "development"]
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+      target: frontend-dev
+    ports:
+      - "3000:3000"
+      - "24678:24678"  # Vite HMR port
+    depends_on:
+      backend-dev:
+        condition: service_healthy
+    volumes:
+      - ./frontend/src:/app/frontend/src
+      - ./frontend/static:/app/frontend/static
+      - ./frontend/vite.config.ts:/app/frontend/vite.config.ts
+      - ./frontend/svelte.config.js:/app/frontend/svelte.config.js
+      - ./frontend/tsconfig.json:/app/frontend/tsconfig.json
+      - ./shared/src:/app/shared/src
+      - ./shared/dist:/app/shared/dist
+      - frontend_node_modules:/app/frontend/node_modules
+      - shared_node_modules_frontend:/app/shared/node_modules
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - ORIGIN=http://localhost:3000
+      - VITE_PUBLIC_BACKEND_URL=http://localhost:3001
+      - INTERNAL_BACKEND_URL=http://backend-dev:3001
+
 volumes:
   mongodb_data:
+  backend_node_modules:
+  frontend_node_modules:
+  shared_node_modules:
+  shared_node_modules_frontend:
