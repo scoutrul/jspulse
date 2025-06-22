@@ -3,6 +3,16 @@ import { AppError } from '../middleware/ApiError.js';
 
 const router: Router = Router();
 
+// Отладочный middleware для всех админ запросов
+router.use((req: Request, res: Response, next) => {
+  console.log(`[ADMIN-DEBUG] ${req.method} ${req.originalUrl}`);
+  if (req.originalUrl.includes('/docs/')) {
+    console.log(`[ADMIN-DEBUG] Docs route hit! Params:`, req.params);
+    console.log(`[ADMIN-DEBUG] Query:`, req.query);
+  }
+  next();
+});
+
 /**
  * GET /api/admin/stats
  * Получение базовой статистики для дашборда (временная заглушка)
@@ -268,13 +278,17 @@ router.get("/docs", async (req: Request, res: Response) => {
 });
 
 /**
- * GET /api/admin/docs/:filePath
+ * GET /api/admin/docs/:filename
  * Получение реального содержимого конкретного файла из Memory Bank
  */
-router.get("/docs/:filePath(*)", async (req: Request, res: Response) => {
+router.get(/^\/docs\/(.+)$/, async (req: Request, res: Response) => {
+  console.log(`[ADMIN-REGEX] Route hit! ${req.originalUrl}`);
   try {
-    const filePath = decodeURIComponent(req.params.filePath);
-    console.log(`[ADMIN] Loading file content: ${filePath}`);
+    // Получаем имя файла из regex группы
+    const filePath = req.params[0] || '';
+    console.log(`[ADMIN-REGEX] Loading file content: ${filePath}`);
+    console.log(`[ADMIN-REGEX] Full URL: ${req.originalUrl}`);
+    console.log(`[ADMIN-REGEX] Params:`, req.params);
 
     // Используем DocumentationService для получения реального содержимого файла
     const { DocumentationService } = await import('../services/DocumentationService.js');
@@ -329,6 +343,20 @@ router.get("/health", async (req: Request, res: Response) => {
       }
     });
   }
+});
+
+/**
+ * Catch-all для отладки
+ */
+router.get("*", async (req: Request, res: Response) => {
+  console.log(`[ADMIN-CATCHALL] Unmatched route: ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    error: {
+      code: 404,
+      message: `Admin route not found: ${req.originalUrl}`
+    }
+  });
 });
 
 export default router; 

@@ -29,6 +29,7 @@ export async function createApp(): Promise<{ app: express.Application; container
   }
 
   console.log('✅ DI Container validation passed');
+  console.log('🔧 Testing console.log output');
 
   // Инициализация и запуск SchedulerService
   const scheduler = rootContainer.resolve<SchedulerService>('SchedulerService');
@@ -47,6 +48,9 @@ export async function createApp(): Promise<{ app: express.Application; container
   if (process.env.NODE_ENV === 'development') {
     app.use((req, res, next) => {
       console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+      if (req.path.includes('/docs/')) {
+        console.log(`[DEV-MIDDLEWARE] Docs request: ${req.originalUrl}`);
+      }
       next();
     });
   }
@@ -106,6 +110,7 @@ export async function createApp(): Promise<{ app: express.Application; container
 
   // 404 handler
   app.use((req, res) => {
+    console.log(`[404] Unmatched route: ${req.method} ${req.originalUrl}`);
     res.status(404).json({
       success: false,
       error: {
