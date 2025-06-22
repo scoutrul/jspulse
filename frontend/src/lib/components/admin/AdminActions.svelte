@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { createEventDispatcher } from 'svelte';
 	import ActionButton from './ActionButton.svelte';
+	import Heading from '../ui/Heading.svelte';
 	import { showNotification } from '../../stores/notificationStore';
 	import { parsingLogs, addParsingLog, clearParsingLogs } from '../../stores/parsingLogsStore';
 	// Event dispatcher для обновления данных
@@ -137,9 +138,9 @@
 <!-- Административные действия - унифицированная карточка -->
 <div class="stat-card">
 	<div class="flex items-start justify-between mb-3">
-		<h3 class="text-sm font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wide">
-			🔄 Административные действия
-		</h3>
+		<Heading level={3} size="sm" weight="medium" variant="secondary" icon="🔄" class="uppercase tracking-wide">
+			Административные действия
+		</Heading>
 		<div class="w-3 h-3 bg-orange-400 rounded-full"></div>
 	</div>
 	
@@ -166,9 +167,9 @@
 	<!-- Логи парсинга -->
 	{#if logs.length > 0}
 		<div class="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
-			<h4 class="text-xs font-medium text-slate-600 dark:text-slate-300 uppercase tracking-wide mb-3">
-				📝 Логи парсинга
-			</h4>
+			<Heading level={4} size="xs" weight="medium" variant="secondary" icon="📝" class="uppercase tracking-wide mb-3">
+				Логи парсинга
+			</Heading>
 			<div class="space-y-2 max-h-40 overflow-y-auto">
 				{#each logs as log (log.id)}
 					<div class="text-xs p-2 rounded font-mono {getLogClasses(log.type)}">

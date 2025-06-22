@@ -1,5 +1,6 @@
 <script lang="ts">
 	import StatCard from './StatCard.svelte';
+	import Heading from '../ui/Heading.svelte';
 	import type { SystemStats } from '../../types/admin.types';
 
 	// Props
@@ -26,9 +27,9 @@
 </script>
 
 <div class="space-y-6">
-	<h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">
-		📊 Система JSPulse
-	</h2>
+	<Heading level={2} size="2xl" weight="bold" variant="primary" icon="📊" class="mb-4">
+		Система JSPulse
+	</Heading>
 	
 	{#if loading}
 		<div class="animate-pulse space-y-6">
@@ -73,7 +74,7 @@
 		/>
 	{:else}
 		<div class="text-center py-12">
-			<p class="text-slate-600 dark:text-slate-300">Нет данных о системе</p>
+			<p class="text-secondary">Нет данных о системе</p>
 		</div>
 	{/if}
 </div> 

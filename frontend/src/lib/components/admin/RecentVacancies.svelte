@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Heading from '../ui/Heading.svelte';
+	
 	export let vacancies: Array<{
 		id: string;
 		title: string;
@@ -45,9 +47,9 @@
 </script>
 
 <div class="admin-card">
-	<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-6">
-		⏰ Последние вакансии
-	</h3>
+	<Heading level={3} size="lg" weight="semibold" variant="primary" icon="⏰" class="mb-6">
+		Последние вакансии
+	</Heading>
 	
 	{#if vacancies.length === 0}
 		<div class="text-center py-8 text-slate-500 dark:text-slate-400">
@@ -60,9 +62,9 @@
 				<div class="p-4 border border-slate-100 dark:border-slate-700 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors cursor-pointer">
 					<!-- Заголовок и источник -->
 					<div class="flex items-start justify-between mb-2">
-						<h4 class="font-medium text-slate-800 dark:text-slate-100 flex-1 mr-2">
+						<Heading level={4} size="base" weight="medium" variant="primary" class="flex-1 mr-2">
 							{truncateTitle(vacancy.title)}
-						</h4>
+						</Heading>
 						<div class="flex items-center space-x-1 text-sm text-slate-500 dark:text-slate-400">
 							<span>{getSourceIcon(vacancy.source)}</span>
 							<span>{vacancy.source.toUpperCase()}</span>
@@ -70,7 +72,7 @@
 					</div>
 					
 					<!-- Компания -->
-					<div class="text-sm text-slate-600 dark:text-slate-300 mb-2">
+					<div class="text-sm text-secondary mb-2">
 						🏢 {vacancy.companyName}
 					</div>
 					

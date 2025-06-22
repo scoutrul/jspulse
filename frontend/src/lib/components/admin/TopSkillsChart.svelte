@@ -1,4 +1,6 @@
 <script lang="ts">
+	import Heading from '../ui/Heading.svelte';
+	
 	export let skills: Array<{
 		skill: string;
 		count: number;
@@ -25,9 +27,9 @@
 </script>
 
 <div class="admin-card">
-	<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-6">
-		🏆 Топ навыков
-	</h3>
+	<Heading level={3} size="lg" weight="semibold" variant="primary" icon="🏆" class="mb-6">
+		Топ навыков
+	</Heading>
 	
 	{#if skills.length === 0}
 		<div class="text-center py-8 text-slate-500 dark:text-slate-400">
@@ -39,14 +41,14 @@
 			{#each skills as skill, index}
 				<div class="flex items-center space-x-3">
 					<!-- Позиция -->
-					<div class="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-full text-sm font-bold text-slate-600 dark:text-slate-300">
+					<div class="w-8 h-8 flex items-center justify-center bg-slate-100 dark:bg-slate-700 rounded-full text-sm font-bold text-secondary">
 						{index + 1}
 					</div>
 					
 					<!-- Информация о навыке -->
 					<div class="flex-1">
 						<div class="flex items-center justify-between mb-1">
-							<span class="font-medium text-slate-800 dark:text-slate-100">
+							<span class="font-medium text-primary">
 								{skill.skill}
 							</span>
 							<div class="text-sm text-slate-500 dark:text-slate-400">

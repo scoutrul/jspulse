@@ -57,9 +57,9 @@
 		>
 			<!-- Message -->
 			<div class="mb-6">
-				<p class="text-slate-800 dark:text-slate-100 whitespace-pre-line leading-relaxed">
-					{message}
-				</p>
+							<p class="text-primary whitespace-pre-line leading-relaxed">
+				{message}
+			</p>
 			</div>
 			
 			<!-- Buttons -->

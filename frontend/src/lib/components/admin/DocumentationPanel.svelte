@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import Heading from '../ui/Heading.svelte';
 
 	export let files: Array<{
 		path: string;
@@ -94,9 +95,9 @@
 	{#if !selectedFile}
 		<!-- Обзор файлов -->
 		<div class="p-6">
-			<h3 class="text-lg font-semibold text-slate-800 dark:text-slate-100 mb-4">
-				📚 Memory Bank
-			</h3>
+			<Heading level={3} size="lg" weight="semibold" variant="primary" icon="📚" class="mb-4">
+				Memory Bank
+			</Heading>
 			
 			<!-- Поиск -->
 			<div class="mb-4">
@@ -104,7 +105,7 @@
 					type="text"
 					placeholder="Поиск файлов..."
 					bind:value={searchTerm}
-					class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+					class="w-full px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-primary placeholder-slate-500 dark:placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
 				/>
 			</div>
 			
@@ -118,9 +119,9 @@
 				{:else}
 					{#each Object.entries(groupedFiles) as [category, categoryFiles]}
 						<div>
-							<h4 class="text-sm font-medium text-slate-600 dark:text-slate-300 mb-2 uppercase tracking-wide">
+							<Heading level={4} size="sm" weight="medium" variant="secondary" class="mb-2 uppercase tracking-wide">
 								{category}
-							</h4>
+							</Heading>
 							<div class="space-y-1">
 								{#each categoryFiles as file}
 									<button
@@ -132,7 +133,7 @@
 											<div class="flex items-center space-x-2">
 												<span class="text-lg">{getFileIcon(file)}</span>
 												<div>
-													<div class="font-medium text-slate-800 dark:text-slate-100 text-sm">
+													<div class="font-medium text-primary text-sm">
 														{file.name}
 													</div>
 													<div class="text-xs text-slate-500 dark:text-slate-400">
@@ -158,9 +159,9 @@
 		<div class="flex flex-col h-96">
 			<!-- Заголовок с кнопкой закрытия -->
 			<div class="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
-				<h4 class="font-medium text-slate-800 dark:text-slate-100 truncate mr-2">
-					📄 {selectedFile}
-				</h4>
+				<Heading level={4} size="base" weight="medium" variant="primary" icon="📄" class="truncate mr-2">
+					{selectedFile}
+				</Heading>
 				<button
 					on:click={closeFileView}
 					class="p-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"

@@ -7,6 +7,7 @@
 	import DocumentationPanel from '$lib/components/admin/DocumentationPanel.svelte';
 	import ToastNotifications from '$lib/components/admin/ToastNotifications.svelte';
 	import ConfirmDialog from '$lib/components/admin/ConfirmDialog.svelte';
+	import Heading from '$lib/components/ui/Heading.svelte';
 	import type { SystemStats as SystemStatsType } from '$lib/types/admin.types';
 
 	// API базовый URL
@@ -162,10 +163,10 @@
 <div class="container mx-auto px-4 py-8">
 	<!-- Заголовок дашборда -->
 	<div class="mb-8 text-center">
-		<h1 class="text-4xl font-bold text-slate-800 dark:text-slate-100 mb-2">
-			🔧 JSPulse Admin Dashboard
-		</h1>
-		<p class="text-slate-600 dark:text-slate-300">
+		<Heading level={1} size="4xl" weight="bold" variant="primary" icon="🔧" class="mb-2">
+			JSPulse Admin Dashboard
+		</Heading>
+		<p class="text-secondary">
 			Административное управление системой JSPulse
 		</p>
 		
@@ -188,7 +189,7 @@
 	{#if loading}
 		<div class="text-center py-12">
 			<div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-			<p class="text-slate-600 dark:text-slate-300">Загрузка данных дашборда...</p>
+			<p class="text-secondary">Загрузка данных дашборда...</p>
 		</div>
 	{:else}
 		<!-- Основной контент дашборда -->
@@ -207,9 +208,9 @@
 
 			<!-- Центральная колонка: Аналитика -->
 			<div class="space-y-6">
-				<h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">
-					📈 Аналитика
-				</h2>
+				<Heading level={2} size="2xl" weight="bold" variant="primary" icon="📈" class="mb-4">
+					Аналитика
+				</Heading>
 				
 				{#if topSkills.length > 0}
 					<TopSkillsChart skills={topSkills} />
@@ -222,9 +223,9 @@
 
 			<!-- Правая колонка: Memory Bank -->
 			<div class="space-y-6">
-				<h2 class="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-4">
-					📚 Memory Bank
-				</h2>
+				<Heading level={2} size="2xl" weight="bold" variant="primary" icon="📚" class="mb-4">
+					Memory Bank
+				</Heading>
 				
 				{#if documentationFiles.length > 0}
 					<DocumentationPanel files={documentationFiles} />

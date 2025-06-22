@@ -36,13 +36,13 @@
 			>
 				<div class="flex justify-between items-start">
 					<div class="flex-1">
-						<p class="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+						<p class="font-semibold text-primary flex items-center gap-2">
 							<span>{getIcon(notification.type)}</span>
 							<span>{notification.message}</span>
 						</p>
 						
 						{#if notification.details}
-							<p class="text-sm text-slate-600 dark:text-slate-300 mt-1 whitespace-pre-line">
+							<p class="text-sm text-secondary mt-1 whitespace-pre-line">
 								{notification.details}
 							</p>
 						{/if}
