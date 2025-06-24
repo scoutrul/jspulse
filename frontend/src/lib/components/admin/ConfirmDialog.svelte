@@ -34,8 +34,8 @@
 
 	// CSS классы для кнопки подтверждения
 	$: confirmButtonClass = confirmVariant === 'danger' 
-		? 'bg-red-500 hover:bg-red-600 focus:ring-red-500' 
-		: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-500';
+		? 'bg-red-500 hover:bg-red-600 focus:ring-red-500 dark:bg-red-600 dark:hover:bg-red-700 dark:focus:ring-red-400' 
+		: 'bg-blue-500 hover:bg-blue-600 focus:ring-blue-500 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-400';
 </script>
 
 <!-- Диалог подтверждения -->
@@ -45,35 +45,36 @@
 		class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 animate-fade-in"
 		on:click={handleCancel}
 		on:keydown={handleKeydown}
-		role="dialog"
-		aria-modal="true"
-		tabindex="-1"
+		role="button"
+		aria-label="Закрыть диалог"
+		tabindex="0"
 	>
 		<!-- Dialog content -->
 		<div 
-			class="bg-white dark:bg-slate-800 rounded-lg p-6 max-w-md mx-4 shadow-xl animate-scale-in"
+			class="bg-card rounded-lg p-6 max-w-md mx-4 shadow-xl animate-scale-in"
 			on:click|stopPropagation
-			role="document"
+			role="dialog"
+			aria-modal="true"
 		>
 			<!-- Message -->
 			<div class="mb-6">
-							<p class="text-primary whitespace-pre-line leading-relaxed">
-				{message}
-			</p>
+				<p class="text-primary whitespace-pre-line leading-relaxed">
+					{message}
+				</p>
 			</div>
 			
 			<!-- Buttons -->
 			<div class="flex justify-end space-x-3">
 				<button
 					on:click={handleCancel}
-					class="px-4 py-2 bg-gray-500 hover:bg-gray-600 focus:bg-gray-600 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2"
+					class="px-4 py-2 bg-slate-500 hover:bg-slate-600 focus:bg-slate-600 dark:bg-slate-600 dark:hover:bg-slate-700 dark:focus:bg-slate-700 text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2 dark:focus:ring-slate-400 dark:focus:ring-offset-slate-800"
 				>
 					{cancelText}
 				</button>
 				
 				<button
 					on:click={handleConfirm}
-					class="px-4 py-2 {confirmButtonClass} text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
+					class="px-4 py-2 {confirmButtonClass} text-white rounded-lg transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 dark:focus:ring-offset-slate-800"
 				>
 					{confirmText}
 				</button>

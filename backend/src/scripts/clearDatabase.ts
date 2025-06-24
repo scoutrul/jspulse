@@ -3,14 +3,6 @@ import { connectDB } from "../config/db.js";
 import "dotenv/config";
 import { Vacancy } from "../models/Vacancy.js";
 
-const mongoUrl =
-  process.env.NODE_ENV === "development" ? process.env.MONGO_URI_LOCALHOST : process.env.MONGO_URI;
-
-if (!mongoUrl) {
-  console.error("Error: MONGO_URI is not set.");
-  process.exit(1);
-}
-
 async function clearDatabase() {
   const startTime = Date.now();
   let stats = {
@@ -20,9 +12,26 @@ async function clearDatabase() {
     error: null as string | null
   };
 
+  // Проверяем, есть ли уже активное подключение
+  const isConnected = mongoose.connection.readyState === 1;
+
   try {
-    await mongoose.connect(mongoUrl as string);
-    console.log("✅ Connected to MongoDB for database clearing");
+    if (!isConnected) {
+      // Если нет активного подключения, создаем новое
+      const mongoUrl =
+        process.env.NODE_ENV === "development" ? process.env.MONGO_URI_LOCALHOST : process.env.MONGO_URI;
+
+      if (!mongoUrl) {
+        console.error("Error: MONGO_URI is not set.");
+        stats.error = "MONGO_URI is not set";
+        return stats;
+      }
+
+      await mongoose.connect(mongoUrl as string);
+      console.log("✅ Connected to MongoDB for database clearing");
+    } else {
+      console.log("✅ Using existing MongoDB connection for database clearing");
+    }
 
     console.log("🗑️ Clearing database...");
 
@@ -44,8 +53,13 @@ async function clearDatabase() {
     console.error("❌ Error clearing the database:", error);
     stats.error = errorMessage;
   } finally {
-    await mongoose.disconnect();
-    console.log("🔌 Disconnected from MongoDB");
+    // Закрываем подключение только если мы его создали
+    if (!isConnected) {
+      await mongoose.disconnect();
+      console.log("🔌 Disconnected from MongoDB");
+    } else {
+      console.log("🔌 Keeping existing MongoDB connection active");
+    }
     stats.executionTime = Date.now() - startTime;
   }
 

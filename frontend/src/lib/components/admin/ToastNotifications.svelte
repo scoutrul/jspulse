@@ -31,7 +31,7 @@
 	<div class="fixed top-4 right-4 z-50 space-y-2">
 		{#each notificationList as notification (notification.id)}
 			<div 
-				class="max-w-sm bg-white dark:bg-slate-800 rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-4 border-l-4 {getTypeClasses(notification.type)} animate-slide-in"
+				class="max-w-sm bg-card rounded-lg shadow-lg border border-slate-200 dark:border-slate-700 p-4 border-l-4 {getTypeClasses(notification.type)} animate-slide-in"
 				role="alert"
 			>
 				<div class="flex justify-between items-start">
@@ -47,14 +47,14 @@
 							</p>
 						{/if}
 						
-						<p class="text-xs text-slate-400 dark:text-slate-500 mt-1">
+						<p class="text-xs text-muted mt-1">
 							{notification.timestamp}
 						</p>
 					</div>
 					
 					<button 
 						on:click={() => removeNotification(notification.id)}
-						class="ml-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 text-lg leading-none transition-colors"
+						class="ml-2 text-muted hover:text-secondary transition-colors text-lg leading-none"
 						aria-label="Закрыть уведомление"
 					>
 						×

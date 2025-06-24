@@ -19,6 +19,7 @@
 	// Состояние загрузки
 	let parsingInProgress = false;
 	let clearingInProgress = false;
+	let seedingInProgress = false;
 
 	// Подписываемся на логи
 	$: logs = $parsingLogs;
@@ -121,6 +122,54 @@
 		});
 	}
 
+	// Обработчик сидинга БД
+	async function handleSeedDatabase() {
+		if (seedingInProgress) return;
+		
+		try {
+			seedingInProgress = true;
+			clearParsingLogs(); // Очищаем старые логи
+			
+			addParsingLog('🌱 Инициализация заполнения БД тестовыми данными...', 'info');
+			addParsingLog('📦 Подготовка тестовых вакансий...', 'info');
+			
+			const response = await fetch(`${API_BASE}/seed-db`, { method: 'POST' });
+			const result = await response.json();
+			
+			if (result.success) {
+				const message = `База данных заполнена!`;
+				const details = `Добавлено: ${result.data.details.insertedCount} вакансий\nУдалено старых: ${result.data.details.deletedCount} вакансий\nУникальных навыков: ${result.data.details.uniqueSkills}\nВремя выполнения: ${result.data.executionTime}мс`;
+				showNotification('success', message, details);
+				
+				// Детальные логи сидинга
+				addParsingLog(`✅ Сидинг успешно выполнен`, 'success');
+				addParsingLog(`📊 Добавлено ${result.data.details.insertedCount} тестовых вакансий`, 'success');
+				addParsingLog(`🗑️ Удалено ${result.data.details.deletedCount} старых тестовых вакансий`, 'info');
+				addParsingLog(`🏷️ Создано ${result.data.details.uniqueSkills} уникальных навыков`, 'info');
+				addParsingLog(`⏱️ Время выполнения: ${result.data.executionTime}мс`, 'info');
+				
+				if (result.data.details.warnings) {
+					addParsingLog(`⚠️ ${result.data.details.warnings}`, 'info');
+				}
+				
+				// Уведомляем о необходимости обновления данных
+				dispatch('dataUpdated');
+				
+			} else {
+				const errorMsg = `Ошибка сидинга: ${result.error?.message}`;
+				showNotification('error', errorMsg);
+				addParsingLog(`❌ ${errorMsg}`, 'error');
+			}
+		} catch (err) {
+			console.error('Error seeding database:', err);
+			const errorMsg = 'Не удалось заполнить базу данных';
+			showNotification('error', errorMsg);
+			addParsingLog(`❌ ${errorMsg}`, 'error');
+		} finally {
+			seedingInProgress = false;
+		}
+	}
+
 	// Функция для получения CSS классов лога
 	function getLogClasses(type: string): string {
 		switch (type) {
@@ -136,7 +185,7 @@
 </script>
 
 <!-- Административные действия - унифицированная карточка -->
-<div class="stat-card">
+<div class="bg-card">
 	<div class="flex items-start justify-between mb-3">
 		<Heading level={3} size="sm" weight="medium" variant="secondary" icon="🔄" class="uppercase tracking-wide">
 			Административные действия
@@ -152,6 +201,15 @@
 			text="Парсить HH.ru"
 			description="Запустить сбор новых вакансий"
 			disabled={parsingInProgress}
+		/>
+		
+		<ActionButton 
+			on:click={handleSeedDatabase}
+			variant="secondary"
+			icon="🌱"
+			text="Заполнить БД тестовыми данными"
+			description="Добавить тестовые вакансии"
+			disabled={seedingInProgress}
 		/>
 		
 		<ActionButton 
@@ -173,7 +231,7 @@
 			<div class="space-y-2 max-h-40 overflow-y-auto">
 				{#each logs as log (log.id)}
 					<div class="text-xs p-2 rounded font-mono {getLogClasses(log.type)}">
-						<span class="text-slate-500 dark:text-slate-400">{log.timestamp}</span>
+						<span class="text-muted">{log.timestamp}</span>
 						<span class="ml-2">{log.message}</span>
 					</div>
 				{/each}
@@ -184,7 +242,7 @@
 
 <style>
 	/* Унифицированные стили карточек */
-	.stat-card {
+	.bg-card {
 		@apply rounded-xl p-6 shadow-lg border transition-all duration-300;
 		@apply hover:shadow-xl;
 		
@@ -197,7 +255,7 @@
 	}
 
 	/* Темная тема */
-	:global(.dark) .stat-card {
+	:global(.dark) .bg-card {
 		background: linear-gradient(135deg, #1e293b 0%, #334155 100%);
 		@apply bg-slate-800 border-slate-700;
 		box-shadow: 
@@ -207,7 +265,7 @@
 	}
 
 	/* Анимация при наведении */
-	.stat-card:hover {
+	.bg-card:hover {
 		transform: translateY(-2px);
 	}
 </style> 

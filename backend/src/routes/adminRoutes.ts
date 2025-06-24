@@ -195,6 +195,58 @@ router.post("/parse-hh", async (req: Request, res: Response) => {
 });
 
 /**
+ * POST /api/admin/seed-db
+ * Заполнение базы данных тестовыми вакансиями
+ */
+router.post("/seed-db", async (req: Request, res: Response) => {
+  try {
+    // Импортируем функцию сидинга
+    const { default: executeSeedDatabase } = await import('../data/seedDatabase.js');
+
+    // Выполняем сидинг БД
+    const stats = await executeSeedDatabase();
+
+    if (stats.success) {
+      res.json({
+        success: true,
+        data: {
+          success: true,
+          message: 'Database seeded successfully',
+          details: {
+            output: stats.output.join('\n'),
+            warnings: stats.deletedCount === 0 ? 'No previous test data found' : null,
+            deletedCount: stats.deletedCount,
+            insertedCount: stats.insertedCount,
+            uniqueSkills: stats.uniqueSkills
+          },
+          executionTime: stats.executionTime
+        },
+        message: 'Database seeded successfully'
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 500,
+          message: 'Failed to seed database',
+          details: stats.error || 'Unknown error'
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Error seeding database:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: 'Failed to seed database',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }
+    });
+  }
+});
+
+/**
  * DELETE /api/admin/clear-db
  * Реальная очистка базы данных
  */
