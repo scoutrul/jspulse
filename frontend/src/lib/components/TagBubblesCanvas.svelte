@@ -2,6 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
   import { createEventDispatcher } from 'svelte';
   import { theme } from '$lib/stores/themeStore';
+  import BubbleLegend from '$lib/components/ui/BubbleLegend.svelte';
 
   // Типы для входных данных
   interface TagData {
@@ -427,59 +428,15 @@
         aria-label="Интерактивная визуализация тегов вакансий"
       ></canvas>
       
-      <!-- Статичная легенда (скрыта на мобильных) -->
-      <div class="bubble-legend">
-        <h3 class="text-sm font-semibold mb-2 text-neutral-800 dark:text-neutral-200 transition-colors duration-300">
-          Популярные технологии:
-        </h3>
-        <div class="legend-grid">
-          {#each tags.slice(0, 12) as tag, index}
-                         <div 
-               class="legend-item"
-               style="--bubble-color: {createBubbles([tag], $theme === 'dark')[0]?.color}"
-               tabindex="0"
-               role="button"
-               on:mouseenter={() => {
-                 const bubble = bubbles.find(b => b.name === tag.name);
-                 if (bubble) {
-                   hoveredBubble = bubble;
-                   bubble.targetRadius = bubble.radius * 1.2;
-                   dispatch('tagHover', {
-                     name: bubble.name,
-                     count: bubble.count
-                   });
-                 }
-               }}
-               on:mouseleave={() => {
-                 if (hoveredBubble) {
-                   hoveredBubble.targetRadius = hoveredBubble.radius;
-                   dispatch('tagHover', null);
-                 }
-                 hoveredBubble = null;
-               }}
-               on:click={() => {
-                 dispatch('tagClick', {
-                   name: tag.name,
-                   count: tag.count
-                 });
-               }}
-               on:keydown={(e) => {
-                 if (e.key === 'Enter' || e.key === ' ') {
-                   e.preventDefault();
-                   dispatch('tagClick', {
-                     name: tag.name,
-                     count: tag.count
-                   });
-                 }
-               }}
-             >
-              <div class="legend-dot"></div>
-              <span class="legend-text">{tag.name}</span>
-              <span class="legend-count">{tag.count}</span>
-            </div>
-          {/each}
-        </div>
-      </div>
+      <!-- Интерактивная легенда -->
+      <BubbleLegend 
+        {tags}
+        {bubbles}
+        {hoveredBubble}
+        on:tagClick
+        on:tagHover
+        on:updateHoveredBubble={(e) => hoveredBubble = e.detail}
+      />
       
       <!-- SVG для accessibility (скрытый) -->
       <svg class="sr-only" aria-label="Теги вакансий">
@@ -493,13 +450,8 @@
 
 <style>
   .bubbles-container {
-    @apply relative w-full h-full min-h-96 bg-neutral-50 overflow-hidden;
+    @apply relative w-full h-full min-h-96 bg-transparent overflow-hidden;
     @apply transition-colors duration-300;
-  }
-
-  /* Темная тема для контейнера пузырей */
-  :global(.dark) .bubbles-container {
-    @apply bg-slate-900;
   }
 
   .bubbles-canvas {
@@ -508,88 +460,11 @@
     cursor: default;
   }
 
-  /* Статичная легенда */
-  .bubble-legend {
-    @apply absolute top-4 right-4 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg;
-    @apply border border-neutral-200 dark:border-slate-700;
-    @apply transition-colors duration-300;
-    max-width: 250px;
-    max-height: 300px;
-    overflow-y: auto;
-  }
 
-  /* Кастомный скроллбар для легенды */
-  .bubble-legend::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  .bubble-legend::-webkit-scrollbar-track {
-    background: rgb(241 245 249);
-  }
-  
-  .bubble-legend::-webkit-scrollbar-thumb {
-    background: rgb(148 163 184);
-    border-radius: 2px;
-  }
-  
-  .bubble-legend::-webkit-scrollbar-thumb:hover {
-    background: rgb(100 116 139);
-  }
-  
-  /* Темная тема для скроллбара */
-  :global(.dark) .bubble-legend::-webkit-scrollbar-track {
-    background: rgb(51 65 85);
-  }
-  
-  :global(.dark) .bubble-legend::-webkit-scrollbar-thumb {
-    background: rgb(71 85 105);
-  }
-  
-  :global(.dark) .bubble-legend::-webkit-scrollbar-thumb:hover {
-    background: rgb(100 116 139);
-  }
-
-  /* Скрываем на мобильных */
-  @media (max-width: 768px) {
-    .bubble-legend {
-      display: none;
-    }
-  }
-
-  .legend-grid {
-    @apply space-y-2;
-  }
-
-  .legend-item {
-    @apply flex items-center gap-2 p-1 rounded cursor-pointer;
-    @apply hover:bg-neutral-50 dark:hover:bg-slate-700;
-    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
-    @apply transition-all duration-150 ease-in-out;
-  }
-
-  .legend-dot {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: var(--bubble-color);
-    flex-shrink: 0;
-  }
-
-  .legend-text {
-    @apply text-sm font-medium text-neutral-800 dark:text-neutral-200;
-    @apply transition-colors duration-300;
-    flex: 1;
-  }
-
-  .legend-count {
-    @apply text-xs text-neutral-500 dark:text-neutral-400 font-mono;
-    @apply transition-colors duration-300;
-  }
 
   .tags-visualization-section {
     @apply -mx-4; /* Выходим за границы main контейнера */
-    width: 100%;
-    max-width: 100vw;
+    width: calc(100vw - 17px);
     margin-left: calc(-50vw + 50%);
   }
 
