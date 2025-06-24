@@ -427,9 +427,9 @@
         aria-label="Интерактивная визуализация тегов вакансий"
       ></canvas>
       
-      <!-- Статичная легенда вместо анимированного текста -->
+      <!-- Статичная легенда (скрыта на мобильных) -->
       <div class="bubble-legend">
-        <h3 class="text-sm font-semibold mb-2 text-neutral-700 dark:text-neutral-300">
+        <h3 class="text-sm font-semibold mb-2 text-neutral-700 dark:text-neutral-300 transition-colors duration-300">
           Популярные технологии:
         </h3>
         <div class="legend-grid">
@@ -512,9 +512,15 @@
   .bubble-legend {
     @apply absolute top-4 right-4 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg;
     @apply border border-neutral-200 dark:border-slate-700;
+    @apply transition-colors duration-300;
     max-width: 250px;
     max-height: 300px;
     overflow-y: auto;
+    
+    /* Скрываем на мобильных */
+    @media (max-width: 768px) {
+      @apply hidden;
+    }
   }
 
   .legend-grid {
@@ -524,7 +530,8 @@
   .legend-item {
     @apply flex items-center gap-2 p-1 rounded cursor-pointer;
     @apply hover:bg-neutral-50 dark:hover:bg-slate-700;
-    transition: background-color 0.15s ease;
+    @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+    @apply transition-all duration-150 ease;
   }
 
   .legend-dot {
@@ -537,16 +544,19 @@
 
   .legend-text {
     @apply text-sm font-medium text-neutral-800 dark:text-neutral-200;
+    @apply transition-colors duration-300;
     flex: 1;
   }
 
   .legend-count {
     @apply text-xs text-neutral-500 dark:text-neutral-400 font-mono;
+    @apply transition-colors duration-300;
   }
 
   .tags-visualization-section {
     @apply -mx-4; /* Выходим за границы main контейнера */
-    width: 100vw;
+    width: 100%;
+    max-width: 100vw;
     margin-left: calc(-50vw + 50%);
   }
 
