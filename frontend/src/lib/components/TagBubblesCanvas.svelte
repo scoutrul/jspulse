@@ -429,7 +429,7 @@
       
       <!-- Статичная легенда (скрыта на мобильных) -->
       <div class="bubble-legend">
-        <h3 class="text-sm font-semibold mb-2 text-neutral-700 dark:text-neutral-300 transition-colors duration-300">
+        <h3 class="text-sm font-semibold mb-2 text-neutral-800 dark:text-neutral-200 transition-colors duration-300">
           Популярные технологии:
         </h3>
         <div class="legend-grid">
@@ -516,10 +516,43 @@
     max-width: 250px;
     max-height: 300px;
     overflow-y: auto;
-    
-    /* Скрываем на мобильных */
-    @media (max-width: 768px) {
-      @apply hidden;
+  }
+
+  /* Кастомный скроллбар для легенды */
+  .bubble-legend::-webkit-scrollbar {
+    width: 4px;
+  }
+  
+  .bubble-legend::-webkit-scrollbar-track {
+    background: rgb(241 245 249);
+  }
+  
+  .bubble-legend::-webkit-scrollbar-thumb {
+    background: rgb(148 163 184);
+    border-radius: 2px;
+  }
+  
+  .bubble-legend::-webkit-scrollbar-thumb:hover {
+    background: rgb(100 116 139);
+  }
+  
+  /* Темная тема для скроллбара */
+  :global(.dark) .bubble-legend::-webkit-scrollbar-track {
+    background: rgb(51 65 85);
+  }
+  
+  :global(.dark) .bubble-legend::-webkit-scrollbar-thumb {
+    background: rgb(71 85 105);
+  }
+  
+  :global(.dark) .bubble-legend::-webkit-scrollbar-thumb:hover {
+    background: rgb(100 116 139);
+  }
+
+  /* Скрываем на мобильных */
+  @media (max-width: 768px) {
+    .bubble-legend {
+      display: none;
     }
   }
 
@@ -531,7 +564,7 @@
     @apply flex items-center gap-2 p-1 rounded cursor-pointer;
     @apply hover:bg-neutral-50 dark:hover:bg-slate-700;
     @apply focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
-    @apply transition-all duration-150 ease;
+    @apply transition-all duration-150 ease-in-out;
   }
 
   .legend-dot {
