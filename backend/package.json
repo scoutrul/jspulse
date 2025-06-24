@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "nodemon src/index.ts",
+    "dev": "nodemon --exec tsx src/index.ts",
     "build": "rm -rf dist && mkdir -p dist/config dist/models dist/routes dist/scripts dist/utils dist/data && npx tsc --project tsconfig.build.json",
     "db:seed": "tsx src/data/seedDatabase.ts",
     "db:hh": "tsx src/scripts/fetchAndSaveFromHH.ts",
@@ -36,7 +36,7 @@
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.1",
     "@types/jest": "^29.5.14",
-    "@types/node": "^22.14.1",
+    "@types/node": "^22.15.2",
     "@types/supertest": "^6.0.3",
     "jest": "^30.0.0",
     "mongodb-memory-server": "^10.1.4",

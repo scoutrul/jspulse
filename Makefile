@@ -1,6 +1,75 @@
 # JSPulse - Короткие команды для разработки
 
-# 🚀 Development режим (hot-reload)
+# 🌍 Автоматическое определение операционной системы
+UNAME_S := $(shell uname -s 2>/dev/null || echo Windows)
+ifeq ($(UNAME_S),Windows_NT)
+    OS_TYPE = windows
+else ifeq ($(UNAME_S),Darwin)
+    OS_TYPE = macos
+else ifeq ($(UNAME_S),Linux)
+    OS_TYPE = linux
+else
+    # Для Windows без uname (обычный случай)
+    OS_TYPE = windows
+endif
+
+# 🚀 УНИВЕРСАЛЬНАЯ команда запуска (автоматически выбирает конфигурацию)
+start:
+ifeq ($(OS_TYPE),windows)
+	@echo "🪟 Запуск на Windows..."
+	docker-compose -f docker-compose.windows.yml up --build -d
+else
+	@echo "🍎 Запуск на macOS/Linux..."
+	docker-compose --profile dev up --build -d
+endif
+
+# 🛑 УНИВЕРСАЛЬНАЯ команда остановки
+stop:
+ifeq ($(OS_TYPE),windows)
+	docker-compose -f docker-compose.windows.yml down
+else
+	docker-compose down
+endif
+
+# 📋 УНИВЕРСАЛЬНЫЕ логи
+logs:
+ifeq ($(OS_TYPE),windows)
+	docker-compose -f docker-compose.windows.yml logs -f
+else
+	docker-compose logs -f
+endif
+
+# 📊 УНИВЕРСАЛЬНЫЙ статус
+status:
+ifeq ($(OS_TYPE),windows)
+	docker-compose -f docker-compose.windows.yml ps
+else
+	docker-compose ps
+endif
+
+# 🧹 УНИВЕРСАЛЬНАЯ очистка
+clean:
+ifeq ($(OS_TYPE),windows)
+	docker-compose -f docker-compose.windows.yml down -v
+	docker system prune -f
+else
+	docker-compose down -v
+	docker system prune -f
+endif
+
+# 📊 УНИВЕРСАЛЬНАЯ инициализация данных
+init:
+	@echo "🚀 Инициализация данных..."
+	node init-data.js
+
+# 🎯 ПОЛНЫЙ ЗАПУСК с данными (универсальная команда)
+up: start init
+
+# ===============================================
+# СТАРЫЕ КОМАНДЫ (для совместимости)
+# ===============================================
+
+# 🚀 Development режим (hot-reload) - macOS/Linux
 dev:
 	docker-compose --profile dev up --build
 
@@ -12,24 +81,39 @@ d:
 prod:
 	docker-compose --profile prod up --build -d
 
+# 🪟 Windows development режим (специальная версия для Windows)
+win:
+	docker-compose -f docker-compose.windows.yml up --build
+
+# 🪟 Windows development в фоне
+winbg:
+	docker-compose -f docker-compose.windows.yml up --build -d
+
 # 🛑 Остановить все
 down:
 	docker-compose down
 
-# 📋 Логи
-logs:
-	docker-compose logs -f
+# 🛑 Остановить Windows версию
+windown:
+	docker-compose -f docker-compose.windows.yml down
 
-# 🧹 Очистить все
-clean:
-	docker-compose down -v
+# 📋 Логи Windows версии
+winlogs:
+	docker-compose -f docker-compose.windows.yml logs -f
+
+# 🧹 Очистить Windows версию
+winclean:
+	docker-compose -f docker-compose.windows.yml down -v
 	docker system prune -f
 
-# 📊 Статус
-status:
-	docker-compose ps
+# 📊 Статус Windows версии
+winstatus:
+	docker-compose -f docker-compose.windows.yml ps
 
 # 🔄 Перезапуск dev
 restart: down d
 
-.PHONY: up d down logs prod clean status restart 
+# 🔄 Перезапуск Windows
+winrestart: windown winbg
+
+.PHONY: start stop logs status clean init up dev d down prod restart win winbg windown winlogs winclean winstatus winrestart 

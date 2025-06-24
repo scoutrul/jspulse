@@ -1,0 +1,77 @@
+version: "3.8"
+
+services:
+  mongodb:
+    image: mongo:latest
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
+
+  backend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+      target: backend-dev
+    ports:
+      - "3001:3001"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    # Минимальные volumes для Windows
+    volumes:
+      - ./backend/src:/app/backend/src:cached
+      - ./shared/src:/app/shared/src:cached
+    environment:
+      - PORT=3001
+      - MONGO_URI=mongodb://mongodb:27017/jspulse
+      - NODE_ENV=development
+      - SCHEDULER_HH_PARSER_SCHEDULE=0 */8 * * *
+      - SCHEDULER_HH_PARSER_ENABLED=true
+      - SCHEDULER_CLEANUP_SCHEDULE=0 2 * * 0
+      - SCHEDULER_CLEANUP_ENABLED=true
+      - SCHEDULER_CLEANUP_DAYS_THRESHOLD=30
+      - SCHEDULER_HEALTH_CHECK_SCHEDULE=*/30 * * * *
+      - SCHEDULER_HEALTH_CHECK_ENABLED=true
+      - SCHEDULER_MAX_RETRIES=3
+      - SCHEDULER_RETRY_DELAY=60000
+      - SCHEDULER_ENABLE_NOTIFICATIONS=true
+      - SCHEDULER_LOG_TO_FILE=true
+    restart: unless-stopped
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:3001/health || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+
+  frontend-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.windows
+      target: frontend-dev
+    ports:
+      - "3000:3000"
+      - "24678:24678"  # Vite HMR port
+    depends_on:
+      backend-dev:
+        condition: service_healthy
+    # Минимальные volumes для Windows
+    volumes:
+      - ./frontend/src:/app/frontend/src:cached
+      - ./shared/src:/app/shared/src:cached
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - ORIGIN=http://localhost:3000
+      - VITE_PUBLIC_BACKEND_URL=http://localhost:3001
+      - INTERNAL_BACKEND_URL=http://backend-dev:3001
+
+volumes:
+  mongodb_data: 

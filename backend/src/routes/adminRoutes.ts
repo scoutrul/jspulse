@@ -1,10 +1,10 @@
-import { Router, Request, Response } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/ApiError.js';
 
 const router: Router = Router();
 
 // Отладочный middleware для всех админ запросов
-router.use((req: Request, res: Response, next) => {
+router.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`[ADMIN-DEBUG] ${req.method} ${req.originalUrl}`);
   if (req.originalUrl.includes('/docs/')) {
     console.log(`[ADMIN-DEBUG] Docs route hit! Params:`, req.params);
@@ -280,39 +280,40 @@ router.get("/docs", async (req: Request, res: Response) => {
 /**
  * GET /api/admin/docs/:filename
  * Получение реального содержимого конкретного файла из Memory Bank
+ * Временно отключён из-за проблем с path-to-regexp на Windows
  */
-router.get(/^\/docs\/(.+)$/, async (req: Request, res: Response) => {
-  console.log(`[ADMIN-REGEX] Route hit! ${req.originalUrl}`);
-  try {
-    // Получаем имя файла из regex группы
-    const filePath = req.params[0] || '';
-    console.log(`[ADMIN-REGEX] Loading file content: ${filePath}`);
-    console.log(`[ADMIN-REGEX] Full URL: ${req.originalUrl}`);
-    console.log(`[ADMIN-REGEX] Params:`, req.params);
+// router.get("/docs/*", async (req: Request, res: Response) => {
+//   console.log(`[ADMIN-DOCS] Route hit! ${req.originalUrl}`);
+//   try {
+//     // Получаем имя файла из URL path (поддерживает пути с /)
+//     const filePath = req.params[0] || req.path.replace('/docs/', '') || '';
+//     console.log(`[ADMIN-DOCS] Loading file content: ${filePath}`);
+//     console.log(`[ADMIN-DOCS] Full URL: ${req.originalUrl}`);
+//     console.log(`[ADMIN-DOCS] Params:`, req.params);
 
-    // Используем DocumentationService для получения реального содержимого файла
-    const { DocumentationService } = await import('../services/DocumentationService.js');
-    const docService = new DocumentationService();
+//     // Используем DocumentationService для получения реального содержимого файла
+//     const { DocumentationService } = await import('../services/DocumentationService.js');
+//     const docService = new DocumentationService();
 
-    const fileContent = await docService.getFileContent(filePath);
+//     const fileContent = await docService.getFileContent(filePath);
 
-    res.json({
-      success: true,
-      data: fileContent,
-      timestamp: new Date().toISOString()
-    });
-  } catch (error) {
-    console.error('[ADMIN] Error loading file content:', error);
-    res.status(500).json({
-      success: false,
-      error: {
-        code: 'FILE_READ_ERROR',
-        message: 'Failed to read file content',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      }
-    });
-  }
-});
+//     res.json({
+//       success: true,
+//       data: fileContent,
+//       timestamp: new Date().toISOString()
+//     });
+//   } catch (error) {
+//     console.error('[ADMIN] Error loading file content:', error);
+//     res.status(500).json({
+//       success: false,
+//       error: {
+//         code: 'FILE_READ_ERROR',
+//         message: 'Failed to read file content',
+//         details: error instanceof Error ? error.message : 'Unknown error'
+//       }
+//     });
+//   }
+// });
 
 /**
  * GET /api/admin/health
@@ -346,17 +347,17 @@ router.get("/health", async (req: Request, res: Response) => {
 });
 
 /**
- * Catch-all для отладки
+ * Catch-all для отладки - временно отключён из-за проблем с path-to-regexp на Windows
  */
-router.get("*", async (req: Request, res: Response) => {
-  console.log(`[ADMIN-CATCHALL] Unmatched route: ${req.originalUrl}`);
-  res.status(404).json({
-    success: false,
-    error: {
-      code: 404,
-      message: `Admin route not found: ${req.originalUrl}`
-    }
-  });
-});
+// router.get("*", async (req: Request, res: Response) => {
+//   console.log(`[ADMIN-CATCHALL] Unmatched route: ${req.originalUrl}`);
+//   res.status(404).json({
+//     success: false,
+//     error: {
+//       code: 404,
+//       message: `Admin route not found: ${req.originalUrl}`
+//     }
+//   });
+// });
 
 export default router; 
