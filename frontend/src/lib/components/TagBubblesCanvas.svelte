@@ -41,6 +41,11 @@
   // DOM элементы
   let canvas: HTMLCanvasElement;
   let container: HTMLDivElement;
+  
+  // Определение Windows для отключения анимации дыхания
+  function isWindows(): boolean {
+    return typeof window !== 'undefined' && /Win/.test(window.navigator.platform);
+  }
 
   
   // Canvas контекст и состояние
@@ -153,27 +158,32 @@
 
   // Обновление состояния пузырьков
   function updateBubbles() {
-    const time = Date.now() * 0.0008; // Замедляем движение
+    const time = Date.now() * 0.0008;
     
     bubbles.forEach((bubble, index) => {
-      // Живые колебания радиуса
-      const oscillation = Math.sin(time * 2 + bubble.oscillationPhase) * 0.05;
-      bubble.currentRadius = bubble.targetRadius * (1 + oscillation);
+      // Живые колебания радиуса (только не на Windows)
+      if (!isWindows()) {
+        const oscillation = Math.sin(time * 2 + bubble.oscillationPhase) * 0.05;
+        bubble.currentRadius = bubble.targetRadius * (1 + oscillation);
+      } else {
+        // На Windows статичный размер без дыхания
+        bubble.currentRadius = bubble.targetRadius;
+      }
       
-      // Постоянное броуновское движение
-      const phase = index * 1.3;
-      const oscillationX = Math.sin(time * 0.4 + phase) * 0.5;
-      const oscillationY = Math.cos(time * 0.6 + phase) * 0.3;
-      
-      // Небольшие случайные возмущения
-      const randomX = (Math.random() - 0.5) * 0.1;
-      const randomY = (Math.random() - 0.5) * 0.1;
-      
-      bubble.x += oscillationX + randomX;
-      bubble.y += oscillationY + randomY;
+              // Постоянное броуновское движение
+        const phase = index * 1.3;
+        const oscillationX = Math.sin(time * 0.4 + phase) * 0.5;
+        const oscillationY = Math.cos(time * 0.6 + phase) * 0.3;
+        
+        // Небольшие случайные возмущения
+        const randomX = (Math.random() - 0.5) * 0.1;
+        const randomY = (Math.random() - 0.5) * 0.1;
+        
+        bubble.x += oscillationX + randomX;
+        bubble.y += oscillationY + randomY;
 
-      // Границы canvas с учетом радиуса пузыря и минимальным отступом
-      const minPadding = 2; // Минимальный отступ от края
+      // Границы
+      const minPadding = 2;
       const paddingX = bubble.currentRadius + minPadding;
       const paddingY = bubble.currentRadius + minPadding;
       
@@ -247,11 +257,11 @@
     context.restore();
   }
 
-  // Отрисовка на Canvas
+  // Отрисовка на Canvas с текстом
   function render() {
     if (!ctx || !canvas) return;
     
-    const context = ctx; // Локальная переменная для TypeScript
+    const context = ctx;
 
     // Очистка canvas
     context.clearRect(0, 0, width, height);
@@ -417,6 +427,60 @@
         aria-label="Интерактивная визуализация тегов вакансий"
       ></canvas>
       
+      <!-- Статичная легенда вместо анимированного текста -->
+      <div class="bubble-legend">
+        <h3 class="text-sm font-semibold mb-2 text-neutral-700 dark:text-neutral-300">
+          Популярные технологии:
+        </h3>
+        <div class="legend-grid">
+          {#each tags.slice(0, 12) as tag, index}
+                         <div 
+               class="legend-item"
+               style="--bubble-color: {createBubbles([tag], $theme === 'dark')[0]?.color}"
+               tabindex="0"
+               role="button"
+               on:mouseenter={() => {
+                 const bubble = bubbles.find(b => b.name === tag.name);
+                 if (bubble) {
+                   hoveredBubble = bubble;
+                   bubble.targetRadius = bubble.radius * 1.2;
+                   dispatch('tagHover', {
+                     name: bubble.name,
+                     count: bubble.count
+                   });
+                 }
+               }}
+               on:mouseleave={() => {
+                 if (hoveredBubble) {
+                   hoveredBubble.targetRadius = hoveredBubble.radius;
+                   dispatch('tagHover', null);
+                 }
+                 hoveredBubble = null;
+               }}
+               on:click={() => {
+                 dispatch('tagClick', {
+                   name: tag.name,
+                   count: tag.count
+                 });
+               }}
+               on:keydown={(e) => {
+                 if (e.key === 'Enter' || e.key === ' ') {
+                   e.preventDefault();
+                   dispatch('tagClick', {
+                     name: tag.name,
+                     count: tag.count
+                   });
+                 }
+               }}
+             >
+              <div class="legend-dot"></div>
+              <span class="legend-text">{tag.name}</span>
+              <span class="legend-count">{tag.count}</span>
+            </div>
+          {/each}
+        </div>
+      </div>
+      
       <!-- SVG для accessibility (скрытый) -->
       <svg class="sr-only" aria-label="Теги вакансий">
         {#each tags as tag}
@@ -442,6 +506,42 @@
     @apply w-full h-full;
     display: block;
     cursor: default;
+  }
+
+  /* Статичная легенда */
+  .bubble-legend {
+    @apply absolute top-4 right-4 bg-white dark:bg-slate-800 rounded-lg p-4 shadow-lg;
+    @apply border border-neutral-200 dark:border-slate-700;
+    max-width: 250px;
+    max-height: 300px;
+    overflow-y: auto;
+  }
+
+  .legend-grid {
+    @apply space-y-2;
+  }
+
+  .legend-item {
+    @apply flex items-center gap-2 p-1 rounded cursor-pointer;
+    @apply hover:bg-neutral-50 dark:hover:bg-slate-700;
+    transition: background-color 0.15s ease;
+  }
+
+  .legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background-color: var(--bubble-color);
+    flex-shrink: 0;
+  }
+
+  .legend-text {
+    @apply text-sm font-medium text-neutral-800 dark:text-neutral-200;
+    flex: 1;
+  }
+
+  .legend-count {
+    @apply text-xs text-neutral-500 dark:text-neutral-400 font-mono;
   }
 
   .tags-visualization-section {
