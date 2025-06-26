@@ -1,5 +1,6 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { AppError } from '../middleware/ApiError.js';
+// Импортируем функционал через dynamic import
 
 const router: Router = Router();
 
@@ -19,33 +20,29 @@ router.use((req: Request, res: Response, next: NextFunction) => {
  */
 router.get("/stats", async (req: Request, res: Response) => {
   try {
-    // Временная заглушка - базовые данные
+    // Получаем реальную статистику из репозитория
+    const { VacancyRepository } = await import('../repositories/VacancyRepository.js');
+    const vacancyRepo = new VacancyRepository();
+    
+    // Получаем общее количество вакансий
+    const totalVacancies = await vacancyRepo.count();
+    
+    // Получаем количество вакансий за последние 24 часа
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const recent24h = await vacancyRepo.count({ 
+      createdAt: yesterday 
+    } as any);
+    
+    // Получаем уникальные навыки
+    const uniqueSkills = await vacancyRepo.getUniqueSkills();
+    
     const stats = {
-      vacancies: {
-        total: 203,
-        recent24h: 5,
-        withFullDescription: 150
-      },
-      skills: {
-        unique: 45,
-        total: 890
-      },
-      cache: {
-        hitRate: 85,
-        size: 128,
-        totalRequests: 1024,
-        totalHits: 870
-      },
-      scheduler: {
-        status: 'running',
-        lastRun: new Date(Date.now() - 3600000), // 1 час назад
-        nextRun: new Date(Date.now() + 3600000)  // через 1 час
-      },
-      system: {
-        uptime: process.uptime(),
-        memoryUsage: process.memoryUsage(),
-        timestamp: new Date()
-      }
+      vacancies: { total: totalVacancies, recent24h, withFullDescription: 0 },
+      skills: { unique: uniqueSkills.length, total: 0 },
+      cache: { hitRate: 0, keys: 0, totalRequests: 0, totalHits: 0 },
+      scheduler: { status: 'unknown', lastRun: null, nextRun: null },
+      system: { uptime: process.uptime(), memoryUsage: process.memoryUsage(), timestamp: new Date() }
     };
 
     res.json({
@@ -70,18 +67,8 @@ router.get("/stats", async (req: Request, res: Response) => {
  */
 router.get("/top-skills", async (req: Request, res: Response) => {
   try {
-    const topSkills = [
-      { skill: 'JavaScript', count: 45, percentage: 22 },
-      { skill: 'React', count: 32, percentage: 16 },
-      { skill: 'Node.js', count: 28, percentage: 14 },
-      { skill: 'TypeScript', count: 25, percentage: 12 },
-      { skill: 'Vue.js', count: 18, percentage: 9 },
-      { skill: 'Python', count: 15, percentage: 7 },
-      { skill: 'MongoDB', count: 12, percentage: 6 },
-      { skill: 'PostgreSQL', count: 10, percentage: 5 },
-      { skill: 'Docker', count: 8, percentage: 4 },
-      { skill: 'AWS', count: 5, percentage: 2 }
-    ];
+    // Пока что возвращаем пустой массив вместо моков
+    const topSkills: any[] = [];
 
     res.json({
       success: true,

@@ -7,7 +7,7 @@ import { DateSchema, OptionalDateSchema } from "./date.schema.js";
 export const BaseVacancySchema = z.object({
   externalId: z.string({
     required_error: "ID вакансии во внешней системе обязателен",
-  }),
+  }).optional(),
   title: z.string({
     required_error: "Название вакансии обязательно",
   }).min(1, "Название вакансии не может быть пустым"),

@@ -92,6 +92,8 @@ export class VacancyApi {
 
       if (!validationResult.success) {
         logger.error(this.CONTEXT, 'Ошибка валидации данных API', validationResult.error);
+        console.error('[VACANCY API] Полученные данные:', JSON.stringify(response, null, 2));
+        console.error('[VACANCY API] Ошибки валидации:', JSON.stringify(validationResult.error.issues, null, 2));
         throw new Error('API вернуло данные в неожидаемом формате');
       }
 
