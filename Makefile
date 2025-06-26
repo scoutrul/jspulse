@@ -62,8 +62,11 @@ init:
 	@echo "🚀 Инициализация данных..."
 	node init-data.js
 
-# 🎯 ПОЛНЫЙ ЗАПУСК с данными (универсальная команда)
-up: start init
+# 🎯 УНИВЕРСАЛЬНЫЙ ЗАПУСК (без автоматического парсинга)
+up: start
+
+# 🎯 ПОЛНЫЙ ЗАПУСК с данными (с парсингом)
+full: start init
 
 # ===============================================
 # СТАРЫЕ КОМАНДЫ (для совместимости)
@@ -116,4 +119,4 @@ restart: down d
 # 🔄 Перезапуск Windows
 winrestart: windown winbg
 
-.PHONY: start stop logs status clean init up dev d down prod restart win winbg windown winlogs winclean winstatus winrestart 
+.PHONY: start stop logs status clean init up full dev d down prod restart win winbg windown winlogs winclean winstatus winrestart 
