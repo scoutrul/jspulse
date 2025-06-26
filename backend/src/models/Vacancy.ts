@@ -1,5 +1,5 @@
 import mongoose, { Schema, Document } from "mongoose";
-import type { DescriptionContent } from "../types/DescriptionContent.js";
+import type { DescriptionContent } from "../types/DescriptionContent";
 
 // Временный локальный интерфейс до исправления shared
 interface IVacancy {

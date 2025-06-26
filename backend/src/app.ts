@@ -1,12 +1,12 @@
 import express from 'express';
 import cors from 'cors';
-import { connectToDatabase } from './config/database.js';
-import { containerFactory } from './container/ContainerFactory.js';
-import { createDIMiddleware, diErrorHandler } from './middleware/diMiddleware.js';
-import vacancyRoutes from './routes/vacancyRoutes.js';
-import schedulerRoutes from './routes/schedulerRoutes.js';
-import adminRoutes from './routes/adminRoutes.js';
-import { SchedulerService } from './services/SchedulerService.js';
+import { connectToDatabase } from './config/database';
+import { containerFactory } from './container/ContainerFactory';
+import { createDIMiddleware, diErrorHandler } from './middleware/diMiddleware';
+import vacancyRoutes from './routes/vacancyRoutes';
+import schedulerRoutes from './routes/schedulerRoutes';
+import adminRoutes from './routes/adminRoutes';
+import { SchedulerService } from './services/SchedulerService';
 
 /**
  * Создание и настройка Express приложения с DI Container.

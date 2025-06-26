@@ -1,5 +1,5 @@
 import express, { Request, Response, Router, RequestHandler, NextFunction } from "express";
-import { isValidObjectId } from "mongoose";
+
 import {
   VacancyDTOSchema,
   VacancySearchSchema,
@@ -13,15 +13,28 @@ import {
 } from "@jspulse/shared";
 import { z } from "zod";
 import { validateBody, validateQuery, validateParams } from "../middleware/validation.middleware.js";
+import { DIContainer } from '../container/DIContainer.js';
+import { AppError } from '../middleware/ApiError.js';
+import { getMongoose } from '../config/mongoose.js';
 
 const router: Router = express.Router();
+
+// Helper для проверки ObjectId через динамический импорт
+async function isValidObjectId(id: string): Promise<boolean> {
+  try {
+    const mongoose = await getMongoose();
+    return mongoose.isValidObjectId(id);
+  } catch {
+    return false;
+  }
+}
 
 /**
  * Схема валидации для параметра ID.
  * Проверяет корректность MongoDB ObjectId для предотвращения некорректных запросов.
  */
 const IdParamSchema = z.object({
-  id: z.string().refine(val => isValidObjectId(val), {
+  id: z.string().refine(async val => await isValidObjectId(val), {
     message: "Некорректный ID вакансии"
   })
 });

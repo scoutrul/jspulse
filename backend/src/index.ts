@@ -1,4 +1,4 @@
-import { createApp, gracefulShutdown } from './app.js';
+import { createApp, gracefulShutdown } from './app';
 
 /**
  * Главный entry point для backend сервера.
