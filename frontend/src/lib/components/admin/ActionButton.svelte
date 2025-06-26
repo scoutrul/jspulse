@@ -34,6 +34,7 @@
 	{disabled}
 	class="w-full p-4 rounded-lg border-2 transition-all duration-200 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed {buttonClass}"
 	class:animate-pulse={loading}
+	data-testid="action-button"
 >
 	<div class="flex items-center justify-start space-x-3">
 		<!-- Иконка -->

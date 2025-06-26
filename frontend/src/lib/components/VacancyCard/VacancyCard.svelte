@@ -36,7 +36,7 @@
   }
 </script>
 
-<article class="vacancy-card" class:dark-theme={theme === 'dark'} class:light-theme={theme === 'light'}>
+<article class="vacancy-card" class:dark-theme={theme === 'dark'} class:light-theme={theme === 'light'} data-testid="vacancy-card">
   <div class="vacancy-card__container">
     <!-- Header Section -->
     <VacancyCardHeader 

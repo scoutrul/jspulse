@@ -134,6 +134,8 @@ help:
 	@echo "  seed     - Добавить тестовые данные"
 	@echo "  parse    - Парсинг реальных данных с HeadHunter"
 	@echo "  reparse  - Очистить базу и парсить заново"
+	@echo "  test-e2e - Запустить E2E тесты с Playwright"
+	@echo "  test-ui  - Запустить Playwright в UI режиме"
 
 # ГЛАВНАЯ КОМАНДА - запустить проект с нуля на любой машине
 up:
@@ -189,4 +191,14 @@ reparse:
 	docker exec jspulse-mongodb-1 mongosh jspulse --eval "db.vacancies.deleteMany({}); console.log('🗑️ Database cleared');"
 	$(MAKE) parse
 
-.PHONY: start stop logs status clean init up full dev d down prod restart win winbg windown winlogs winclean winstatus winrestart help 
+# E2E тестирование с Playwright
+test-e2e:
+	@echo "🎭 Запускаем E2E тесты с Playwright..."
+	pnpm test:e2e
+
+# Playwright UI режим (интерактивный)
+test-ui:
+	@echo "🎭 Запускаем Playwright в UI режиме..."
+	pnpm test:e2e:ui
+
+.PHONY: start stop logs status clean init up full dev d down prod restart win winbg windown winlogs winclean winstatus winrestart help test-e2e test-ui parse reparse seed 

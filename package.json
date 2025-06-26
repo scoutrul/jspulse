@@ -27,12 +27,18 @@
     "build": "pnpm --filter @jspulse/shared build && pnpm --filter @jspulse/backend build && pnpm --filter @jspulse/frontend build",
     "clean": "pnpm --filter @jspulse/shared run clean && pnpm --filter @jspulse/backend run clean && pnpm --filter @jspulse/frontend run clean",
     "test": "pnpm --filter @jspulse/backend test && pnpm --filter @jspulse/frontend test",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:debug": "playwright test --debug",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report",
     "test:telegram": "pnpm --filter @jspulse/backend test:telegram",
     "test:telegram:real": "pnpm --filter @jspulse/backend test:telegram:real",
     "telegram:auth": "pnpm --filter @jspulse/backend telegram:auth",
     "lint": "pnpm --filter @jspulse/backend lint && pnpm --filter @jspulse/frontend lint"
   },
   "devDependencies": {
+    "@playwright/test": "^1.53.1",
     "@types/node": "^20.11.19",
     "concurrently": "^9.1.2",
     "typescript": "^5.8.3"
@@ -42,7 +48,7 @@
   },
   "workspaces": [
     "backend",
-    "frontend", 
+    "frontend",
     "shared"
   ]
 }

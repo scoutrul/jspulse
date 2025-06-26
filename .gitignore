@@ -44,3 +44,8 @@ Thumbs.db
 
 # Docker data volumes
 data/mongo/
+
+# Playwright test results
+test-results/
+playwright-report/
+playwright/.cache/

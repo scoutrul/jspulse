@@ -33,6 +33,7 @@
   tabindex={isClickable ? 0 : undefined}
   role={isClickable ? 'button' : undefined}
   aria-label={isClickable ? `Фильтровать по навыку ${skill}` : undefined}
+  data-testid="skill-tag"
 >
   {skill}
 </span>

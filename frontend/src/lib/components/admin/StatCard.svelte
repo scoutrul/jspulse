@@ -18,7 +18,7 @@
 	$: cardClass = variants[variant];
 </script>
 
-<div class="stat-card {cardClass}">
+<div class="stat-card {cardClass}" data-testid="stat-card">
 	<!-- Заголовок карточки -->
 	<div class="flex items-start justify-between mb-3">
 		<Heading level={3} size="sm" weight="medium" variant="secondary" class="uppercase tracking-wide">
