@@ -9,6 +9,9 @@
   export let darkTheme: boolean = false;
 
   $: variantClasses = {
+    default: darkTheme 
+      ? 'bg-slate-500/20 text-slate-200 border-slate-400/30' 
+      : 'bg-neutral-100 text-neutral-800 border-neutral-200',
     primary: darkTheme 
       ? 'bg-purple-500/20 text-purple-200 border-purple-400/30' 
       : 'bg-blue-100 text-blue-800 border-blue-200',
