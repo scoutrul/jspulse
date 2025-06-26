@@ -28,13 +28,13 @@ export const validate = (
   schema: z.ZodSchema,
   location: SchemaLocation = SchemaLocation.BODY
 ): RequestHandler => {
-  return (req: Request, res: Response, next: NextFunction): void => {
+  return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       // Получаем данные из запроса в зависимости от расположения
       const data = req[location];
 
-      // Валидируем данные
-      const result = schema.safeParse(data);
+      // Валидируем данные (используем parseAsync для поддержки async refinement)
+      const result = await schema.safeParseAsync(data);
 
       if (!result.success) {
         // Форматируем ошибки валидации
