@@ -19,6 +19,16 @@ interface IVacancy {
   experience?: string;
   employment?: string;
   address?: string;
+
+  // Telegram-специфичные поля
+  sourceId?: string;
+  sourceChannel?: string;
+  sourceUrl?: string;
+  contact?: string;
+  workFormat?: string;
+  hashtags?: string[];
+  confidence?: number;
+  parsedAt?: Date;
 }
 
 /**
@@ -47,6 +57,17 @@ export interface IVacancyDocument extends IVacancy, Document {
   experience?: string;
   employment?: string;
   address?: string;
+
+  // Telegram-специфичные поля
+  sourceId?: string;
+  sourceChannel?: string;
+  sourceUrl?: string;
+  contact?: string;
+  workFormat?: string;
+  hashtags?: string[];
+  confidence?: number;
+  parsedAt?: Date;
+
   // Сохраняем исходные данные для отладки и возможных миграций
   rawData?: any;
 }
@@ -86,6 +107,17 @@ const vacancySchema = new Schema<IVacancyDocument>(
     experience: { type: String },
     employment: { type: String },
     address: { type: String },
+
+    // Telegram-специфичные поля
+    sourceId: { type: String, unique: true, sparse: true },
+    sourceChannel: { type: String },
+    sourceUrl: { type: String },
+    contact: { type: String },
+    workFormat: { type: String },
+    hashtags: [{ type: String }],
+    confidence: { type: Number },
+    parsedAt: { type: Date },
+
     // Mixed type для хранения произвольных данных от разных источников
     rawData: { type: mongoose.Schema.Types.Mixed },
   },

@@ -45,6 +45,16 @@ export const VacancyDTOSchema = BaseVacancySchema.extend({
   address: z.string().optional().nullable(),
   htmlDescription: z.string().optional().nullable(),
   fullHtmlDescription: z.string().optional(),   // Полное HTML для frontend
+
+  // Telegram-специфичные поля
+  sourceId: z.string().optional(),               // Уникальный ID источника
+  sourceChannel: z.string().optional(),          // Telegram канал
+  sourceUrl: z.string().optional(),              // URL источника (Telegraph)
+  contact: z.string().optional(),                // Контакт HR
+  workFormat: z.string().optional(),             // Формат работы
+  hashtags: z.array(z.string()).default([]),     // Хештеги
+  confidence: z.number().optional(),             // Уверенность парсинга
+  parsedAt: OptionalDateSchema,                  // Время парсинга
 });
 
 /**
@@ -87,6 +97,17 @@ export type VacancyDTO = Omit<z.infer<typeof BaseVacancySchema>, 'publishedAt'> 
   address?: string | null;
   htmlDescription?: string | null;
   fullHtmlDescription?: string;    // Полное HTML для frontend
+
+  // Telegram-специфичные поля
+  sourceId?: string;               // Уникальный ID источника
+  sourceChannel?: string;          // Telegram канал
+  sourceUrl?: string;              // URL источника (Telegraph)
+  contact?: string;                // Контакт HR
+  workFormat?: string;             // Формат работы
+  hashtags: string[];              // Хештеги
+  confidence?: number;             // Уверенность парсинга
+  parsedAt?: Date;                 // Время парсинга
+
   publishedAt: Date;
 };
 export type CreateVacancy = z.infer<typeof CreateVacancySchema>;

@@ -8,7 +8,8 @@ import {
   DI_TOKENS,
   IVacancyRepository,
   ICacheService,
-  PAGINATION
+  PAGINATION,
+  ARCHIVE
 } from "@jspulse/shared";
 import { z } from "zod";
 import { validateBody, validateQuery, validateParams } from "../middleware/validation.middleware.js";
@@ -28,10 +29,12 @@ const IdParamSchema = z.object({
 /**
  * Схема валидации для параметров поиска навыков.
  * Обеспечивает корректность пагинации и предотвращает некорректные значения.
+ * Включает поддержку архивных вакансий.
  */
 const SkillsQuerySchema = z.object({
   limit: z.coerce.number().int().positive().default(PAGINATION.DEFAULT_PAGE_SIZE),
-  page: z.coerce.number().int().nonnegative().default(PAGINATION.VALIDATION.MIN_PAGE)
+  page: z.coerce.number().int().nonnegative().default(PAGINATION.VALIDATION.MIN_PAGE),
+  includeArchived: z.coerce.boolean().default(false)
 });
 
 /**
@@ -103,12 +106,14 @@ router.get("/skills", async (req: Request, res: Response) => {
 /**
  * GET / - Получение списка вакансий с пагинацией и фильтрацией по навыкам.
  * Основной эндпоинт для отображения вакансий на главной странице.
+ * По умолчанию показывает только активные вакансии (не архивные).
  * Использует Repository Pattern с интеллектуальным кэшированием (3-5 минут).
  */
 router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Response) => {
   // Параметры получены из middleware валидации для безопасности типов
   const page = req.validatedQuery.page;
   const limit = req.validatedQuery.limit;
+  const includeArchived = req.validatedQuery.includeArchived;
   const skills = req.query.skills;
 
   try {
@@ -130,7 +135,8 @@ router.get("/", validateQuery(SkillsQuerySchema), async (req: Request, res: Resp
     const result = await vacancyRepository.findWithFilters({
       page,
       limit,
-      skills: skillsArray
+      skills: skillsArray,
+      includeArchived
     });
 
     res.json({
@@ -192,6 +198,7 @@ router.get("/cache/stats", async (req: Request, res: Response) => {
 /**
  * GET /:id - Получение детальной информации о вакансии.
  * Используется на странице просмотра конкретной вакансии.
+ * Возвращает вакансию независимо от того, архивная она или нет.
  * Repository обеспечивает валидацию ID и кэширование отдельных записей (15 минут).
  */
 router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Response) => {
@@ -215,9 +222,15 @@ router.get("/:id", validateParams(IdParamSchema), async (req: Request, res: Resp
       return;
     }
 
+    // Проверяем является ли вакансия архивной для добавления метаинформации
+    const isArchived = await vacancyRepository.isArchived(id);
+
     res.json({
       success: true,
-      data: vacancy
+      data: vacancy,
+      meta: {
+        isArchived
+      }
     });
   } catch (error) {
     console.error(`Ошибка при получении вакансии ${id}:`, error);

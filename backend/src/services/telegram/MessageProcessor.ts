@@ -59,14 +59,19 @@ export class MessageProcessor {
 
     // 2. Извлечение данных
     const extractedData = {
-      title: this.extractTitle(originalText),
-      company: this.extractCompany(originalText),
-      location: this.extractLocation(originalText),
-      salary: this.extractSalary(originalText),
-      skills: this.extractSkills(originalText),
+      title: this.extractTitleV2(originalText),
+      company: this.extractCompanyV2(originalText),
+      location: this.extractLocationV2(originalText),
+      salary: this.extractSalaryV2(originalText),
+      skills: this.extractSkillsV2(originalText),
       description: originalText,
-      contact: this.extractContact(originalText),
-      confidence: this.calculateConfidence(originalText)
+      contact: this.extractContactV2(originalText),
+      format: this.extractFormat(originalText),
+      employment: this.extractEmployment(originalText),
+      descriptionUrl: this.extractDescriptionUrl(originalText),
+      hashtags: this.extractHashtags(originalText),
+      fullDescription: await this.extractFullDescription(originalText),
+      confidence: this.calculateConfidenceV2(originalText)
     };
 
     console.log(`✅ Extracted data with confidence: ${extractedData.confidence}`);
@@ -452,5 +457,263 @@ export class MessageProcessor {
     console.log(`✅ Processed ${results.length} messages, ${validResults.length} valid vacancies found`);
 
     return results;
+  }
+
+  // ============================================================================
+  // НОВЫЕ МЕТОДЫ ДЛЯ @vacancy_it_ulbitv ФОРМАТА
+  // ============================================================================
+
+  /**
+   * Извлечение заголовка из **жирного** текста в начале сообщения
+   */
+  private extractTitleV2(text: string): string | undefined {
+    const titleMatch = text.match(TELEGRAM_CONFIG.PARSING.TITLE_REGEX);
+    if (titleMatch && titleMatch[1]) {
+      return this.cleanText(titleMatch[1]);
+    }
+
+    // Fallback к старому методу
+    return this.extractTitle(text);
+  }
+
+  /**
+   * Извлечение компании из **Компания:** поля
+   */
+  private extractCompanyV2(text: string): string | undefined {
+    const companyMatch = text.match(TELEGRAM_CONFIG.PARSING.COMPANY_REGEX);
+    if (companyMatch && companyMatch[1]) {
+      return this.cleanText(companyMatch[1]);
+    }
+
+    // Fallback к старому методу
+    return this.extractCompany(text);
+  }
+
+  /**
+   * Извлечение зарплаты из **ЗП:** поля или других мест
+   */
+  private extractSalaryV2(text: string): { from?: number; to?: number; currency?: string } | undefined {
+    const salaryMatches = text.matchAll(TELEGRAM_CONFIG.PARSING.SALARY_REGEX);
+
+    for (const match of salaryMatches) {
+      const salaryText = match[1] || match[2];
+      if (salaryText) {
+        const parsed = this.parseSalary(salaryText, text);
+        if (parsed) return parsed;
+      }
+    }
+
+    // Fallback к старому методу
+    return this.extractSalary(text);
+  }
+
+  /**
+   * Извлечение локации из **Формат:** поля и других мест
+   */
+  private extractLocationV2(text: string): string | undefined {
+    // Сначала пробуем из формата работы
+    const formatMatch = text.match(TELEGRAM_CONFIG.PARSING.FORMAT_REGEX);
+    if (formatMatch && formatMatch[1]) {
+      const format = formatMatch[1];
+      // Извлекаем города из скобок
+      const locationInBrackets = format.match(/\(([^)]+)\)/);
+      if (locationInBrackets) {
+        return this.cleanText(locationInBrackets[1]);
+      }
+      return this.cleanText(format);
+    }
+
+    // Затем ищем общие паттерны локации
+    const locationMatches = text.matchAll(TELEGRAM_CONFIG.PARSING.LOCATION_REGEX);
+    for (const match of locationMatches) {
+      if (match[0]) {
+        return this.cleanText(match[0]);
+      }
+    }
+
+    // Fallback к старому методу
+    return this.extractLocation(text);
+  }
+
+  /**
+   * Извлечение навыков из хештегов и текста
+   */
+  private extractSkillsV2(text: string): string[] {
+    const skills: Set<string> = new Set();
+
+    // Извлекаем из хештегов
+    const hashtagMatches = text.matchAll(TELEGRAM_CONFIG.PARSING.SKILLS_REGEX);
+    for (const match of hashtagMatches) {
+      if (match[1]) {
+        skills.add(match[1].toLowerCase());
+      }
+    }
+
+    // Добавляем навыки из общих хештегов
+    const allHashtags = this.extractHashtags(text);
+    allHashtags.forEach(tag => {
+      // Проверяем известные технологии
+      const techPattern = /^(react|vue|angular|javascript|typescript|nodejs?|nestjs|express|frontend|backend|fullstack|python|java|php|csharp|dotnet|docker|kubernetes|aws|azure|sql|mongodb|postgresql|redis|html|css|sass|scss|webpack|vite|git)$/i;
+      if (techPattern.test(tag)) {
+        skills.add(tag.toLowerCase());
+      }
+    });
+
+    // Fallback к старому методу если мало навыков
+    if (skills.size < 2) {
+      const oldSkills = this.extractSkills(text);
+      oldSkills.forEach(skill => skills.add(skill));
+    }
+
+    return Array.from(skills).slice(0, 15);
+  }
+
+  /**
+   * Извлечение контакта HR
+   */
+  private extractContactV2(text: string): string | undefined {
+    const hrMatch = text.match(TELEGRAM_CONFIG.PARSING.HR_CONTACT_REGEX);
+    if (hrMatch && hrMatch[1]) {
+      return hrMatch[1];
+    }
+
+    // Fallback к старому методу
+    return this.extractContact(text);
+  }
+
+  /**
+   * Извлечение формата работы
+   */
+  private extractFormat(text: string): string | undefined {
+    const formatMatch = text.match(TELEGRAM_CONFIG.PARSING.FORMAT_REGEX);
+    if (formatMatch && formatMatch[1]) {
+      return this.cleanText(formatMatch[1]);
+    }
+    return undefined;
+  }
+
+  /**
+   * Извлечение типа занятости
+   */
+  private extractEmployment(text: string): string | undefined {
+    const employmentMatch = text.match(TELEGRAM_CONFIG.PARSING.EMPLOYMENT_REGEX);
+    if (employmentMatch && employmentMatch[1]) {
+      return this.cleanText(employmentMatch[1]);
+    }
+    return undefined;
+  }
+
+  /**
+   * Извлечение ссылки на описание
+   */
+  private extractDescriptionUrl(text: string): string | undefined {
+    const urlMatch = text.match(TELEGRAM_CONFIG.PARSING.DESCRIPTION_REGEX);
+    if (urlMatch && urlMatch[1]) {
+      return urlMatch[1];
+    }
+    return undefined;
+  }
+
+  /**
+   * Извлечение хештегов
+   */
+  private extractHashtags(text: string): string[] {
+    const hashtags: string[] = [];
+    const hashtagMatches = text.matchAll(TELEGRAM_CONFIG.PARSING.HASHTAGS_REGEX);
+    for (const match of hashtagMatches) {
+      if (match[1]) {
+        hashtags.push(match[1].toLowerCase());
+      }
+    }
+    return hashtags;
+  }
+
+  /**
+   * Извлечение полного описания из Telegraph ссылки
+   */
+  private async extractFullDescription(text: string): Promise<string | undefined> {
+    const descriptionUrl = this.extractDescriptionUrl(text);
+    if (!descriptionUrl || !descriptionUrl.includes('telegra.ph')) {
+      return undefined;
+    }
+
+    try {
+      console.log(`🔗 Fetching full description from: ${descriptionUrl}`);
+
+      // Простой HTTP запрос к Telegraph
+      const response = await fetch(descriptionUrl);
+      if (!response.ok) {
+        console.warn(`⚠️ Failed to fetch description: ${response.status}`);
+        return undefined;
+      }
+
+      const html = await response.text();
+
+      // Простое извлечение текста из HTML (удаляем теги)
+      const textContent = html
+        .replace(/<script[^>]*>.*?<\/script>/gis, '')
+        .replace(/<style[^>]*>.*?<\/style>/gis, '')
+        .replace(/<[^>]*>/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      // Извлекаем основной контент (после заголовка, до конца)
+      const contentMatch = textContent.match(/Компания:.*$/s);
+      if (contentMatch) {
+        const fullDescription = contentMatch[0].substring(0, 2000); // Ограничиваем длину
+        console.log(`✅ Successfully extracted ${fullDescription.length} characters of full description`);
+        return fullDescription;
+      }
+
+      return textContent.substring(0, 2000); // Fallback
+
+    } catch (error) {
+      console.warn(`⚠️ Error fetching full description from ${descriptionUrl}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Улучшенный расчет уверенности для @vacancy_it_ulbitv формата
+   */
+  private calculateConfidenceV2(text: string): number {
+    let confidence = 0;
+
+    // Базовая уверенность за наличие ключевых слов (0.2)
+    const hasKeywords = TELEGRAM_CONFIG.KEYWORDS.REQUIRED.some(keyword =>
+      text.toLowerCase().includes(keyword.toLowerCase())
+    );
+    if (hasKeywords) confidence += 0.2;
+
+    // Бонус за структуру @vacancy_it_ulbitv (0.4)
+    let structureScore = 0;
+    if (text.includes('**Компания:**')) structureScore += 0.1;
+    if (text.includes('**ЗП:**')) structureScore += 0.1;
+    if (text.includes('**Формат:**')) structureScore += 0.1;
+    if (text.includes('**Занятость:**')) structureScore += 0.1;
+    confidence += structureScore;
+
+    // Бонус за заголовок в **жирном** тексте (0.15)
+    if (TELEGRAM_CONFIG.PARSING.TITLE_REGEX.test(text)) {
+      confidence += 0.15;
+    }
+
+    // Бонус за хештеги (0.1)
+    const hashtags = this.extractHashtags(text);
+    if (hashtags.length >= 3) {
+      confidence += 0.1;
+    }
+
+    // Бонус за ссылку на описание (0.1)
+    if (this.extractDescriptionUrl(text)) {
+      confidence += 0.1;
+    }
+
+    // Бонус за контакт HR (0.05)
+    if (this.extractContactV2(text)) {
+      confidence += 0.05;
+    }
+
+    return Math.min(1.0, confidence);
   }
 } 

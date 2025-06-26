@@ -101,6 +101,12 @@ export class SessionManager {
       return false;
     }
 
+    // Если session string получен из переменных окружения, считаем его валидным
+    if (TELEGRAM_CONFIG.SESSION_STRING && sessionString === TELEGRAM_CONFIG.SESSION_STRING) {
+      return true;
+    }
+
+    // Иначе проверяем файл сессии
     const session = await this.loadSession();
     if (!session) {
       return false;
@@ -136,9 +142,22 @@ export class SessionManager {
     username?: string;
     lastUsed?: Date;
   }> {
-    const session = await this.loadSession();
+    const sessionString = await this.getSessionString();
     const valid = await this.isSessionValid();
 
+    // Если используется session string из переменных окружения
+    if (TELEGRAM_CONFIG.SESSION_STRING && sessionString === TELEGRAM_CONFIG.SESSION_STRING) {
+      return {
+        exists: true,
+        valid,
+        userId: undefined,
+        username: 'from_env_variable',
+        lastUsed: new Date()
+      };
+    }
+
+    // Иначе проверяем файл сессии
+    const session = await this.loadSession();
     return {
       exists: !!session,
       valid,

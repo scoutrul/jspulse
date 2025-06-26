@@ -18,6 +18,11 @@
     "test:unit": "jest --config=jest.config.cjs tests/unit",
     "test:integration": "jest --config=jest.config.cjs tests/integration",
     "test:scheduler": "node dist/scripts/testDockerScheduler.js",
+    "test:telegram": "tsx src/scripts/testMessageProcessor.ts",
+    "test:telegram:real": "tsx src/scripts/testRealTelegramParsing.ts",
+    "test:telegram:service": "tsx src/scripts/testTelegramParserService.ts",
+    "telegram:auth": "tsx src/scripts/generateTelegramSession.ts",
+    "telegram:diagnostic": "tsx src/scripts/diagnosticChannel.ts",
     "scheduler-demo": "node dist/scripts/testDockerScheduler.js",
     "lint": "tsc --noEmit"
   },

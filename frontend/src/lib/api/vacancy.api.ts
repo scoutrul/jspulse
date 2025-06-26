@@ -16,6 +16,7 @@ export interface VacanciesOptions {
   limit?: number;
   page?: number;
   skills?: string[];
+  includeArchived?: boolean;
 }
 
 /**
@@ -28,6 +29,14 @@ export interface VacanciesResponse {
   limit: number;
   totalPages: number;
   error?: string;
+}
+
+/**
+ * Структура ответа для одной вакансии с метаинформацией
+ */
+export interface SingleVacancyResponse {
+  vacancy: VacancyDTO;
+  isArchived: boolean;
 }
 
 /**
@@ -48,6 +57,7 @@ export class VacancyApi {
 
   /**
    * Получение списка вакансий с пагинацией и фильтрацией
+   * По умолчанию показывает только активные вакансии (не архивные)
    */
   async fetchVacancies(options: VacanciesOptions = {}): Promise<VacanciesResponse> {
     try {
@@ -63,6 +73,11 @@ export class VacancyApi {
 
       if (options.skills && options.skills.length > 0) {
         queryParams.append('skills', options.skills.join(','));
+      }
+
+      // Добавляем параметр архивности (по умолчанию false)
+      if (options.includeArchived) {
+        queryParams.append('includeArchived', options.includeArchived.toString());
       }
 
       // Конструируем URL с параметрами пагинации и фильтрации
@@ -152,8 +167,9 @@ export class VacancyApi {
 
   /**
  * Получение одной вакансии по её ID
+ * Возвращает вакансию независимо от того, архивная она или нет
  */
-  async fetchVacancyById(id: string, sanitizeHtml?: (html: string) => string): Promise<VacancyDTO | null> {
+  async fetchVacancyById(id: string, sanitizeHtml?: (html: string) => string): Promise<SingleVacancyResponse | null> {
     try {
       const url = `/api/vacancies/${id}`;
 
@@ -174,19 +190,27 @@ export class VacancyApi {
       }
 
       // Получаем валидированные данные
-      const vacancy = validationResult.data.data as unknown as VacancyDTO;
+      const rawResponse = validationResult.data as { data: VacancyDTO; meta?: { isArchived?: boolean } };
+      const vacancy = rawResponse.data;
+      const isArchived = rawResponse.meta?.isArchived ?? false;
 
-      logger.debug(this.CONTEXT, `Вакансия ${id} успешно загружена:`, vacancy.title);
+      logger.debug(this.CONTEXT, `Вакансия ${id} успешно загружена: ${vacancy.title} (архивная: ${isArchived})`);
 
       // Если есть HTML-описание и функция санитизации, применяем её
       if (vacancy.description && sanitizeHtml) {
         return {
-          ...vacancy,
-          description: sanitizeHtml(vacancy.description),
-        } as VacancyDTO;
+          vacancy: {
+            ...vacancy,
+            description: sanitizeHtml(vacancy.description),
+          } as VacancyDTO,
+          isArchived
+        };
       }
 
-      return vacancy;
+      return {
+        vacancy,
+        isArchived
+      };
     } catch (error) {
       logger.error(this.CONTEXT, `Ошибка при загрузке вакансии ${id}`, error);
       return null;

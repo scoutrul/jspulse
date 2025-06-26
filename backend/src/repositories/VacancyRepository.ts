@@ -4,7 +4,8 @@ import {
   IFindResult,
   VacancyDTO,
   ICacheService,
-  PAGINATION
+  PAGINATION,
+  ARCHIVE
 } from "@jspulse/shared";
 import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
 import { isValidObjectId } from "mongoose";
@@ -38,6 +39,7 @@ export class VacancyRepository implements IVacancyRepository {
   /**
    * Поиск вакансии по ID с валидацией ObjectId.
    * Возвращает null для некорректных ID без выброса ошибки.
+   * Всегда возвращает вакансию независимо от того, архивная она или нет.
    */
   async findById(id: string): Promise<VacancyDTO | null> {
     if (!isValidObjectId(id)) {
@@ -66,13 +68,14 @@ export class VacancyRepository implements IVacancyRepository {
 
   /**
    * Базовый поиск вакансий с пагинацией.
+   * По умолчанию показывает только активные вакансии (не архивные).
    * Для продвинутых фильтров используйте findWithFilters().
    */
   async findMany(criteria: IVacancyFindCriteria): Promise<IFindResult<VacancyDTO>> {
-    const { page = PAGINATION.VALIDATION.MIN_PAGE, limit = PAGINATION.DEFAULT_PAGE_SIZE, where = {}, orderBy } = criteria;
+    const { page = PAGINATION.VALIDATION.MIN_PAGE, limit = PAGINATION.DEFAULT_PAGE_SIZE, where = {}, orderBy, includeArchived = false } = criteria;
 
     // Кэшируем простые запросы списков
-    const cacheKey = this.buildListCacheKey('findMany', { page, limit, where, orderBy });
+    const cacheKey = this.buildListCacheKey('findMany', { page, limit, where, orderBy, includeArchived });
     if (this.cacheService) {
       const cached = await this.cacheService.get<IFindResult<VacancyDTO>>(cacheKey);
       if (cached) {
@@ -82,6 +85,11 @@ export class VacancyRepository implements IVacancyRepository {
 
     // Строим MongoDB query из критериев поиска
     const query = this.buildMongoQuery(where);
+
+    // Добавляем фильтр архивности если не включаем архивные
+    if (!includeArchived) {
+      query.publishedAt = { $gte: this.getArchiveDateThreshold() };
+    }
 
     const total = await Vacancy.countDocuments(query);
     const offset = page * limit;
@@ -123,6 +131,40 @@ export class VacancyRepository implements IVacancyRepository {
     }
 
     return result;
+  }
+
+  /**
+   * Получение только активных (не архивных) вакансий.
+   * Вакансии считаются активными если опубликованы в течение последних 30 дней.
+   */
+  async findActiveVacancies(criteria: Omit<IVacancyFindCriteria, 'includeArchived'>): Promise<IFindResult<VacancyDTO>> {
+    return this.findMany({ ...criteria, includeArchived: false });
+  }
+
+  /**
+   * Проверка является ли вакансия архивной.
+   * Возвращает true если вакансия старше 30 дней.
+   */
+  async isArchived(vacancyId: string): Promise<boolean> {
+    if (!isValidObjectId(vacancyId)) {
+      return false;
+    }
+
+    const vacancy = await Vacancy.findById(vacancyId, 'publishedAt').lean();
+    if (!vacancy || !vacancy.publishedAt) {
+      return false;
+    }
+
+    const archiveThreshold = this.getArchiveDateThreshold();
+    return new Date(vacancy.publishedAt) < archiveThreshold;
+  }
+
+  /**
+   * Вычисляет пороговую дату для архивации.
+   * Вакансии старше этой даты считаются архивными.
+   */
+  private getArchiveDateThreshold(): Date {
+    return new Date(Date.now() - ARCHIVE.ACTIVE_VACANCY_MS);
   }
 
   /**
@@ -202,6 +244,7 @@ export class VacancyRepository implements IVacancyRepository {
   /**
    * Продвинутый поиск вакансий с поддержкой всех фильтров UI.
    * Основной метод для получения отфильтрованного списка вакансий.
+   * По умолчанию показывает только активные вакансии (не архивные).
    * Агрессивно кэшируется для улучшения UX.
    */
   async findWithFilters(criteria: IVacancyFindCriteria): Promise<IFindResult<VacancyDTO>> {
@@ -223,7 +266,8 @@ export class VacancyRepository implements IVacancyRepository {
       publishedAfter,
       publishedBefore,
       searchText,
-      orderBy
+      orderBy,
+      includeArchived = false
     } = criteria;
 
     // Строим сложный MongoDB query
@@ -253,13 +297,23 @@ export class VacancyRepository implements IVacancyRepository {
     }
 
     // Фильтр по дате публикации
-    if (publishedAfter || publishedBefore) {
+    if (publishedAfter || publishedBefore || !includeArchived) {
       query.publishedAt = {};
       if (publishedAfter) {
         query.publishedAt.$gte = publishedAfter;
       }
       if (publishedBefore) {
         query.publishedAt.$lte = publishedBefore;
+      }
+      // Добавляем фильтр архивности если не включаем архивные
+      if (!includeArchived) {
+        // Если уже есть $gte, берем максимальную дату
+        const archiveThreshold = this.getArchiveDateThreshold();
+        if (query.publishedAt.$gte) {
+          query.publishedAt.$gte = new Date(Math.max(query.publishedAt.$gte.getTime(), archiveThreshold.getTime()));
+        } else {
+          query.publishedAt.$gte = archiveThreshold;
+        }
       }
     }
 
@@ -366,6 +420,34 @@ export class VacancyRepository implements IVacancyRepository {
     const result = vacancy ? this.documentToDTO(vacancy) : null;
 
     // Кэшируем на 10 минут для ускорения импорта
+    if (this.cacheService) {
+      await this.cacheService.set(cacheKey, result, 600);
+    }
+
+    return result;
+  }
+
+  /**
+   * Поиск вакансии по sourceId для предотвращения дубликатов.
+   * Используется при парсинге Telegram каналов.
+   */
+  async findBySourceId(sourceId: string): Promise<VacancyDTO | null> {
+    const cacheKey = `sourceId:${sourceId}`;
+
+    if (this.cacheService) {
+      const cached = await this.cacheService.get<VacancyDTO | null>(cacheKey);
+      if (cached !== undefined) {
+        return cached;
+      }
+    }
+
+    const vacancy = await Vacancy.findOne({
+      sourceId
+    }).lean();
+
+    const result = vacancy ? this.documentToDTO(vacancy) : null;
+
+    // Кэшируем на 10 минут для ускорения парсинга
     if (this.cacheService) {
       await this.cacheService.set(cacheKey, result, 600);
     }
@@ -557,7 +639,17 @@ export class VacancyRepository implements IVacancyRepository {
       salaryCurrency: doc.salaryCurrency,
       experience: doc.experience,
       employment: doc.employment,
-      address: doc.address
+      address: doc.address,
+
+      // Telegram-специфичные поля
+      sourceId: doc.sourceId,
+      sourceChannel: doc.sourceChannel,
+      sourceUrl: doc.sourceUrl,
+      contact: doc.contact,
+      workFormat: doc.workFormat,
+      hashtags: doc.hashtags || [],
+      confidence: doc.confidence,
+      parsedAt: doc.parsedAt
     };
   }
 

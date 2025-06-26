@@ -2,6 +2,7 @@
 <script lang="ts">
   import type { PageData } from "./$types";
   import VacancyCard from '$lib/components/VacancyCard/VacancyCard.svelte';
+  import InfoBadge from '$lib/components/ui/InfoBadge.svelte';
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { theme } from '$lib/stores/themeStore';
@@ -9,6 +10,7 @@
   export let data: PageData;
   
   $: vacancy = data.vacancy;
+  $: isArchived = data.isArchived;
   
   // Скроллим к описанию при загрузке страницы
   onMount(() => {
@@ -46,8 +48,16 @@
 
 <main>
   {#if vacancy}
-  <VacancyCard {vacancy} isDetailPage={true} theme={$theme} />
-{:else}
+    {#if isArchived}
+      <div class="archive-warning mb-4">
+        <InfoBadge type="archived" text="📦 Архивная вакансия" />
+        <p class="mt-2 text-sm text-gray-600">
+          Эта вакансия была опубликована более 30 дней назад и может быть неактуальна.
+        </p>
+      </div>
+    {/if}
+    <VacancyCard {vacancy} isDetailPage={true} theme={$theme} />
+  {:else}
     <div class="loading-placeholder">
       <div class="loading-content">
         <div class="loading-spinner" aria-hidden="true"></div>

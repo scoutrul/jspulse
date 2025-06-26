@@ -1,6 +1,6 @@
 import { TelegramClient as MTProtoClient } from 'telegram';
 import { StringSession } from 'telegram/sessions/index.js';
-import type { Api } from 'telegram/tl/api.js';
+import { Api } from 'telegram/tl/api.js';
 import type { TelegramMessage, TelegramChannelInfo, TelegramConfig } from '@jspulse/shared';
 import { TELEGRAM_CONFIG } from '../../config/telegram.js';
 import { SessionManager } from './SessionManager.js';
@@ -139,17 +139,44 @@ export class TelegramClient {
     try {
       console.log(`📡 Getting info for channel: ${channelUsername}`);
 
-      const entity = await this.client!.getEntity(channelUsername);
+      // Сначала пробуем стандартный метод
+      try {
+        const entity = await this.client!.getEntity(channelUsername);
 
-      if (entity && entity.constructor.name === 'Channel') {
-        const channel = entity as Api.Channel;
-        return {
-          id: channel.id.toString(),
-          username: channel.username || channelUsername,
-          title: channel.title || '',
-          membersCount: channel.participantsCount,
-          isActive: !channel.left
-        };
+        if (entity && entity.constructor.name === 'Channel') {
+          const channel = entity as Api.Channel;
+          return {
+            id: channel.id.toString(),
+            username: channel.username || channelUsername,
+            title: channel.title || '',
+            membersCount: channel.participantsCount,
+            isActive: !channel.left
+          };
+        }
+      } catch (getEntityError) {
+        console.log(`⚠️ getEntity failed, trying alternative method...`);
+
+        // Альтернативный метод через resolve
+        try {
+          const result = await this.client!.invoke(new Api.contacts.ResolveUsername({
+            username: channelUsername.replace('@', '')
+          }));
+
+          if (result && result.chats && result.chats.length > 0) {
+            const chat = result.chats[0] as any;
+            console.log(`✅ Channel found via resolve method`);
+
+            return {
+              id: chat.id.toString(),
+              username: chat.username || channelUsername.replace('@', ''),
+              title: chat.title || '',
+              membersCount: chat.participantsCount || undefined,
+              isActive: !chat.left
+            };
+          }
+        } catch (resolveError) {
+          console.log(`⚠️ resolve method also failed`);
+        }
       }
 
       return null;
@@ -175,7 +202,34 @@ export class TelegramClient {
       // Rate limiting
       await this.sleep(this.rateLimitDelay);
 
-      const entity = await this.client!.getEntity(channelUsername);
+      let entity: any = null;
+
+      // Сначала пробуем стандартный метод
+      try {
+        entity = await this.client!.getEntity(channelUsername);
+      } catch (getEntityError) {
+        console.log(`⚠️ getEntity failed for messages, trying resolve method...`);
+
+        // Альтернативный метод через resolve
+        try {
+          const result = await this.client!.invoke(new Api.contacts.ResolveUsername({
+            username: channelUsername.replace('@', '')
+          }));
+
+          if (result && result.chats && result.chats.length > 0) {
+            entity = result.chats[0];
+            console.log(`✅ Channel entity found via resolve for messages`);
+          }
+        } catch (resolveError) {
+          console.log(`⚠️ resolve method also failed for messages`);
+          throw new Error(`Cannot access channel ${channelUsername}: both getEntity and resolve failed`);
+        }
+      }
+
+      if (!entity) {
+        throw new Error(`No entity found for channel ${channelUsername}`);
+      }
+
       const messages = await this.client!.getMessages(entity, {
         limit,
         offsetId
@@ -273,8 +327,14 @@ export class TelegramClient {
   async isChannelAccessible(channelUsername: string): Promise<boolean> {
     try {
       const info = await this.getChannelInfo(channelUsername);
-      return !!info;
-    } catch {
+      if (info) return true;
+
+      // Если getChannelInfo не сработал, пробуем напрямую получить сообщения
+      console.log(`🔄 Trying alternative accessibility check for ${channelUsername}...`);
+      const messages = await this.getChannelMessages(channelUsername, 1);
+      return messages.length >= 0; // Даже 0 сообщений означает что канал доступен
+    } catch (error) {
+      console.log(`❌ Channel ${channelUsername} is completely inaccessible:`, error instanceof Error ? error.message : error);
       return false;
     }
   }
