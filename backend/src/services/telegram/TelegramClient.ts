@@ -359,4 +359,27 @@ export class TelegramClient {
     this.rateLimitDelay = Math.max(delayMs, 1000); // Минимум 1 секунда
     console.log(`⏱️ Rate limit set to ${this.rateLimitDelay}ms`);
   }
+
+  /**
+ * Отправка сообщения в канал
+ */
+  async sendMessageToChannel(channelUsername: string, message: string, options?: any): Promise<any> {
+    await this.ensureConnected();
+
+    try {
+      console.log(`📤 Sending message to channel: ${channelUsername}`);
+
+      const entity = await this.client!.getEntity(channelUsername);
+      const result = await this.client!.sendMessage(entity, {
+        message,
+        ...options
+      });
+
+      console.log(`✅ Message sent successfully to ${channelUsername}`);
+      return result;
+    } catch (error) {
+      console.error(`❌ Error sending message to ${channelUsername}:`, error);
+      throw error;
+    }
+  }
 } 
