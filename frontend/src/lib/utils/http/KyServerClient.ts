@@ -31,7 +31,7 @@ export class KyServerClient implements HttpClient {
       // Формируем URL с параметрами, если они есть
       const urlWithParams = this.buildUrlWithParams(url, params);
 
-      logger.debug(this.CONTEXT, `Выполняем запрос к: ${this.baseUrl}${urlWithParams}`);
+      logger.debug(this.CONTEXT, `Выполняем запрос к: ${this.baseUrl.endsWith('/') ? this.baseUrl : this.baseUrl + '/'}${urlWithParams}`);
 
       const response = await this.kyInstance(urlWithParams, {
         method: "GET",
@@ -52,7 +52,7 @@ export class KyServerClient implements HttpClient {
       // Формируем URL с параметрами, если они есть
       const urlWithParams = this.buildUrlWithParams(url, params);
 
-      logger.debug(this.CONTEXT, `Выполняем POST запрос к: ${this.baseUrl}${urlWithParams}`);
+      logger.debug(this.CONTEXT, `Выполняем POST запрос к: ${this.baseUrl.endsWith('/') ? this.baseUrl : this.baseUrl + '/'}${urlWithParams}`);
 
       const response = await this.kyInstance(urlWithParams, {
         method: "POST",
@@ -98,7 +98,7 @@ export class KyServerClient implements HttpClient {
       const { headers = {}, params = {}, data } = options;
       const urlWithParams = this.buildUrlWithParams(url, params);
 
-      logger.debug(this.CONTEXT, `Выполняем PUT запрос к: ${this.baseUrl}${urlWithParams}`);
+      logger.debug(this.CONTEXT, `Выполняем PUT запрос к: ${this.baseUrl.endsWith('/') ? this.baseUrl : this.baseUrl + '/'}${urlWithParams}`);
 
       const response = await this.kyInstance(urlWithParams, {
         method: "PUT",
@@ -118,7 +118,7 @@ export class KyServerClient implements HttpClient {
       const { headers = {}, params = {}, data } = options;
       const urlWithParams = this.buildUrlWithParams(url, params);
 
-      logger.debug(this.CONTEXT, `Выполняем PATCH запрос к: ${this.baseUrl}${urlWithParams}`);
+      logger.debug(this.CONTEXT, `Выполняем PATCH запрос к: ${this.baseUrl.endsWith('/') ? this.baseUrl : this.baseUrl + '/'}${urlWithParams}`);
 
       const response = await this.kyInstance(urlWithParams, {
         method: "PATCH",
@@ -138,7 +138,7 @@ export class KyServerClient implements HttpClient {
       const { headers = {}, params = {} } = options;
       const urlWithParams = this.buildUrlWithParams(url, params);
 
-      logger.debug(this.CONTEXT, `Выполняем DELETE запрос к: ${this.baseUrl}${urlWithParams}`);
+      logger.debug(this.CONTEXT, `Выполняем DELETE запрос к: ${this.baseUrl.endsWith('/') ? this.baseUrl : this.baseUrl + '/'}${urlWithParams}`);
 
       const response = await this.kyInstance(urlWithParams, {
         method: "DELETE",

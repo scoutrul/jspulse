@@ -119,4 +119,74 @@ restart: down d
 # 🔄 Перезапуск Windows
 winrestart: windown winbg
 
-.PHONY: start stop logs status clean init up full dev d down prod restart win winbg windown winlogs winclean winstatus winrestart 
+# Переменные
+COMPOSE_FILE = docker-compose.yml
+
+# Показать все доступные команды  
+help:
+	@echo "Доступные команды:"
+	@echo "  up       - Запустить проект с нуля (очистка + сборка + запуск + данные)"
+	@echo "  d        - Запустить в dev режиме"
+	@echo "  down     - Остановить все контейнеры" 
+	@echo "  clean    - Удалить все volumes и контейнеры"
+	@echo "  logs     - Показать логи"
+	@echo "  restart  - Перезапустить контейнеры"
+	@echo "  seed     - Добавить тестовые данные"
+	@echo "  parse    - Парсинг реальных данных с HeadHunter"
+	@echo "  reparse  - Очистить базу и парсить заново"
+
+# ГЛАВНАЯ КОМАНДА - запустить проект с нуля на любой машине
+up:
+	@echo "🚀 Запускаем JSPulse с нуля..."
+	@echo "🧹 Очищаем старые контейнеры и volumes..."
+	docker-compose down -v --remove-orphans 2>/dev/null || true
+	docker system prune -f --volumes 2>/dev/null || true
+	@echo "🏗️ Собираем и запускаем контейнеры..."
+	docker-compose up -d --build --force-recreate
+	@echo "⏳ Ждем запуска backend (30 сек)..."
+	sleep 30
+	@echo "📊 Добавляем тестовые данные..."
+	$(MAKE) seed
+	@echo "✅ Проект запущен!"
+	@echo "🌐 Frontend: http://localhost:3000"
+	@echo "🔧 Backend API: http://localhost:3001"
+	@echo "🗄️ MongoDB: localhost:27017"
+
+# Разработка
+d:
+	docker-compose up -d --build
+
+# Остановить все
+down:
+	docker-compose down
+
+# Полная очистка
+clean:
+	docker-compose down -v --remove-orphans
+	docker system prune -f --volumes
+
+# Логи
+logs:
+	docker-compose logs -f
+
+# Перезапуск
+restart:
+	docker-compose restart
+
+# Добавить тестовые данные
+seed:
+	@echo "📊 Добавляем тестовые данные в MongoDB..."
+	docker exec jspulse-mongodb-1 mongosh jspulse --eval "db.vacancies.insertMany([{title:'Frontend Developer',company:'Test Company',location:'Remote',url:'http://test.com/job1',publishedAt:new Date(),source:'test',skills:['JavaScript','React','TypeScript'],description:'Test vacancy'},{title:'React Developer',company:'Another Company',location:'Moscow',url:'http://test.com/job2',publishedAt:new Date(),source:'test',skills:['React','Node.js','MongoDB'],description:'Another test vacancy'},{title:'Full Stack Developer',company:'Tech Corp',location:'Saint Petersburg',url:'http://test.com/job3',publishedAt:new Date(),source:'test',skills:['JavaScript','Vue.js','Python','PostgreSQL'],description:'Full stack position'}]); console.log('✅ Test data inserted');"
+
+# Парсинг реальных данных с HeadHunter
+parse:
+	@echo "🕷️ Запускаем парсинг вакансий с HeadHunter..."
+	docker exec jspulse-backend-dev-1 tsx src/scripts/fetchAndSaveFromHH.ts
+
+# Очистить базу и запарсить заново
+reparse:
+	@echo "🧹 Очищаем старые данные и парсим заново..."
+	docker exec jspulse-mongodb-1 mongosh jspulse --eval "db.vacancies.deleteMany({}); console.log('🗑️ Database cleared');"
+	$(MAKE) parse
+
+.PHONY: start stop logs status clean init up full dev d down prod restart win winbg windown winlogs winclean winstatus winrestart help 

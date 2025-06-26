@@ -71,8 +71,9 @@ services:
       - ./backend/src:/app/backend/src
       - ./shared/src:/app/shared/src
       - ./shared/dist:/app/shared/dist
-      - backend_node_modules:/app/backend/node_modules
-      - shared_node_modules:/app/shared/node_modules
+      # Убираем volumes для node_modules - они конфликтуют с pnpm workspace
+      # - backend_node_modules:/app/backend/node_modules
+      # - shared_node_modules:/app/shared/node_modules
     environment:
       - PORT=3001
       - MONGO_URI=mongodb://mongodb:27017/jspulse
@@ -139,8 +140,9 @@ services:
       - ./frontend/tsconfig.json:/app/frontend/tsconfig.json
       - ./shared/src:/app/shared/src
       - ./shared/dist:/app/shared/dist
-      - frontend_node_modules:/app/frontend/node_modules
-      - shared_node_modules_frontend:/app/shared/node_modules
+      # Убираем volumes для node_modules - они конфликтуют с pnpm workspace
+      # - frontend_node_modules:/app/frontend/node_modules
+      # - shared_node_modules_frontend:/app/shared/node_modules
     environment:
       - PORT=3000
       - NODE_ENV=development
