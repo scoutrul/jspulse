@@ -28,12 +28,12 @@ async function testPagination() {
         .limit(limit)
         .skip(offset)
         .sort({ publishedAt: -1 })
-        .lean<VacancyDTO[]>();
+        .lean() as VacancyDTO[];
 
       console.log(`Получено вакансий: ${vacancies.length}`);
 
       // Выводим ID и заголовки вакансий
-      vacancies.forEach((v, i) => {
+      vacancies.forEach((v: any, i: number) => {
         console.log(`${i + 1}. ${v._id}: ${v.title}`);
       });
     }

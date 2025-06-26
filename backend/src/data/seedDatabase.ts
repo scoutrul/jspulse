@@ -87,7 +87,7 @@ export async function executeSeedDatabase(): Promise<{
     output.push("Добавленные вакансии (первые 5):");
     console.log("Добавленные вакансии (первые 5):");
 
-    result.slice(0, 5).forEach((vacancy, index) => {
+    result.slice(0, 5).forEach((vacancy: any, index: number) => {
       const v = vacancy.toObject();
       const vacancyInfo = `${index + 1}. ${v.title} - ${v.company} - Навыки: ${v.skills?.join(", ")}`;
       output.push(vacancyInfo);
@@ -102,9 +102,9 @@ export async function executeSeedDatabase(): Promise<{
 
     // Проверим, что вакансии доступны через API фильтрации
     const uniqueSkills = new Set<string>();
-    result.forEach((vacancy) => {
+    result.forEach((vacancy: any) => {
       const v = vacancy.toObject();
-      v.skills?.forEach((skill) => uniqueSkills.add(skill));
+      v.skills?.forEach((skill: string) => uniqueSkills.add(skill));
     });
 
     const skillsInfo = `Доступно ${uniqueSkills.size} уникальных навыков для фильтрации:`;
@@ -125,7 +125,7 @@ export async function executeSeedDatabase(): Promise<{
       { $group: { _id: "$skills" } },
       { $sort: { _id: 1 } },
     ]);
-    const allUniqueSkillsFromDB = allSkillsAggregation.map((item) => item._id);
+    const allUniqueSkillsFromDB = allSkillsAggregation.map((item: any) => item._id);
 
     const dbSkillsInfo = `Найдено всего ${allUniqueSkillsFromDB.length} уникальных навыков во всей коллекции Vacancy:`;
     output.push(dbSkillsInfo);
@@ -189,9 +189,9 @@ async function seedDatabase() {
 }
 
 // Запускаем функцию только если файл запущен напрямую
-if (import.meta.url === `file://${process.argv[1]}`) {
-  seedDatabase();
-}
+// if (import.meta.url === `file://${process.argv[1]}`) {
+//   seedDatabase();
+// }
 
 // Экспортируем функцию для использования в API
 export default executeSeedDatabase;

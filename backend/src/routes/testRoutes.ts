@@ -46,11 +46,11 @@ router.get("/pagination", async (req: Request, res: Response) => {
       .limit(limitNum)
       .skip(offset)
       .sort({ publishedAt: -1 })
-      .lean<VacancyDTO[]>();
+      .lean() as VacancyDTO[];
     console.log(`[GET /api/test/pagination] Получено вакансий из БД: ${vacancies.length}`);
 
     // Валидируем вакансии через Zod
-    const validatedVacancies = vacancies.map(vacancy => {
+    const validatedVacancies = vacancies.map((vacancy: any) => {
       // Преобразуем ObjectId в строку
       const vacancyWithStringId = {
         ...vacancy,

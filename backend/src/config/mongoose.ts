@@ -3,21 +3,12 @@ let mongoose: any;
 
 async function getMongoose() {
   if (!mongoose) {
-    // Динамический импорт для обхода ESM/CommonJS проблем
+    // Простой динамический импорт mongoose
     try {
-      // Пробуем через createRequire для CommonJS совместимости
-      const { createRequire } = await import('module');
-      const require = createRequire(import.meta.url);
-      mongoose = require('mongoose');
+      const mongooseModule = await import('mongoose');
+      mongoose = mongooseModule.default || mongooseModule;
     } catch (error) {
-      // Fallback на динамический импорт
-      try {
-        const mongooseModule = await import('mongoose/index.js');
-        mongoose = mongooseModule.default || mongooseModule;
-      } catch (error2) {
-        const mongooseModule = await import('mongoose');
-        mongoose = mongooseModule.default || mongooseModule;
-      }
+      throw new Error('Failed to import mongoose: ' + error);
     }
   }
   return mongoose;
