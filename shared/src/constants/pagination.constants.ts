@@ -53,6 +53,28 @@ export const PAGINATION = {
   }
 } as const;
 
+/**
+ * Константы для системы архивации вакансий
+ */
+export const ARCHIVE = {
+  /** Время жизни активной вакансии в днях */
+  ACTIVE_VACANCY_DAYS: 30,
+
+  /** Время жизни активной вакансии в миллисекундах */
+  ACTIVE_VACANCY_MS: 30 * 24 * 60 * 60 * 1000, // 30 дней в мс
+
+  /** Параметры запроса */
+  QUERY_PARAMS: {
+    INCLUDE_ARCHIVED: 'includeArchived'
+  },
+
+  /** Статусы архивации */
+  STATUS: {
+    ACTIVE: 'active',
+    ARCHIVED: 'archived'
+  }
+} as const;
+
 // API константы
 export const API = {
   /** Endpoints */
@@ -93,4 +115,5 @@ export const LOCALE = {
 export type PageSize = typeof PAGINATION.AVAILABLE_PAGE_SIZES[number];
 export type ProgressiveStep = keyof typeof PAGINATION.PROGRESSIVE_STEPS;
 export type HttpMethod = typeof API.METHODS[keyof typeof API.METHODS];
-export type HttpStatus = typeof API.STATUS[keyof typeof API.STATUS]; 
+export type HttpStatus = typeof API.STATUS[keyof typeof API.STATUS];
+export type ArchiveStatus = typeof ARCHIVE.STATUS[keyof typeof ARCHIVE.STATUS]; 

@@ -50,6 +50,8 @@
 		tabindex="0"
 	>
 		<!-- Dialog content -->
+		<!-- svelte-ignore a11y_click_events_have_key_events -->
+		<!-- svelte-ignore a11y_interactive_supports_focus -->
 		<div 
 			class="bg-card rounded-lg p-6 max-w-md mx-4 shadow-xl animate-scale-in"
 			on:click|stopPropagation

@@ -1,8 +1,8 @@
-import { VacancyApi, type VacanciesOptions, type VacanciesResponse } from "$lib/api/vacancy.api";
+import { VacancyApi, type VacanciesOptions, type VacanciesResponse, type SingleVacancyResponse } from "$lib/api/vacancy.api";
 import type { VacancyDTO } from "@jspulse/shared";
 
 // Экспортируем типы для использования в других модулях
-export { type VacanciesOptions, type VacanciesResponse } from "$lib/api/vacancy.api";
+export { type VacanciesOptions, type VacanciesResponse, type SingleVacancyResponse } from "$lib/api/vacancy.api";
 
 /**
  * Получение вакансий на сервере
@@ -49,6 +49,7 @@ export const fetchSkillsStatsServer = async (
 
 /**
  * Получение детальной информации о вакансии на сервере
+ * Возвращает вакансию независимо от того, архивная она или нет
  * 
  * @param fetch Функция fetch из SvelteKit
  * @param id ID вакансии
@@ -58,7 +59,7 @@ export const fetchVacancyByIdServer = async (
   fetch: typeof globalThis.fetch,
   id: string,
   sanitizeHtml?: (html: string) => string
-): Promise<VacancyDTO | null> => {
+): Promise<SingleVacancyResponse | null> => {
   // Создаем экземпляр API для использования на сервере
   const vacancyApi = new VacancyApi({ fetch });
   return vacancyApi.fetchVacancyById(id, sanitizeHtml);

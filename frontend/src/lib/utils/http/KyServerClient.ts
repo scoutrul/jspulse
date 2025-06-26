@@ -14,8 +14,11 @@ export class KyServerClient implements HttpClient {
     private options: KyOptions = {},
     private customFetch?: typeof globalThis.fetch
   ) {
+    // Убеждаемся, что baseUrl заканчивается слешем для корректной работы с prefixUrl
+    const normalizedBaseUrl = baseUrl.endsWith('/') ? baseUrl : baseUrl + '/';
+
     this.kyInstance = ky.create({
-      prefixUrl: baseUrl,
+      prefixUrl: normalizedBaseUrl,
       ...options,
       fetch: customFetch,
     });

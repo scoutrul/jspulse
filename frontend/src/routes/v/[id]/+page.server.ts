@@ -10,17 +10,19 @@ export const load: PageServerLoad = async ({ params, fetch }) => {
   logger.info(CONTEXT, `Запрос вакансии с ID: ${id}`);
 
   try {
-    const vacancy = await fetchVacancyByIdServer(fetch, id);
+    const response = await fetchVacancyByIdServer(fetch, id);
 
-    if (!vacancy) {
+    if (!response) {
       logger.warn(CONTEXT, `Вакансия с ID ${id} не найдена`);
       throw error(404, 'Вакансия не найдена');
     }
 
-    logger.info(CONTEXT, `Вакансия загружена: ${vacancy.title}`);
+    const { vacancy, isArchived } = response;
+    logger.info(CONTEXT, `Вакансия загружена: ${vacancy.title} (архивная: ${isArchived})`);
 
     return {
-      vacancy
+      vacancy,
+      isArchived
     };
   } catch (err) {
     logger.error(CONTEXT, `Ошибка при загрузке вакансии ${id}:`, err);

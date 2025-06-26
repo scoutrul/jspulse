@@ -1,11 +1,66 @@
-import mongoose from "mongoose";
+import { getMongoose } from "../config/mongoose.js";
 import ky, { HTTPError } from "ky";
-import { Vacancy } from "../models/Vacancy.js";
 import { transformHHVacancyToIVacancy, transformHHVacancyWithFullDescription } from "../utils/transformations.js";
 import type { HHResponseRaw } from "@jspulse/shared";
 import dotenv from "dotenv";
 dotenv.config();
 import { HH_API_BASE_URL } from "../config/api.js";
+
+// Функция для получения модели в скриптах
+async function getVacancyModel() {
+  const mongoose = await getMongoose() as any;
+
+  const vacancySchema = new mongoose.Schema(
+    {
+      externalId: { type: String, unique: true, sparse: true },
+      title: { type: String, required: true },
+      company: { type: String, required: true },
+      location: { type: String },
+      url: { type: String, required: true },
+      publishedAt: { type: Date, required: true },
+      source: { type: String, required: true },
+      description: { type: String },
+      fullDescription: {
+        type: {
+          raw: { type: String },
+          preview: { type: String },
+          processed: { type: String },
+          textOnly: { type: String }
+        },
+        default: undefined
+      },
+      processedHtml: { type: String },
+      schedule: { type: String },
+      skills: [{ type: String }],
+      salaryFrom: { type: Number },
+      salaryTo: { type: Number },
+      salaryCurrency: { type: String },
+      experience: { type: String },
+      employment: { type: String },
+      address: { type: String },
+
+      sourceId: { type: String, unique: true, sparse: true },
+      sourceChannel: { type: String },
+      sourceUrl: { type: String },
+      contact: { type: String },
+      workFormat: { type: String },
+      hashtags: [{ type: String }],
+      confidence: { type: Number },
+      parsedAt: { type: Date },
+
+      rawData: { type: mongoose.Schema.Types.Mixed },
+    },
+    {
+      timestamps: true,
+      versionKey: false,
+      collection: "vacancies",
+    }
+  );
+
+  vacancySchema.index({ publishedAt: -1 });
+
+  return mongoose.model("Vacancy", vacancySchema);
+}
 
 const SOURCE_HH = "hh.ru";
 const MAX_VACANCIES_PER_PAGE = 10; // HH API limit
@@ -23,8 +78,12 @@ async function fetchAndSaveHHVacancies() {
 
   let connection;
   try {
+    const mongoose = await getMongoose();
     connection = await mongoose.connect(mongoUrl);
     console.log("✅ Успешное подключение к MongoDB");
+
+    // Получаем модель
+    const Vacancy = await getVacancyModel();
 
     // Проверяем текущее состояние БД
     const initialCount = await Vacancy.countDocuments();
@@ -189,6 +248,7 @@ async function fetchAndSaveHHVacancies() {
     console.error("💥 Произошла критическая ошибка во время выполнения скрипта:", error);
   } finally {
     if (connection) {
+      const mongoose = await getMongoose();
       await mongoose.disconnect();
       console.log("🔌 Соединение с MongoDB закрыто");
     }

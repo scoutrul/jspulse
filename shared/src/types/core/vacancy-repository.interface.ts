@@ -26,6 +26,9 @@ export interface IVacancyFindCriteria extends IFindCriteria<VacancyDTO> {
 
   // Текстовый поиск по названию, описанию и компании
   searchText?: string;
+
+  // Включать ли архивные вакансии в результаты поиска
+  includeArchived?: boolean;
 }
 
 /**
@@ -53,6 +56,12 @@ export interface IVacancyRepository extends IRepository<VacancyDTO> {
   findByExternalId(externalId: string, source: string): Promise<VacancyDTO | null>;
 
   /**
+   * Поиск вакансии по sourceId для предотвращения дубликатов.
+   * Используется при парсинге Telegram каналов.
+   */
+  findBySourceId(sourceId: string): Promise<VacancyDTO | null>;
+
+  /**
    * Массовое создание вакансий с проверкой на дубликаты.
    * Оптимизированный метод для импорта больших объемов данных.
    */
@@ -77,4 +86,16 @@ export interface IVacancyRepository extends IRepository<VacancyDTO> {
       max: number;
     };
   }>;
+
+  /**
+   * Получение только активных (не архивных) вакансий.
+   * Вакансии считаются активными если опубликованы в течение последних 30 дней.
+   */
+  findActiveVacancies(criteria: Omit<IVacancyFindCriteria, 'includeArchived'>): Promise<IFindResult<VacancyDTO>>;
+
+  /**
+   * Проверка является ли вакансия архивной.
+   * Возвращает true если вакансия старше 30 дней.
+   */
+  isArchived(vacancyId: string): Promise<boolean>;
 } 

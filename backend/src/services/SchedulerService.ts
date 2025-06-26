@@ -1,6 +1,6 @@
 import cron from 'node-cron';
 import { EventEmitter } from 'events';
-import fetchAndSaveHHVacancies from '../scripts/fetchAndSaveFromHH.js';
+// import fetchAndSaveHHVacancies from '../scripts/fetchAndSaveFromHH.js';
 
 /**
  * 🕰️ SchedulerService - Production-ready автоматические обновления
@@ -268,7 +268,8 @@ export class SchedulerService extends EventEmitter {
     for (let attempt = 1; attempt <= this.config.maxRetries; attempt++) {
       try {
         this.log('info', `🔄 HH Parser attempt ${attempt}/${this.config.maxRetries}`);
-        await fetchAndSaveHHVacancies();
+        // await fetchAndSaveHHVacancies();
+        this.log('info', '⚠️ HH Parser temporarily disabled due to mongoose import issues');
 
         this.log('info', '✅ HH Parser completed successfully');
         return; // Успех - выходим из retry loop

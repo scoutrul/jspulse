@@ -34,8 +34,19 @@
     };
   }
 
-  // Проверяем есть ли данные с сервера, иначе инициализируем пустыми
-  if (data.initialVacancies && data.initialVacancies.length > 0) {
+  // Пытаемся восстановить состояние из localStorage
+  let stateRestored = false;
+  if (browser) {
+    stateRestored = vacancyStore.restoreState();
+    if (stateRestored) {
+      console.log("[CLIENT] Состояние восстановлено из localStorage");
+    } else {
+      console.log("[CLIENT] Состояние не найдено, будем загружать с сервера");
+    }
+  }
+  
+  // Проверяем есть ли данные с сервера, используем их только если состояние не восстановлено
+  if (!stateRestored && data.initialVacancies && data.initialVacancies.length > 0) {
     vacancyStore.setVacancies(
       data.initialVacancies.map(convertVacancy),
       data.totalCount || 0,
@@ -89,8 +100,8 @@
         vacancyStore.setSkills(skills);
       }
       
-      // Если нет данных с сервера, загружаем через сервисы
-      if (store.vacancies.length === 0) {
+      // Если нет данных (ни восстановленных, ни с сервера), загружаем через сервисы
+      if (store.vacancies.length === 0 && !stateRestored) {
         console.log("[CLIENT] Загружаем данные через сервисы...");
         vacancyStore.setLoading(true);
         
@@ -180,7 +191,7 @@
   // Сброс фильтра
   async function handleReset() {
     vacancyStore.setSkills([]);
-    vacancyStore.reset();
+    vacancyStore.reset(); // Это очистит localStorage и сбросит состояние
     vacancyStore.setLoading(true);
     
     const response = await vacancyService.fetchVacanciesClient({
