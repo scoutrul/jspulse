@@ -152,10 +152,10 @@ router.post("/parse-hh", async (req: Request, res: Response) => {
     const startTime = Date.now();
 
     // Импортируем скрипт парсинга
-    const { default: executeHHParsing } = await import('../scripts/fetchAndSaveFromHH.js');
+    // const { default: executeHHParsing } = await import('../scripts/fetchAndSaveFromHH.js');
 
     // Запускаем парсинг в отдельном процессе для не блокирования API
-    const parsingPromise = executeHHParsing();
+    // const parsingPromise = executeHHParsing();
 
     // Не ждем завершения, возвращаем ответ сразу
     const executionTime = Date.now() - startTime;
@@ -164,22 +164,22 @@ router.post("/parse-hh", async (req: Request, res: Response) => {
       success: true,
       data: {
         success: true,
-        message: 'HeadHunter parsing started successfully',
+        message: 'HeadHunter parsing temporarily disabled',
         details: {
-          output: 'Parsing started in background. Check logs for progress.',
-          warnings: 'Processing may take 30-60 seconds'
+          output: 'HH parsing is temporarily disabled due to mongoose import issues.',
+          warnings: 'Feature will be restored after fixing ESM compatibility'
         },
         executionTime
       },
-      message: 'HeadHunter parsing started'
+      message: 'HeadHunter parsing temporarily disabled'
     });
 
     // Логируем результат парсинга в фоне
-    parsingPromise.then(() => {
-      console.log('✅ Background HH parsing completed successfully');
-    }).catch((error) => {
-      console.error('❌ Background HH parsing failed:', error);
-    });
+    // parsingPromise.then(() => {
+    //   console.log('✅ Background HH parsing completed successfully');
+    // }).catch((error) => {
+    //   console.error('❌ Background HH parsing failed:', error);
+    // });
 
   } catch (error) {
     console.error('Error starting HH parsing:', error);

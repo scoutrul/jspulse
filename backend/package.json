@@ -6,7 +6,7 @@
   "main": "./dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
-    "dev": "nodemon --exec tsx src/index.ts",
+    "dev": "sleep 5 && nodemon --exec tsx src/index.ts",
     "build": "rm -rf dist && mkdir -p dist/config dist/models dist/routes dist/scripts dist/utils dist/data && npx tsc --project tsconfig.build.json",
     "db:seed": "tsx src/data/seedDatabase.ts",
     "db:hh": "tsx src/scripts/fetchAndSaveFromHH.ts",

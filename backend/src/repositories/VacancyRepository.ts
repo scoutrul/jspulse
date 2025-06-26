@@ -8,7 +8,7 @@ import {
   ARCHIVE
 } from "@jspulse/shared";
 import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
-import { isValidObjectId } from "mongoose";
+import { getMongoose } from "../config/mongoose.js";
 
 /**
  * Конкретная реализация репозитория для работы с вакансиями в MongoDB.
@@ -19,6 +19,18 @@ import { isValidObjectId } from "mongoose";
 export class VacancyRepository implements IVacancyRepository {
 
   constructor(private cacheService?: ICacheService) { }
+
+  /**
+   * Helper для проверки валидности ObjectId через динамический импорт mongoose
+   */
+  private async isValidObjectId(id: string): Promise<boolean> {
+    try {
+      const mongoose = await getMongoose();
+      return mongoose.isValidObjectId(id);
+    } catch {
+      return false;
+    }
+  }
 
   /**
    * Создание новой вакансии.
@@ -42,7 +54,7 @@ export class VacancyRepository implements IVacancyRepository {
    * Всегда возвращает вакансию независимо от того, архивная она или нет.
    */
   async findById(id: string): Promise<VacancyDTO | null> {
-    if (!isValidObjectId(id)) {
+    if (!(await this.isValidObjectId(id))) {
       return null;
     }
 
@@ -114,7 +126,7 @@ export class VacancyRepository implements IVacancyRepository {
     const vacancies = await mongoQuery;
 
     const result = {
-      data: vacancies.map(v => this.documentToDTO(v)),
+      data: vacancies.map((v: any) => this.documentToDTO(v)),
       meta: {
         page,
         limit,
@@ -146,7 +158,7 @@ export class VacancyRepository implements IVacancyRepository {
    * Возвращает true если вакансия старше 30 дней.
    */
   async isArchived(vacancyId: string): Promise<boolean> {
-    if (!isValidObjectId(vacancyId)) {
+    if (!(await this.isValidObjectId(vacancyId))) {
       return false;
     }
 
@@ -173,7 +185,7 @@ export class VacancyRepository implements IVacancyRepository {
    * Инвалидирует кэш для обновленной записи.
    */
   async updateById(id: string, data: Partial<VacancyDTO>): Promise<VacancyDTO | null> {
-    if (!isValidObjectId(id)) {
+    if (!(await this.isValidObjectId(id))) {
       return null;
     }
 
@@ -200,7 +212,7 @@ export class VacancyRepository implements IVacancyRepository {
    * Инвалидирует связанные записи в кэше.
    */
   async deleteById(id: string): Promise<boolean> {
-    if (!isValidObjectId(id)) {
+    if (!(await this.isValidObjectId(id))) {
       return false;
     }
 
@@ -349,7 +361,7 @@ export class VacancyRepository implements IVacancyRepository {
     const vacancies = await mongoQuery;
 
     const result = {
-      data: vacancies.map(v => this.documentToDTO(v)),
+      data: vacancies.map((v: any) => this.documentToDTO(v)),
       meta: {
         page,
         limit,
@@ -388,7 +400,7 @@ export class VacancyRepository implements IVacancyRepository {
       { $sort: { _id: 1 } }
     ]);
 
-    const result = skillsAggregation.map(item => item._id);
+    const result = skillsAggregation.map((item: any) => item._id);
 
     // Кэшируем навыки на 30 минут (данные меняются редко)
     if (this.cacheService) {
@@ -567,11 +579,11 @@ export class VacancyRepository implements IVacancyRepository {
 
     // Форматируем результаты
     const bySource: Record<string, number> = {};
-    sourceStats.forEach(item => {
+    sourceStats.forEach((item: any) => {
       bySource[item._id] = item.count;
     });
 
-    const bySkills = skillStats.map(item => ({
+    const bySkills = skillStats.map((item: any) => ({
       skill: item._id,
       count: item.count
     }));

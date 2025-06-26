@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import { getMongoose } from "../config/mongoose.js";
 import ky, { HTTPError } from "ky";
-import { Vacancy } from "../models/Vacancy.js";
+import { getVacancy } from "../models/Vacancy.js";
 import { transformHHVacancyToIVacancy, transformHHVacancyWithFullDescription } from "../utils/transformations.js";
 import type { HHResponseRaw } from "@jspulse/shared";
 import dotenv from "dotenv";
