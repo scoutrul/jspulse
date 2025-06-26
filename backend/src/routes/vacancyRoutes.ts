@@ -15,14 +15,14 @@ import { z } from "zod";
 import { validateBody, validateQuery, validateParams } from "../middleware/validation.middleware.js";
 import { DIContainer } from '../container/DIContainer.js';
 import { AppError } from '../middleware/ApiError.js';
-import { getMongoose } from '../config/mongoose.js';
+import mongoose from '../config/mongoose.js';
 
 const router: Router = express.Router();
 
 // Helper для проверки ObjectId через динамический импорт
 async function isValidObjectId(id: string): Promise<boolean> {
   try {
-    const mongoose = await getMongoose();
+    // mongoose уже импортирован
     return mongoose.isValidObjectId(id);
   } catch {
     return false;

@@ -1,4 +1,4 @@
-import { getMongoose } from "../config/mongoose.js";
+import mongoose from "../config/mongoose.js";
 import ky, { HTTPError } from "ky";
 import { transformHHVacancyToIVacancy, transformHHVacancyWithFullDescription } from "../utils/transformations.js";
 import type { HHResponseRaw } from "@jspulse/shared";
@@ -8,7 +8,7 @@ import { HH_API_BASE_URL } from "../config/api.js";
 
 // Функция для получения модели в скриптах
 async function getVacancyModel() {
-  const mongoose = await getMongoose() as any;
+  // mongoose уже импортирован
 
   const vacancySchema = new mongoose.Schema(
     {
@@ -73,12 +73,12 @@ async function fetchAndSaveHHVacancies() {
   console.log(`📊 Настройки: ${MAX_PAGES_TO_FETCH} страниц × ${MAX_VACANCIES_PER_PAGE} = до ${MAX_PAGES_TO_FETCH * MAX_VACANCIES_PER_PAGE} вакансий`);
   console.log(`🔍 Получение полных описаний: ${FETCH_FULL_DESCRIPTIONS ? 'ВКЛЮЧЕНО' : 'ВЫКЛЮЧЕНО'}`);
 
-  // Принудительно используем локальный MongoDB
-  const mongoUrl = "mongodb://localhost:27017/jspulse";
+  // Используем MongoDB внутри Docker сети
+  const mongoUrl = process.env.MONGO_URI || "mongodb://mongodb:27017/jspulse";
 
   let connection;
   try {
-    const mongoose = await getMongoose();
+    // mongoose уже импортирован
     connection = await mongoose.connect(mongoUrl);
     console.log("✅ Успешное подключение к MongoDB");
 
@@ -248,7 +248,7 @@ async function fetchAndSaveHHVacancies() {
     console.error("💥 Произошла критическая ошибка во время выполнения скрипта:", error);
   } finally {
     if (connection) {
-      const mongoose = await getMongoose();
+      // mongoose уже импортирован
       await mongoose.disconnect();
       console.log("🔌 Соединение с MongoDB закрыто");
     }

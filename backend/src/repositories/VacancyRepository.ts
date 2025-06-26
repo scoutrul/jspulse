@@ -8,7 +8,7 @@ import {
   ARCHIVE
 } from "@jspulse/shared";
 import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
-import { getMongoose } from "../config/mongoose.js";
+import mongoose from "../config/mongoose.js";
 
 /**
  * Конкретная реализация репозитория для работы с вакансиями в MongoDB.
@@ -25,7 +25,7 @@ export class VacancyRepository implements IVacancyRepository {
    */
   private async isValidObjectId(id: string): Promise<boolean> {
     try {
-      const mongoose = await getMongoose();
+      // mongoose уже импортирован
       return mongoose.isValidObjectId(id);
     } catch {
       return false;

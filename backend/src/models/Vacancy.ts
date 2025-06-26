@@ -1,4 +1,4 @@
-import { getMongoose } from "../config/mongoose.js";
+import mongoose from 'mongoose';
 import type { DescriptionContent } from "../types/DescriptionContent.js";
 
 // Временный локальный интерфейс до исправления shared
@@ -81,8 +81,6 @@ async function initializeVacancyModel() {
   if (vacancyModel) {
     return vacancyModel;
   }
-
-  const mongoose = await getMongoose() as any;
 
   const vacancySchema = new mongoose.Schema(
     {

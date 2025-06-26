@@ -1,4 +1,4 @@
-import { getMongoose } from './mongoose.js';
+import mongoose from './mongoose.js';
 
 /**
  * Подключение к MongoDB с обработкой ошибок и логированием.
@@ -6,7 +6,7 @@ import { getMongoose } from './mongoose.js';
  */
 export async function connectToDatabase(): Promise<void> {
   try {
-    const mongoose = await getMongoose();
+    // mongoose уже импортирован
 
     // Проверяем, не подключены ли мы уже к базе данных
     if (mongoose.connection.readyState === 1) {
@@ -40,7 +40,7 @@ export async function connectToDatabase(): Promise<void> {
  */
 export async function disconnectFromDatabase(): Promise<void> {
   try {
-    const mongoose = await getMongoose();
+    // mongoose уже импортирован  
     await mongoose.disconnect();
     console.log('✅ Disconnected from MongoDB');
   } catch (error) {
