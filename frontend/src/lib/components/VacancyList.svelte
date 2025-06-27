@@ -1,4 +1,5 @@
 <script lang="ts">
+  // 🔥 HOT RELOAD TEST - DELETE BUTTONS ENABLED
   import type { VacancyWithHtml } from "@jspulse/shared";
   import VacancyCard from "$lib/components/VacancyCard/VacancyCard.svelte";
   import MagnifyingGlass from 'svelte-heros-v2/MagnifyingGlass.svelte';
@@ -12,6 +13,7 @@
 
   const dispatch = createEventDispatcher<{
     skillClick: string;
+    vacancyDeleted: { vacancyId: string; title: string };
   }>();
 
   $: showNoVacanciesMessage = !loadingFilter && !clientError && vacancies && vacancies.length === 0;
@@ -21,7 +23,22 @@
     dispatch('skillClick', event.detail);
   }
 
-
+  let deletingVacancyId: string | null = null;
+  
+  function handleVacancyDeleted(event: CustomEvent<{ vacancyId: string; title: string }>) {
+    const { vacancyId, title } = event.detail;
+    
+    // Устанавливаем состояние удаления
+    deletingVacancyId = vacancyId;
+    
+    // Задержка для анимации
+    setTimeout(() => {
+      vacancies = vacancies.filter(v => v._id !== vacancyId);
+      deletingVacancyId = null;
+      
+      dispatch('vacancyDeleted', { vacancyId, title });
+    }, 200);
+  }
 </script>
 
 <div class="vacancies" class:loading={loadingFilter}>
@@ -38,8 +55,11 @@
             <VacancyCard 
               {vacancy} 
               showDetailLink={true} 
+              showDeleteButton={true}
+              isDeleting={deletingVacancyId === vacancy._id}
               theme={$theme}
-              on:skillClick={handleSkillClick} 
+              on:skillClick={handleSkillClick}
+              on:deleted={handleVacancyDeleted}
             />
           </li>
         {/each}

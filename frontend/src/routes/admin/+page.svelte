@@ -140,6 +140,17 @@
 		showConfirmDialog = true;
 	}
 
+	// Обработчик удаления вакансии
+	function handleVacancyDeleted(event: CustomEvent<{ vacancyId: string; title: string }>) {
+		const { title } = event.detail;
+		
+		// Показываем уведомление об успешном удалении
+		console.log(`✅ Вакансия "${title}" удалена`);
+		
+		// Обновляем статистику
+		loadSystemStats();
+	}
+
 	// Обработчики диалога подтверждения
 	function handleConfirm() {
 		if (confirmCallback) {
@@ -217,7 +228,7 @@
 				{/if}
 				
 				{#if recentVacancies.length > 0}
-					<RecentVacancies vacancies={recentVacancies} />
+					<RecentVacancies vacancies={recentVacancies} on:vacancyDeleted={handleVacancyDeleted} />
 				{/if}
 			</div>
 

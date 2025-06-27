@@ -218,6 +218,34 @@ export class VacancyApi {
       return null;
     }
   }
+
+  /**
+   * Удаление вакансии по ID
+   */
+  async deleteVacancy(id: string): Promise<{ success: boolean; title?: string; error?: string }> {
+    try {
+      logger.debug(this.CONTEXT, `Удаление вакансии по ID: ${id}`);
+
+      const response = await this.httpClient.delete(`/api/admin/vacancy/${id}`);
+
+      // Проверяем успешность удаления
+      if (response && typeof response === 'object' && 'success' in response) {
+        const typedResponse = response as { success: boolean; title?: string; error?: string };
+        if (typedResponse.success) {
+          logger.debug(this.CONTEXT, `Вакансия ${id} успешно удалена`);
+          return { success: true, title: typedResponse.title };
+        } else {
+          logger.error(this.CONTEXT, `Ошибка удаления вакансии ${id}:`, typedResponse.error);
+          return { success: false, error: typedResponse.error || 'Ошибка удаления' };
+        }
+      }
+
+      return { success: false, error: 'Неожиданный формат ответа' };
+    } catch (error) {
+      logger.error(this.CONTEXT, `Ошибка при удалении вакансии ${id}`, error);
+      return { success: false, error: 'Ошибка сети или сервера' };
+    }
+  }
 }
 
 // Создаем синглтон для использования в клиентском коде

@@ -73,93 +73,57 @@ export interface IVacancyDocument extends IVacancy {
   rawData?: any;
 }
 
-// Глобальная переменная для модели
-let vacancyModel: any = null;
-
-// Функция инициализации модели
-async function initializeVacancyModel() {
-  if (vacancyModel) {
-    return vacancyModel;
-  }
-
-  const vacancySchema = new mongoose.Schema(
-    {
-      externalId: { type: String, unique: true, sparse: true },
-      title: { type: String, required: true },
-      company: { type: String, required: true },
-      location: { type: String },
-      url: { type: String, required: true },
-      publishedAt: { type: Date, required: true },
-      source: { type: String, required: true },
-      description: { type: String },
-      fullDescription: {
-        type: {
-          raw: { type: String },
-          preview: { type: String },
-          processed: { type: String },
-          textOnly: { type: String }
-        },
-        default: undefined
+// ПРОСТАЯ НОРМАЛЬНАЯ СХЕМА БЕЗ ЕБАНЫХ ПРОКСИ!
+const vacancySchema = new mongoose.Schema(
+  {
+    externalId: { type: String, unique: true, sparse: true },
+    title: { type: String, required: true },
+    company: { type: String, required: true },
+    location: { type: String },
+    url: { type: String, required: true },
+    publishedAt: { type: Date, required: true },
+    source: { type: String, required: true },
+    description: { type: String },
+    fullDescription: {
+      type: {
+        raw: { type: String },
+        preview: { type: String },
+        processed: { type: String },
+        textOnly: { type: String }
       },
-      processedHtml: { type: String },
-      schedule: { type: String },
-      skills: [{ type: String }],
-      salaryFrom: { type: Number },
-      salaryTo: { type: Number },
-      salaryCurrency: { type: String },
-      experience: { type: String },
-      employment: { type: String },
-      address: { type: String },
-
-      // Telegram-специфичные поля
-      sourceId: { type: String, unique: true, sparse: true },
-      sourceChannel: { type: String },
-      sourceUrl: { type: String },
-      contact: { type: String },
-      workFormat: { type: String },
-      hashtags: [{ type: String }],
-      confidence: { type: Number },
-      parsedAt: { type: Date },
-
-      rawData: { type: mongoose.Schema.Types.Mixed },
+      default: undefined
     },
-    {
-      timestamps: true,
-      versionKey: false,
-      collection: "vacancies",
-    }
-  );
+    processedHtml: { type: String },
+    schedule: { type: String },
+    skills: [{ type: String }],
+    salaryFrom: { type: Number },
+    salaryTo: { type: Number },
+    salaryCurrency: { type: String },
+    experience: { type: String },
+    employment: { type: String },
+    address: { type: String },
 
-  vacancySchema.index({ publishedAt: -1 });
+    // Telegram-специфичные поля
+    sourceId: { type: String, unique: true, sparse: true },
+    sourceChannel: { type: String },
+    sourceUrl: { type: String },
+    contact: { type: String },
+    workFormat: { type: String },
+    hashtags: [{ type: String }],
+    confidence: { type: Number },
+    parsedAt: { type: Date },
 
-  vacancyModel = mongoose.model("Vacancy", vacancySchema);
-  return vacancyModel;
-}
-
-// Инициализируем модель при импорте
-const vacancyModelPromise = initializeVacancyModel();
-
-// Экспортируем объект, который будет работать как модель после инициализации
-export const Vacancy = new Proxy({} as any, {
-  get(target, prop) {
-    // Если модель ещё не инициализирована, возвращаем промис
-    if (!vacancyModel) {
-      return async (...args: any[]) => {
-        const model = await vacancyModelPromise;
-        const method = model[prop];
-        if (typeof method === 'function') {
-          return method.apply(model, args);
-        }
-        return method;
-      };
-    }
-
-    // Если модель инициализирована, возвращаем её свойство
-    return vacancyModel[prop];
+    rawData: { type: mongoose.Schema.Types.Mixed },
   },
-
-  construct(target, args) {
-    // Для new Vacancy() - возвращаем промис инстанса
-    return vacancyModelPromise.then(model => new model(...args));
+  {
+    timestamps: true,
+    versionKey: false,
+    collection: "vacancies",
   }
-});
+);
+
+// Индекс для быстрой сортировки
+vacancySchema.index({ publishedAt: -1 });
+
+// ПРОСТАЯ НОРМАЛЬНАЯ МОДЕЛЬ КАК У ВСЕХ ЛЮДЕЙ!
+export const Vacancy = mongoose.model<IVacancyDocument>("Vacancy", vacancySchema);

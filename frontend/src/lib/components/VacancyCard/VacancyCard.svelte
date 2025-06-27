@@ -5,6 +5,7 @@
   import { goto } from '$app/navigation';
   import { saveScrollPosition } from '$lib/stores/scrollStore';
   import { DEFAULT_THEME } from '$lib/constants/theme';
+  import { fly } from 'svelte/transition';
   
   import VacancyCardHeader from './VacancyCardHeader.svelte';
   import VacancyCardContent from './VacancyCardContent.svelte';
@@ -16,9 +17,12 @@
   export let showDetailLink: boolean = false; // Для отображения ссылки на детальную страницу
   export let isDetailPage: boolean = false; // Указывает, что это детальная страница
   export let theme: 'light' | 'dark' = DEFAULT_THEME; // Тема карточки (теперь используется только для переопределения глобальной темы)
+  export let showDeleteButton: boolean = false; // Показывать ли кнопку удаления
+  export let isDeleting: boolean = false; // Состояние удаления для анимации
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
+    deleted: { vacancyId: string; title: string }; // Событие удаления
   }>();
   
   $: sanitizedDescription = vacancy?.description ? sanitizeDescription(vacancy.description) : '';
@@ -34,9 +38,27 @@
       goto(`/v/${vacancy._id}`, { noScroll: true });
     }
   }
+
+  function handleVacancyDeleted(event: CustomEvent<{ vacancyId: string; title: string }>) {
+    // Устанавливаем состояние удаления
+    isDeleting = true;
+    
+    // Небольшая задержка для анимации, затем передаем событие
+    setTimeout(() => {
+      dispatch('deleted', event.detail);
+    }, 200);
+  }
 </script>
 
-<article class="vacancy-card" class:dark-theme={theme === 'dark'} class:light-theme={theme === 'light'} data-testid="vacancy-card">
+<article 
+  class="vacancy-card" 
+  class:dark-theme={theme === 'dark'} 
+  class:light-theme={theme === 'light'} 
+  class:is-deleting={isDeleting}
+  data-testid="vacancy-card"
+  in:fly={{ y: 20, duration: 300, delay: 100 }}
+  out:fly={{ x: -200, opacity: 0, duration: 200 }}
+>
   <div class="vacancy-card__container">
     <!-- Header Section -->
     <VacancyCardHeader 
@@ -73,6 +95,10 @@
       source={vacancy.source}
       {backUrl}
       {backLabel}
+      vacancyId={vacancy._id}
+      vacancyTitle={vacancy.title}
+      {showDeleteButton}
+      on:deleted={handleVacancyDeleted}
     />
   </div>
   
@@ -98,6 +124,14 @@
       0 1px 3px rgba(0, 0, 0, 0.2), 
       0 1px 2px rgba(0, 0, 0, 0.15),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  }
+
+  /* Состояние удаления */
+  .vacancy-card.is-deleting {
+    @apply opacity-50 scale-95;
+    @apply bg-red-900 border-red-600;
+    transform: translateX(-10px) scale(0.95);
+    transition: all 0.2s ease-in-out;
   }
 
   /* Светлая тема как переопределение */

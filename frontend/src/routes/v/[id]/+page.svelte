@@ -6,6 +6,7 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import { theme } from '$lib/stores/themeStore';
+  import { goto } from '$app/navigation';
   
   export let data: PageData;
   
@@ -30,6 +31,13 @@
       }, 100);
     }
   });
+
+  // Обработчик удаления вакансии
+  function handleVacancyDeleted(event: CustomEvent<{ vacancyId: string; title: string }>) {
+    console.log(`✅ Вакансия "${event.detail.title}" удалена`);
+    // После удаления перенаправляем на главную страницу
+    // Переход уже обрабатывается в VacancyCardActions
+  }
 </script>
 
 <svelte:head>
@@ -56,7 +64,7 @@
         </p>
       </div>
     {/if}
-    <VacancyCard {vacancy} isDetailPage={true} theme={$theme} />
+    <VacancyCard {vacancy} isDetailPage={true} theme={$theme} showDeleteButton={true} on:deleted={handleVacancyDeleted} />
   {:else}
     <div class="loading-placeholder">
       <div class="loading-content">

@@ -2,16 +2,60 @@
   import { page } from '$app/stores';
   import { goto } from '$app/navigation';
   import GradientButton from '../ui/GradientButton.svelte';
+  import { createEventDispatcher } from 'svelte';
+  import { vacancyService } from '$lib/services/vacancy.service';
+  
+  const dispatch = createEventDispatcher();
   
   export let url: string | undefined = undefined;
   export let source: string | undefined = undefined;
   export let backUrl: string = '/';
   export let backLabel: string = 'Вернуться к списку';
+  export let vacancyId: string | undefined = undefined;
+  export let showDeleteButton: boolean = false; // Показывать ли кнопку удаления
+  export let vacancyTitle: string = 'эту вакансию'; // Для текста подтверждения
+  
+  let isDeleting = false;
   
   function handleBackClick() {
     // Используем программную навигацию с опцией noScroll
     // Это позволит нашему кастомному scrollStore восстановить позицию
     goto(backUrl, { noScroll: true });
+  }
+
+  async function handleDelete() {
+    if (isDeleting || !vacancyId) return;
+    
+    // Подтверждение удаления
+    const confirmed = confirm(`Вы уверены что хотите удалить вакансию "${vacancyTitle}"?`);
+    if (!confirmed) return;
+    
+    isDeleting = true;
+    
+    try {
+      const result = await vacancyService.deleteVacancy(vacancyId);
+      
+      if (result.success) {
+        // Отправляем событие об успешном удалении
+        dispatch('deleted', { 
+          vacancyId: vacancyId,
+          title: vacancyTitle 
+        });
+        
+        // Переходим к списку ТОЛЬКО с детальных страниц
+        if ($page.url.pathname !== '/') {
+          goto(backUrl);
+        }
+      } else {
+        console.error('Failed to delete vacancy:', result.error);
+        alert('Ошибка удаления: ' + (result.error || 'Неизвестная ошибка'));
+      }
+    } catch (error) {
+      console.error('Error deleting vacancy:', error);
+      alert('Ошибка сети при удалении вакансии');
+    } finally {
+      isDeleting = false;
+    }
   }
 </script>
 
@@ -35,6 +79,34 @@
           </GradientButton>
         </button>
       </div>
+      
+      <!-- Кнопка удаления -->
+      {#if showDeleteButton && vacancyId}
+        <div class="delete-action">
+          <button 
+            type="button" 
+            class="action-link delete-link" 
+            on:click={handleDelete}
+            disabled={isDeleting}
+          >
+            <GradientButton variant="outline" size="lg" disabled={isDeleting}>
+              <span class="button-content">
+                <span class="button-icon" aria-hidden="true">
+                  {#if isDeleting}
+                    ⏳
+                  {:else}
+                    🗑️
+                  {/if}
+                </span>
+                <span class="button-text">
+                  {isDeleting ? 'Удаление...' : 'Удалить'}
+                </span>
+              </span>
+            </GradientButton>
+          </button>
+        </div>
+      {/if}
+      
       {#if url}
         <div class="primary-action ml-auto">
           <a 
@@ -59,6 +131,35 @@
           </a>
         </div>
       {/if}
+    </div>
+  </div>
+{:else if showDeleteButton && vacancyId}
+  <!-- Главная страница - показываем только кнопку удаления при hover -->
+  <div class="vacancy-actions main-page-actions">
+    <div class="actions-container">
+      <div class="delete-action-hover">
+        <button 
+          type="button" 
+          class="action-link delete-link-main" 
+          on:click={handleDelete}
+          disabled={isDeleting}
+        >
+          <GradientButton variant="outline" size="lg" disabled={isDeleting}>
+            <span class="button-content">
+              <span class="button-icon" aria-hidden="true">
+                {#if isDeleting}
+                  ⏳
+                {:else}
+                  🗑️
+                {/if}
+              </span>
+              <span class="button-text">
+                {isDeleting ? 'Удаление...' : 'Удалить'}
+              </span>
+            </span>
+          </GradientButton>
+        </button>
+      </div>
     </div>
   </div>
 {/if}
@@ -119,6 +220,36 @@
     @apply transform -translate-x-1;
   }
   
+  /* Кнопка удаления на главной странице */
+  .main-page-actions {
+    @apply mt-6 pt-4 border-t border-neutral-200;
+    @apply transition-colors duration-300;
+  }
+  
+  /* Темная тема для main-page-actions */
+  :global(.dark) .main-page-actions {
+    @apply border-slate-600;
+  }
+  
+  .delete-action-hover {
+    @apply flex;
+  }
+  
+  .delete-link-main {
+    @apply block w-full;
+    @apply no-underline;
+    @apply transition-all duration-200;
+    @apply focus:outline-2 focus:outline-offset-2 focus:outline-red-500;
+    @apply rounded-lg;
+    @apply border-none bg-transparent p-0 cursor-pointer;
+  }
+  
+  .delete-link-main:disabled {
+    @apply cursor-not-allowed opacity-50;
+  }
+  
+
+
   /* Responsive design */
   @media (max-width: 640px) {
     .vacancy-actions {
@@ -160,5 +291,27 @@
   /* Focus стили для клавиатурной навигации */
   .action-link:focus-visible {
     @apply outline-2 outline-offset-2 outline-primary-500;
+  }
+
+  /* Стили для кнопки удаления */
+  .delete-action .action-link {
+    @apply text-red-600;
+  }
+
+  :global(.dark) .delete-action .action-link {
+    @apply text-red-400;
+  }
+
+  .delete-action .action-link:hover {
+    @apply text-red-700;
+  }
+
+  :global(.dark) .delete-action .action-link:hover {
+    @apply text-red-300;
+  }
+
+  /* Дополнительный стиль для отключенного состояния */
+  .delete-action .action-link:disabled {
+    @apply opacity-50 cursor-not-allowed;
   }
 </style> 

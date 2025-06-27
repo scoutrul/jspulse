@@ -7,9 +7,11 @@
   import LoadingIndicator from "$lib/components/LoadingIndicator.svelte";
   import ErrorMessage from "$lib/components/ErrorMessage.svelte";
   import TagBubblesCanvas from "$lib/components/TagBubblesCanvas.svelte";
+  import ToastNotifications from "$lib/components/admin/ToastNotifications.svelte";
   import { vacancyService } from "$lib/services/vacancy.service";
   import { vacancyStore } from "$lib/stores/vacancyStore";
   import { restoreScrollPosition } from "$lib/stores/scrollStore";
+  import { showNotification } from "$lib/stores/notificationStore";
   import { onMount, beforeUpdate } from 'svelte';
   import { afterNavigate } from '$app/navigation';
   import { page } from '$app/stores';
@@ -34,25 +36,28 @@
     };
   }
 
-  // Пытаемся восстановить состояние из localStorage
+  // НЕ восстанавливаем состояние из localStorage чтобы избежать проблем с кешем после удаления
   let stateRestored = false;
-  if (browser) {
-    stateRestored = vacancyStore.restoreState();
-    if (stateRestored) {
-      console.log("[CLIENT] Состояние восстановлено из localStorage");
-    } else {
-      console.log("[CLIENT] Состояние не найдено, будем загружать с сервера");
-    }
-  }
+  // if (browser) {
+  //   stateRestored = vacancyStore.restoreState();
+  //   if (stateRestored) {
+  //     console.log("[CLIENT] Состояние восстановлено из localStorage");
+  //   } else {
+  //     console.log("[CLIENT] Состояние не найдено, будем загружать с сервера");
+  //   }
+  // }
   
-  // Проверяем есть ли данные с сервера, используем их только если состояние не восстановлено
-  if (!stateRestored && data.initialVacancies && data.initialVacancies.length > 0) {
+  // Проверяем есть ли СВЕЖИЕ данные с сервера, используем их для предотвращения мерцания
+  if (data.initialVacancies && data.initialVacancies.length > 0) {
+    console.log('[INIT] Используем данные с сервера для предотвращения мерцания:', data.initialVacancies.length);
     vacancyStore.setVacancies(
       data.initialVacancies.map(convertVacancy),
       data.totalCount || 0,
       data.totalPages || 0,
       data.page || 0
     );
+  } else {
+    console.log('[INIT] Нет данных с сервера, будем загружать через API');
   }
 
   let availableSkills: string[] = data.availableSkills || [];
@@ -100,9 +105,9 @@
         vacancyStore.setSkills(skills);
       }
       
-      // Если нет данных (ни восстановленных, ни с сервера), загружаем через сервисы
-      if (store.vacancies.length === 0 && !stateRestored) {
-        console.log("[CLIENT] Загружаем данные через сервисы...");
+      // Загружаем данные только если их нет или при необходимости обновления
+      if (store.vacancies.length === 0) {
+        console.log("[CLIENT] Загружаем данные через API...");
         vacancyStore.setLoading(true);
         
         try {
@@ -156,6 +161,8 @@
         } finally {
           vacancyStore.setLoading(false);
         }
+      } else {
+        console.log("[CLIENT] Данные уже загружены с сервера, пропускаем API запрос");
       }
 
     }
@@ -218,6 +225,97 @@
   // Клик по тегу-навыку
   function handleSkillClick(event: CustomEvent<string>) {
     handleSkillsChange([event.detail]);
+  }
+
+  // Обработчик удаления вакансии
+  async function handleVacancyDeleted(event: CustomEvent<{ vacancyId: string; title: string }>) {
+    const { vacancyId, title } = event.detail;
+    
+    try {
+      // Вызываем API удаления
+      const result = await vacancyService.deleteVacancy(vacancyId);
+      
+      if (result.success) {
+        console.log(`✅ Вакансия "${title}" удалена, принудительно обновляем данные...`);
+        
+        // Toast уведомление об успешном удалении
+        showNotification('success', `Вакансия удалена`, `"${title}" успешно удалена из базы данных`);
+        
+        // 1. АГРЕССИВНАЯ ОЧИСТКА ВСЕГО КЕША И ФИЛЬТРОВ
+        console.log('[CACHE] Полная очистка localStorage и сброс фильтров...');
+        vacancyStore.clearStoredState(); // Это теперь очищает и selectedSkills
+        
+        // Дополнительная очистка - убиваем ВСЕ связанное с jspulse в localStorage
+        if (browser) {
+          try {
+            Object.keys(localStorage).forEach(key => {
+              if (key.includes('jspulse') || key.includes('vacancy')) {
+                localStorage.removeItem(key);
+                console.log(`[CACHE] Удален ключ: ${key}`);
+              }
+            });
+          } catch (e) {
+            console.warn('[CACHE] Ошибка очистки localStorage:', e);
+          }
+        }
+        
+        // 2. Сбрасываем текущее состояние и показываем loader
+        vacancyStore.setLoading(true);
+        vacancyStore.setError(null);
+        
+        // 3. Принудительно загружаем АКТУАЛЬНЫЕ данные с сервера
+        const response = await vacancyService.fetchVacanciesClient({
+          page: 0, // Сбрасываем на первую страницу
+          limit: store.limit,
+          skills: store.selectedSkills
+        });
+        
+        if (!response.error) {
+          // 4. Устанавливаем новые данные (это автоматически сохранит их в localStorage)
+          vacancyStore.setVacancies(
+            response.vacancies.map(convertVacancy),
+            response.total,
+            response.totalPages,
+            response.page
+          );
+          console.log(`✅ Данные обновлены: ${response.total} вакансий`);
+
+          // 5. ОБНОВЛЯЕМ СТАТИСТИКУ НАВЫКОВ для фильтров и баблов!
+          try {
+            const newSkills = await vacancyService.fetchSkillsClient();
+            availableSkills = newSkills;
+            console.log(`✅ Навыки обновлены: ${newSkills.length} навыков`);
+
+            const newStats = await vacancyService.fetchSkillsStatsClient();
+            if (newStats && newStats.length > 0) {
+              skillsStats = newStats;
+              console.log(`✅ Статистика навыков обновлена: ${newStats.length} навыков`);
+            }
+          } catch (error) {
+            console.warn("Не удалось обновить статистику навыков:", error);
+          }
+        } else {
+          vacancyStore.setError(response.error);
+        }
+        
+        vacancyStore.setLoading(false);
+        
+        // 6. ФОРСИРОВАННОЕ ОБНОВЛЕНИЕ DOM если нужно
+        setTimeout(() => {
+          console.log('[CACHE] Принудительное обновление интерфейса...');
+          // Триггерим re-render компонентов
+          availableSkills = [...availableSkills];
+          skillsStats = [...skillsStats];
+        }, 100);
+        
+      } else {
+        showNotification('error', 'Ошибка удаления', result.error || 'Не удалось удалить вакансию');
+      }
+    } catch (error) {
+      console.error('Ошибка при удалении вакансии:', error);
+      vacancyStore.setLoading(false);
+      showNotification('error', 'Ошибка удаления', 'Произошла ошибка при удалении вакансии');
+    }
   }
 
   // Обработка клика по пузырю - сброс фильтров и применение одного навыка
@@ -467,6 +565,7 @@
   loadingMore={store.loading && store.vacancies.length > 0}
   clientError={store.error} 
   on:skillClick={handleSkillClick} 
+  on:vacancyDeleted={handleVacancyDeleted}
 />
 
 <!-- Пагинация только снизу -->
@@ -479,6 +578,8 @@
   on:loadAll={handleLoadAll}
 />
 
+<!-- Toast уведомления -->
+<ToastNotifications />
 
 <style>
   :root {

@@ -1,6 +1,9 @@
 <script lang="ts">
 	import Heading from '../ui/Heading.svelte';
 	import VacancyCard from './VacancyCard.svelte';
+	import { createEventDispatcher } from 'svelte';
+	
+	const dispatch = createEventDispatcher();
 	
 	export let vacancies: Array<{
 		id: string;
@@ -10,6 +13,16 @@
 		createdAt: string;
 		source: string;
 	}> = [];
+
+	function handleVacancyDeleted(event: CustomEvent<{ vacancyId: string; title: string }>) {
+		const { vacancyId, title } = event.detail;
+		
+		// Удаляем вакансию из локального списка
+		vacancies = vacancies.filter(v => v.id !== vacancyId);
+		
+		// Отправляем событие в родительский компонент для обновления данных
+		dispatch('vacancyDeleted', { vacancyId, title });
+	}
 </script>
 
 <div class="bg-card p-6 rounded-xl">
@@ -25,7 +38,7 @@
 	{:else}
 		<div class="space-y-4 max-h-96 overflow-y-auto">
 			{#each vacancies as vacancy}
-				<VacancyCard {vacancy} />
+				<VacancyCard {vacancy} on:deleted={handleVacancyDeleted} />
 			{/each}
 		</div>
 		

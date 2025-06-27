@@ -69,7 +69,8 @@ export class VacancyService {
   ): Promise<VacancyDTO | null> {
     try {
       logger.debug(CONTEXT, `Запрос вакансии с ID: ${id}`);
-      return await vacancyApi.fetchVacancyById(id);
+      const result = await vacancyApi.fetchVacancyById(id);
+      return result?.vacancy || null;
     } catch (error) {
       // Возвращаем null для индикации отсутствия данных
       // вместо выброса ошибки, чтобы позволить UI показать 404
@@ -249,6 +250,24 @@ export class VacancyService {
 
       this.debounceTimers.set(debounceKey, timer);
     });
+  }
+
+  /**
+   * Удаление вакансии по ID.
+   * Возвращает результат операции для обработки в UI.
+   */
+  async deleteVacancy(id: string): Promise<{ success: boolean; title?: string; error?: string }> {
+    try {
+      logger.debug(CONTEXT, `Удаление вакансии с ID: ${id}`);
+      return await vacancyApi.deleteVacancy(id);
+    } catch (error) {
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Неизвестная ошибка при удалении вакансии';
+
+      logger.error(CONTEXT, `Ошибка при удалении вакансии ${id}`, error);
+      return { success: false, error: errorMessage };
+    }
   }
 }
 

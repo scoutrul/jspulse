@@ -84,6 +84,15 @@ function clearStoredState() {
 
   try {
     localStorage.removeItem(VACANCY_STATE_STORAGE_KEY);
+    
+    // ВАЖНО: также сбрасываем selectedSkills в самом store
+    update(state => ({
+      ...state,
+      selectedSkills: [],
+      page: 0 // Также сбрасываем на первую страницу
+    }));
+    
+    console.log('[STORE] Кеш очищен полностью, включая фильтры');
   } catch (error) {
     console.warn('Failed to clear vacancy state from localStorage:', error);
   }
@@ -145,6 +154,20 @@ function setPageSize(size: number) {
   });
 }
 
+// Удаление вакансии из списка
+function removeVacancy(vacancyId: string) {
+  update(state => {
+    const filteredVacancies = state.vacancies.filter(v => v._id !== vacancyId);
+    const newState = {
+      ...state,
+      vacancies: filteredVacancies,
+      total: Math.max(0, state.total - 1) // Уменьшаем общий счетчик
+    };
+    saveStateToStorage(newState);
+    return newState;
+  });
+}
+
 function reset() {
   clearStoredState();
   set({ ...initialState });
@@ -176,5 +199,6 @@ export const vacancyStore = {
   setPageSize,
   reset,
   restoreState,
-  clearStoredState
+  clearStoredState,
+  removeVacancy
 }; 

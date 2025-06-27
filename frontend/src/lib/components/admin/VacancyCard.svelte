@@ -1,5 +1,8 @@
 <script lang="ts">
 	import Heading from '../ui/Heading.svelte';
+	import { createEventDispatcher } from 'svelte';
+	
+	const dispatch = createEventDispatcher();
 	
 	export let vacancy: {
 		id: string;
@@ -9,6 +12,8 @@
 		createdAt: string;
 		source: string;
 	};
+
+	let isDeleting = false;
 
 	function formatDate(dateString: string): string {
 		const date = new Date(dateString);
@@ -44,11 +49,59 @@
 	function truncateTitle(title: string, maxLength: number = 50): string {
 		return title.length > maxLength ? title.substring(0, maxLength) + '...' : title;
 	}
+
+	async function handleDelete() {
+		if (isDeleting) return;
+		
+		// Подтверждение удаления
+		const confirmed = confirm(`Вы уверены что хотите удалить вакансию "${vacancy.title}"?`);
+		if (!confirmed) return;
+		
+		isDeleting = true;
+		
+		try {
+			const response = await fetch(`http://localhost:3001/api/admin/vacancy/${vacancy.id}`, {
+				method: 'DELETE'
+			});
+			
+			const result = await response.json();
+			
+			if (result.success) {
+				// Отправляем событие об успешном удалении
+				dispatch('deleted', { 
+					vacancyId: vacancy.id,
+					title: vacancy.title 
+				});
+			} else {
+				console.error('Failed to delete vacancy:', result.error);
+				alert('Ошибка удаления: ' + (result.error?.message || 'Неизвестная ошибка'));
+			}
+		} catch (error) {
+			console.error('Error deleting vacancy:', error);
+			alert('Ошибка сети при удалении вакансии');
+		} finally {
+			isDeleting = false;
+		}
+	}
 </script>
 
-<div class="p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200 cursor-pointer">
+<div class="group relative p-4 border border-slate-200 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 transition-all duration-200">
+	<!-- Кнопка удаления -->
+	<button
+		on:click={handleDelete}
+		disabled={isDeleting}
+		class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-red-500 hover:bg-red-600 disabled:bg-red-300 text-white rounded p-1 text-xs"
+		title="Удалить вакансию"
+	>
+		{#if isDeleting}
+			⏳
+		{:else}
+			🗑️
+		{/if}
+	</button>
+
 	<!-- Заголовок и источник -->
-	<div class="flex items-start justify-between mb-2">
+	<div class="flex items-start justify-between mb-2 pr-8">
 		<Heading level={4} size="base" weight="medium" variant="primary" class="flex-1 mr-2">
 			{truncateTitle(vacancy.title)}
 		</Heading>

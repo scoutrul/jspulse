@@ -355,6 +355,98 @@ router.get("/docs", async (req: Request, res: Response) => {
 // });
 
 /**
+ * DELETE /api/admin/vacancy/:id
+ * Удаление конкретной вакансии по ID
+ */
+router.delete("/vacancy/:id", async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 400,
+          message: 'Vacancy ID is required'
+        }
+      });
+      return;
+    }
+
+    // Импортируем mongoose и VacancyRepository
+    const mongoose = await import('mongoose');
+    const { VacancyRepository } = await import('../repositories/VacancyRepository.js');
+
+    // Проверяем валидность ObjectId
+    if (!mongoose.default.Types.ObjectId.isValid(id)) {
+      res.status(400).json({
+        success: false,
+        error: {
+          code: 400,
+          message: 'Invalid vacancy ID format'
+        }
+      });
+      return;
+    }
+
+    const vacancyRepo = new VacancyRepository();
+
+    // Сначала найдем вакансию чтобы получить её данные
+    const existingVacancy = await vacancyRepo.findById(id);
+    if (!existingVacancy) {
+      res.status(404).json({
+        success: false,
+        error: {
+          code: 404,
+          message: 'Vacancy not found'
+        }
+      });
+      return;
+    }
+
+    // Удаляем вакансию через репозиторий
+    const deleted = await vacancyRepo.deleteById(id);
+    
+    if (!deleted) {
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 500,
+          message: 'Failed to delete vacancy'
+        }
+      });
+      return;
+    }
+
+    console.log(`✅ [ADMIN] Vacancy deleted: ${existingVacancy.title} (${id})`);
+
+    res.json({
+      success: true,
+      data: {
+        message: 'Vacancy deleted successfully',
+        deletedVacancy: {
+          id: id,
+          title: existingVacancy.title,
+          company: existingVacancy.company
+        }
+      },
+      message: 'Vacancy deleted successfully'
+    });
+
+  } catch (error) {
+    console.error('Error deleting vacancy:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: 'Failed to delete vacancy',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }
+    });
+  }
+});
+
+/**
  * GET /api/admin/health
  * Health check для админ системы
  */
