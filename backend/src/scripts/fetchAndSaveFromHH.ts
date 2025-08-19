@@ -66,7 +66,7 @@ const SOURCE_HH = "hh.ru";
 const MAX_VACANCIES_PER_PAGE = 10; // HH API limit
 const MAX_PAGES_TO_FETCH = 20; // Увеличено с 5 до 20 для получения 200 вакансий
 const SEARCH_TEXT = "JavaScript Developer OR Frontend Developer";
-const FETCH_FULL_DESCRIPTIONS = process.env.FETCH_FULL_DESCRIPTIONS === "true"; // Контроль через env
+const FETCH_FULL_DESCRIPTIONS = process.env.FETCH_FULL_DESCRIPTIONS !== "false"; // По умолчанию ВКЛЮЧЕНО, можно выключить через false
 
 async function fetchAndSaveHHVacancies() {
   console.log("🚀 Запускаю incremental импорт вакансий с HeadHunter...");

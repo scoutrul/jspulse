@@ -341,12 +341,23 @@
     @apply leading-relaxed m-0;
     /* По умолчанию темная тема */
     @apply text-slate-200;
-    /* Line clamp для карточек */
+    line-height: 1.6;
+  }
+
+  /* Отключаем усечение текста на детальной странице */
+  .description-container.detail-page .description-text {
+    display: block;
+    -webkit-line-clamp: unset;
+    -webkit-box-orient: initial;
+    overflow: visible;
+  }
+
+  /* Применяем усечение только на карточках (не detail page) */
+  .description-container:not(.detail-page) .description-text {
     display: -webkit-box;
     -webkit-line-clamp: 4;
     -webkit-box-orient: vertical;
     overflow: hidden;
-    line-height: 1.6;
   }
 
   /* Светлая тема для текста описания */
