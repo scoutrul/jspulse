@@ -4,16 +4,6 @@ import { AppError } from '../middleware/ApiError.js';
 
 const router: Router = Router();
 
-// Отладочный middleware для всех админ запросов
-router.use((req: Request, res: Response, next: NextFunction) => {
-  console.log(`[ADMIN-DEBUG] ${req.method} ${req.originalUrl}`);
-  if (req.originalUrl.includes('/docs/')) {
-    console.log(`[ADMIN-DEBUG] Docs route hit! Params:`, req.params);
-    console.log(`[ADMIN-DEBUG] Query:`, req.query);
-  }
-  next();
-});
-
 /**
  * GET /api/admin/stats
  * Получение базовой статистики для дашборда (временная заглушка)
@@ -23,20 +13,20 @@ router.get("/stats", async (req: Request, res: Response) => {
     // Получаем реальную статистику из репозитория
     const { VacancyRepository } = await import('../repositories/VacancyRepository.js');
     const vacancyRepo = new VacancyRepository();
-    
+
     // Получаем общее количество вакансий
     const totalVacancies = await vacancyRepo.count();
-    
+
     // Получаем количество вакансий за последние 24 часа
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const recent24h = await vacancyRepo.count({ 
-      createdAt: yesterday 
+    const recent24h = await vacancyRepo.count({
+      createdAt: yesterday
     } as any);
-    
+
     // Получаем уникальные навыки
     const uniqueSkills = await vacancyRepo.getUniqueSkills();
-    
+
     const stats = {
       vacancies: { total: totalVacancies, recent24h, withFullDescription: 0 },
       skills: { unique: uniqueSkills.length, total: 0 },
@@ -361,7 +351,7 @@ router.get("/docs", async (req: Request, res: Response) => {
 router.delete("/vacancy/:id", async (req: Request, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    
+
     if (!id) {
       res.status(400).json({
         success: false,
@@ -406,7 +396,7 @@ router.delete("/vacancy/:id", async (req: Request, res: Response, next: NextFunc
 
     // Удаляем вакансию через репозиторий
     const deleted = await vacancyRepo.deleteById(id);
-    
+
     if (!deleted) {
       res.status(500).json({
         success: false,

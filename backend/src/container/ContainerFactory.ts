@@ -3,6 +3,11 @@ import { DIContainer } from "./DIContainer.js";
 import { VacancyRepository } from "../repositories/VacancyRepository.js";
 import { MemoryCacheService } from "../services/MemoryCacheService.js";
 import { SchedulerService } from "../services/SchedulerService.js";
+import { IVacancyRepository } from "../domain/repositories/IVacancyRepository.js";
+import { GetUniqueSkillsUseCase } from "../application/use-cases/GetUniqueSkillsUseCase.js";
+import { GetVacanciesUseCase } from "../application/use-cases/GetVacanciesUseCase.js";
+import { GetSystemStatsUseCase } from "../application/use-cases/GetSystemStatsUseCase.js";
+import { VacancyDomainService } from "../domain/services/VacancyDomainService.js";
 
 /**
  * Фабрика для создания и настройки DI Container с различными конфигурациями.
@@ -56,6 +61,47 @@ export class ContainerFactory implements IDIContainerFactory {
       }
     );
 
+    // Регистрируем domain interface как alias к конкретной реализации
+    container.registerSingleton(
+      'IVacancyRepository',
+      (container: IDIContainer) => {
+        return container.resolve(DI_TOKENS.VACANCY_REPOSITORY);
+      }
+    );
+
+    // Регистрируем Domain Services
+    container.registerSingleton(
+      'VacancyDomainService',
+      () => new VacancyDomainService()
+    );
+
+    // Регистрируем Use Cases
+    container.registerSingleton(
+      'GetUniqueSkillsUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetUniqueSkillsUseCase(vacancyRepository);
+      }
+    );
+
+    container.registerSingleton(
+      'GetVacanciesUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        const vacancyDomainService = container.resolve('VacancyDomainService') as VacancyDomainService;
+        return new GetVacanciesUseCase(vacancyRepository, vacancyDomainService);
+      }
+    );
+
+    container.registerSingleton(
+      'GetSystemStatsUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        const vacancyDomainService = container.resolve('VacancyDomainService') as VacancyDomainService;
+        return new GetSystemStatsUseCase(vacancyRepository, vacancyDomainService);
+      }
+    );
+
     // Регистрируем SchedulerService как singleton
     container.registerSingleton(
       'SchedulerService',
@@ -91,6 +137,47 @@ export class ContainerFactory implements IDIContainerFactory {
       (container: IDIContainer) => {
         const cacheService = container.resolve(DI_TOKENS.CACHE_SERVICE) as ICacheService;
         return new VacancyRepository(cacheService);
+      }
+    );
+
+    // Регистрируем domain interface
+    container.registerSingleton(
+      'IVacancyRepository',
+      (container: IDIContainer) => {
+        return container.resolve(DI_TOKENS.VACANCY_REPOSITORY);
+      }
+    );
+
+    // Регистрируем Domain Services для тестов
+    container.registerSingleton(
+      'VacancyDomainService',
+      () => new VacancyDomainService()
+    );
+
+    // Регистрируем Use Cases для тестов
+    container.registerSingleton(
+      'GetUniqueSkillsUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetUniqueSkillsUseCase(vacancyRepository);
+      }
+    );
+
+    container.registerSingleton(
+      'GetVacanciesUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        const vacancyDomainService = container.resolve('VacancyDomainService') as VacancyDomainService;
+        return new GetVacanciesUseCase(vacancyRepository, vacancyDomainService);
+      }
+    );
+
+    container.registerSingleton(
+      'GetSystemStatsUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        const vacancyDomainService = container.resolve('VacancyDomainService') as VacancyDomainService;
+        return new GetSystemStatsUseCase(vacancyRepository, vacancyDomainService);
       }
     );
 
@@ -151,6 +238,11 @@ export class ContainerFactory implements IDIContainerFactory {
       DI_TOKENS.CACHE_SERVICE,
       DI_TOKENS.VACANCY_REPOSITORY,
       'SchedulerService',
+      'IVacancyRepository',
+      'VacancyDomainService',
+      'GetUniqueSkillsUseCase',
+      'GetVacanciesUseCase',
+      'GetSystemStatsUseCase',
     ];
 
     for (const token of requiredServices) {

@@ -6,6 +6,8 @@ import { createDIMiddleware, diErrorHandler } from './middleware/diMiddleware.js
 import vacancyRoutes from './routes/vacancyRoutes.js';
 import schedulerRoutes from './routes/schedulerRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import adminRoutesClean from './routes/adminRoutesClean.js';
+import skillsRoutes from './routes/skillsRoutes.js';
 import { SchedulerService } from './services/SchedulerService.js';
 
 /**
@@ -59,6 +61,8 @@ export async function createApp(): Promise<{ app: express.Application; container
   app.use('/api/vacancies', vacancyRoutes);
   app.use('/api/scheduler', schedulerRoutes);
   app.use('/api/admin', adminRoutes);
+  app.use('/api/admin-clean', adminRoutesClean); // Новый route с Clean Architecture
+  app.use('/api/skills', skillsRoutes);
 
   // Health check endpoint
   app.get('/health', async (req, res) => {
