@@ -26,14 +26,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
 
   let internalBackendUrl = !browser ? process.env.INTERNAL_BACKEND_URL : undefined;
 
-  // Логгируем переменные окружения только в серверном окружении и только в режиме разработки
-  if (!browser) {
-    console.log('[httpClientFactory] Env vars debug:');
-    console.log('- VITE_PUBLIC_BACKEND_URL:', publicBackendUrl);
-    console.log('- INTERNAL_BACKEND_URL:', internalBackendUrl);
-    console.log('- NODE_ENV:', process.env.NODE_ENV);
-    console.log('- browser:', browser);
-  }
+  // Удалено подробное логирование переменных окружения для чистой консоли
 
   // Определяем приоритет URL:
   // 1. Явно заданный в options.baseUrl
@@ -45,14 +38,10 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
   // В Docker контейнере используем внутренний URL, если он задан
   if (!browser && internalBackendUrl) {
     defaultBaseUrl = internalBackendUrl;
-    console.log(`[httpClientFactory] Using internal backend URL: ${defaultBaseUrl}`);
   }
   // Для браузера или когда внутренний URL не задан, используем публичный
   else if (publicBackendUrl) {
     defaultBaseUrl = publicBackendUrl;
-    if (!browser && process.env.NODE_ENV !== 'production') {
-      console.log(`[httpClientFactory] Using public backend URL: ${defaultBaseUrl}`);
-    }
   }
   // Fallback для случаев когда переменные не заданы (например, во время сборки)
   else {
@@ -63,9 +52,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
       // В production для Docker используем backend hostname
       defaultBaseUrl = browser ? "http://localhost:3001" : "http://backend:3001";
     }
-    if (!browser) {
-      console.warn(`[httpClientFactory] INTERNAL_BACKEND_URL не задан, используем fallback: ${defaultBaseUrl}`);
-    }
+    // Удалено предупреждение о fallback URL
   }
 
   const {
@@ -76,7 +63,7 @@ export function createHttpClient(options: HttpClientOptions = {}): HttpClient {
     fetch = undefined  // Опциональный fetch из SvelteKit
   } = options;
 
-  console.log(`[httpClientFactory] Creating client with baseUrl: ${baseUrl}`);
+  // Удалено подробное логирование создания клиента
 
   // В зависимости от окружения создаем разные клиенты
   if (browser) {

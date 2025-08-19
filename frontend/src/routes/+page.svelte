@@ -49,7 +49,6 @@
   
   // Проверяем есть ли СВЕЖИЕ данные с сервера, используем их для предотвращения мерцания
   if (data.initialVacancies && data.initialVacancies.length > 0) {
-    console.log('[INIT] Используем данные с сервера для предотвращения мерцания:', data.initialVacancies.length);
     vacancyStore.setVacancies(
       data.initialVacancies.map(convertVacancy),
       data.totalCount || 0,
@@ -57,7 +56,6 @@
       data.page || 0
     );
   } else {
-    console.log('[INIT] Нет данных с сервера, будем загружать через API');
   }
 
   let availableSkills: string[] = data.availableSkills || [];
@@ -69,7 +67,6 @@
       skill: skill,
       count: Math.floor(Math.random() * 100) + 20
     }));
-    console.log("[CLIENT] Создано", skillsStats.length, "fallback статистик с сервера");
   }
 
   // Данные для TagBubblesCanvas из реальной статистики
@@ -107,7 +104,6 @@
       
       // Загружаем данные только если их нет или при необходимости обновления
       if (store.vacancies.length === 0) {
-        console.log("[CLIENT] Загружаем данные через API...");
         vacancyStore.setLoading(true);
         
         try {
@@ -119,10 +115,8 @@
           });
           
           if (vacancyResponse.error) {
-            console.error("[CLIENT] Ошибка загрузки вакансий:", vacancyResponse.error);
             vacancyStore.setError(vacancyResponse.error);
           } else {
-            console.log("[CLIENT] Получено", vacancyResponse.vacancies.length, "вакансий");
             vacancyStore.setVacancies(
               vacancyResponse.vacancies.map(convertVacancy),
               vacancyResponse.total,
@@ -134,35 +128,30 @@
           // Загружаем навыки
           const skills = await vacancyService.fetchSkillsClient();
           availableSkills = skills;
-          console.log("[CLIENT] Получено", skills.length, "навыков");
 
           // Загружаем статистику навыков для пузырьков
           try {
             const stats = await vacancyService.fetchSkillsStatsClient();
             if (stats && stats.length > 0) {
               skillsStats = stats;
-              console.log("[CLIENT] Получено", stats.length, "статистик навыков");
             } else {
               throw new Error("Пустой ответ от API статистики");
             }
           } catch (error) {
-            console.warn("[CLIENT] Не удалось загрузить статистику навыков, используем fallback");
             // Используем fallback данные на основе availableSkills
             skillsStats = availableSkills.map(skill => ({
               skill: skill,
               count: Math.floor(Math.random() * 100) + 20
             }));
-            console.log("[CLIENT] Создано", skillsStats.length, "fallback статистик навыков");
           }
           
         } catch (error) {
-          console.error("[CLIENT] Ошибка загрузки данных:", error);
           vacancyStore.setError('Ошибка загрузки данных');
         } finally {
           vacancyStore.setLoading(false);
         }
       } else {
-        console.log("[CLIENT] Данные уже загружены с сервера, пропускаем API запрос");
+        // данные уже загружены с сервера, пропускаем API запрос
       }
 
     }
@@ -224,7 +213,7 @@
 
   // Клик по тегу-навыку
   function handleSkillClick(event: CustomEvent<string>) {
-    handleSkillsChange([event.detail]);
+    handleSkillsChange(event.detail);
   }
 
   // Обработчик удаления вакансии
@@ -236,13 +225,10 @@
       const result = await vacancyService.deleteVacancy(vacancyId);
       
       if (result.success) {
-        console.log(`✅ Вакансия "${title}" удалена, принудительно обновляем данные...`);
-        
         // Toast уведомление об успешном удалении
         showNotification('success', `Вакансия удалена`, `"${title}" успешно удалена из базы данных`);
         
         // 1. АГРЕССИВНАЯ ОЧИСТКА ВСЕГО КЕША И ФИЛЬТРОВ
-        console.log('[CACHE] Полная очистка localStorage и сброс фильтров...');
         vacancyStore.clearStoredState(); // Это теперь очищает и selectedSkills
         
         // Дополнительная очистка - убиваем ВСЕ связанное с jspulse в localStorage
@@ -251,11 +237,9 @@
             Object.keys(localStorage).forEach(key => {
               if (key.includes('jspulse') || key.includes('vacancy')) {
                 localStorage.removeItem(key);
-                console.log(`[CACHE] Удален ключ: ${key}`);
               }
             });
           } catch (e) {
-            console.warn('[CACHE] Ошибка очистки localStorage:', e);
           }
         }
         
@@ -278,21 +262,17 @@
             response.totalPages,
             response.page
           );
-          console.log(`✅ Данные обновлены: ${response.total} вакансий`);
 
           // 5. ОБНОВЛЯЕМ СТАТИСТИКУ НАВЫКОВ для фильтров и баблов!
           try {
             const newSkills = await vacancyService.fetchSkillsClient();
             availableSkills = newSkills;
-            console.log(`✅ Навыки обновлены: ${newSkills.length} навыков`);
 
             const newStats = await vacancyService.fetchSkillsStatsClient();
             if (newStats && newStats.length > 0) {
               skillsStats = newStats;
-              console.log(`✅ Статистика навыков обновлена: ${newStats.length} навыков`);
             }
           } catch (error) {
-            console.warn("Не удалось обновить статистику навыков:", error);
           }
         } else {
           vacancyStore.setError(response.error);
@@ -300,10 +280,8 @@
         
         vacancyStore.setLoading(false);
         
-        // 6. ФОРСИРОВАННОЕ ОБНОВЛЕНИЕ DOM если нужно
+        // 6. Форсируем обновление реактивных данных
         setTimeout(() => {
-          console.log('[CACHE] Принудительное обновление интерфейса...');
-          // Триггерим re-render компонентов
           availableSkills = [...availableSkills];
           skillsStats = [...skillsStats];
         }, 100);
@@ -312,7 +290,6 @@
         showNotification('error', 'Ошибка удаления', result.error || 'Не удалось удалить вакансию');
       }
     } catch (error) {
-      console.error('Ошибка при удалении вакансии:', error);
       vacancyStore.setLoading(false);
       showNotification('error', 'Ошибка удаления', 'Произошла ошибка при удалении вакансии');
     }
@@ -546,7 +523,6 @@
   <TagBubblesCanvas
     tags={tagsForBubbles}
     on:tagClick={(e) => handleTagClick(e)}
-    on:tagHover={(e) => console.log('Hovered:', e.detail)}
   />
 
 {/if}

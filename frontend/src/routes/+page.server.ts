@@ -22,31 +22,30 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
   const initialPage = 0;
 
   try {
-    console.log("[PAGE SERVER] Начинаем загрузку данных...");
+
     logger.info(CONTEXT, "Загружаем вакансии и навыки...");
 
     // Простая санитизация HTML на сервере (данные от нашего API уже безопасны)
     const sanitizeHtml = (html: string) => html;
 
-    console.log("[PAGE SERVER] Вызываем fetchVacanciesServer...");
+
     // Загружаем вакансии с помощью нового сервиса
     const { vacancies, total, page, limit, totalPages } = await fetchVacanciesServer(
       _fetch,
       { limit: initialLimit, page: initialPage },
       sanitizeHtml
     );
-    console.log("[PAGE SERVER] Получено вакансий:", vacancies.length, "из", total);
+
 
     logger.debug(CONTEXT, `Извлечено вакансий: ${vacancies.length}, всего: ${total}`);
 
     // Загружаем навыки и статистику параллельно
-    console.log("[PAGE SERVER] Загружаем навыки и статистику...");
+
     const [availableSkills, skillsStats] = await Promise.all([
       fetchSkillsServer(_fetch),
       fetchSkillsStatsServer(_fetch)
     ]);
-    console.log("[PAGE SERVER] Получено навыков:", availableSkills.length);
-    console.log("[PAGE SERVER] Получено статистик навыков:", skillsStats.length);
+
     logger.debug(CONTEXT, `Получено ${availableSkills.length} навыков и ${skillsStats.length} статистик`);
 
     // Явно приводим типы, чтобы соответствовать VacancyWithHtml
@@ -55,11 +54,7 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
       htmlDescription: vacancy.htmlDescription || undefined // Изменяем null на undefined
     }));
 
-    console.log("[PAGE SERVER] Возвращаем данные:", {
-      vacancies: vacanciesWithHtml.length,
-      total,
-      skills: availableSkills.length
-    });
+
 
     return {
       initialVacancies: vacanciesWithHtml,
@@ -72,14 +67,14 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
     };
   } catch (err) {
     logger.error(CONTEXT, "Общая ошибка загрузки данных:", err);
-    console.error("[PAGE SERVER] Детальная ошибка:", err);
+
 
     const message =
       err && typeof err === "object" && "message" in err
         ? (err as { message: string }).message
         : "Не удалось загрузить данные вакансий";
 
-    console.error("[PAGE SERVER] Сообщение об ошибке:", message);
+
 
     // Не выбрасываем error, а возвращаем пустые данные
     return {
