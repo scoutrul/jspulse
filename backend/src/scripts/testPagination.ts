@@ -1,4 +1,4 @@
-import { connectDB } from "../config/db.js";
+import { connectDB } from "../config/database.js";
 import { Vacancy } from "../models/Vacancy.js";
 import type { VacancyDTO } from "@jspulse/shared";
 

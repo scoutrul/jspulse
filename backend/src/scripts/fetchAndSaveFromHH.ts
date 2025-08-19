@@ -1,4 +1,4 @@
-import mongoose from "../config/mongoose.js";
+import mongoose from "../config/database.js";
 import ky, { HTTPError } from "ky";
 import { transformHHVacancyToIVacancy, transformHHVacancyWithFullDescription } from "../utils/transformations.js";
 import type { HHResponseRaw } from "@jspulse/shared";

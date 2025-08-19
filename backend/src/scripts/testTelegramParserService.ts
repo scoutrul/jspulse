@@ -1,5 +1,5 @@
 import { config } from 'dotenv';
-import { connectDB } from '../config/db.js';
+import { connectDB } from '../config/database.js';
 import { VacancyRepository } from '../repositories/VacancyRepository.js';
 import { TelegramParserService } from '../services/TelegramParserService.js';
 

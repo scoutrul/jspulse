@@ -12,10 +12,8 @@ import {
   ARCHIVE
 } from "@jspulse/shared";
 import { z } from "zod";
-import { validateBody, validateQuery, validateParams } from "../middleware/validation.middleware.js";
-import { DIContainer } from '../container/DIContainer.js';
-import { AppError } from '../middleware/ApiError.js';
-import mongoose from '../config/mongoose.js';
+import { validateQuery, validateParams } from "../middleware/validation.middleware.js";
+import mongoose from '../config/database.js';
 
 const router: Router = express.Router();
 

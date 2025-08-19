@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import "dotenv/config";
-import { connectDB } from "../config/db.js";
+import { connectDB } from "../config/database.js";
 import { Vacancy } from "../models/Vacancy.js";
 import mockVacancies from "./mockVacancies.js";
 

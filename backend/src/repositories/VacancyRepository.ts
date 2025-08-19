@@ -8,7 +8,7 @@ import {
   ARCHIVE
 } from "@jspulse/shared";
 import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
-import mongoose from "../config/mongoose.js";
+import mongoose from "../config/database.js";
 
 /**
  * Конкретная реализация репозитория для работы с вакансиями в MongoDB.
