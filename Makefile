@@ -144,11 +144,11 @@ up:
 	docker-compose down -v --remove-orphans 2>/dev/null || true
 	docker system prune -f --volumes 2>/dev/null || true
 	@echo "🏗️ Собираем и запускаем контейнеры..."
-	docker-compose up -d --build --force-recreate
+	docker-compose --profile dev up -d --build --force-recreate
 	@echo "⏳ Ждем запуска backend (30 сек)..."
 	sleep 30
-	@echo "📊 Добавляем тестовые данные..."
-	$(MAKE) seed
+	@echo "🧹 Очищаем БД и запускаем парсинг реальных данных..."
+	$(MAKE) reparse
 	@echo "✅ Проект запущен!"
 	@echo "🌐 Frontend: http://localhost:3000"
 	@echo "🔧 Backend API: http://localhost:3001"
@@ -175,20 +175,21 @@ logs:
 restart:
 	docker-compose restart
 
-# Добавить тестовые данные
+# Добавить тестовые данные (оставлено для совместимости)
 seed:
-	@echo "📊 Добавляем тестовые данные в MongoDB..."
-	docker exec jspulse-mongodb-1 mongosh jspulse --eval "db.vacancies.insertMany([{title:'Frontend Developer',company:'Test Company',location:'Remote',url:'http://test.com/job1',publishedAt:new Date(),source:'test',skills:['JavaScript','React','TypeScript'],description:'Test vacancy'},{title:'React Developer',company:'Another Company',location:'Moscow',url:'http://test.com/job2',publishedAt:new Date(),source:'test',skills:['React','Node.js','MongoDB'],description:'Another test vacancy'},{title:'Full Stack Developer',company:'Tech Corp',location:'Saint Petersburg',url:'http://test.com/job3',publishedAt:new Date(),source:'test',skills:['JavaScript','Vue.js','Python','PostgreSQL'],description:'Full stack position'}]); console.log('✅ Test data inserted');"
+	@echo "ℹ️ seed: добавление тестовых данных больше не используется по умолчанию"
+	@echo "ℹ️ Используйте 'make parse' для загрузки реальных данных"
 
 # Парсинг реальных данных с HeadHunter
 parse:
 	@echo "🕷️ Запускаем парсинг вакансий с HeadHunter..."
-	docker exec jspulse-backend-dev-1 tsx src/scripts/fetchAndSaveFromHH.ts
+	docker-compose exec -T backend-dev npx tsx src/scripts/fetchAndSaveFromHH.ts
 
 # Очистить базу и запарсить заново
 reparse:
-	@echo "🧹 Очищаем старые данные и парсим заново..."
-	docker exec jspulse-mongodb-1 mongosh jspulse --eval "db.vacancies.deleteMany({}); console.log('🗑️ Database cleared');"
+	@echo "🧹 Очищаем старые данные..."
+	docker-compose exec -T mongodb mongosh jspulse --eval "db.vacancies.deleteMany({}); console.log('🗑️ Database cleared');"
+	@echo "🕷️ Парсим реальные данные..."
 	$(MAKE) parse
 
 # E2E тестирование с Playwright

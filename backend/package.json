@@ -11,7 +11,7 @@
     "db:seed": "tsx src/data/seedDatabase.ts",
     "db:hh": "tsx src/scripts/fetchAndSaveFromHH.ts",
     "db:clear": "tsx src/scripts/clearDatabase.ts",
-    "db": "pnpm run db:seed && pnpm run db:hh",
+    "db": "pnpm run db:hh",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",

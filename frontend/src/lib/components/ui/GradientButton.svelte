@@ -7,6 +7,9 @@
   export let fullWidth = false;
   export let disabled = false;
   export let hideOnMobile = false;
+  export let href: string | null = null;
+  export let target: string | null = null;
+  export let rel: string | null = null;
   
   const dispatch = createEventDispatcher<{
     click: MouseEvent;
@@ -16,6 +19,10 @@
   function handleClick(event: MouseEvent) {
     if (!disabled) {
       dispatch('click', event);
+    }
+    if (disabled) {
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
   
@@ -41,15 +48,30 @@
 </script>
 
 <div class="gradient-button-wrapper rounded-md relative inline-block gradient-border {hideOnMobile ? 'hidden sm:block' : ''} {fullWidth ? 'w-full' : ''} flex">
-  <button
-    {type}
-    class="gradient-button rounded-md cursor-pointer font-medium transition-all duration-200 border-0 relative gradient-border-content {variantClasses[variant]} {sizeClasses[size]} {fullWidth ? 'w-full' : ''} focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 active:bg-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-    {disabled}
-    on:click={handleClick}
-    on:mouseenter={handleMouseEnter}
-  >
-    <slot />
-  </button>
+  {#if href}
+    <a
+      href={href}
+      role="button"
+      class="gradient-button rounded-md cursor-pointer font-medium transition-all duration-200 border-0 relative gradient-border-content {variantClasses[variant]} {sizeClasses[size]} {fullWidth ? 'w-full' : ''} focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 active:bg-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+      aria-disabled={disabled}
+      target={target}
+      rel={rel}
+      on:click={handleClick}
+      on:mouseenter={handleMouseEnter}
+    >
+      <slot />
+    </a>
+  {:else}
+    <button
+      {type}
+      class="gradient-button rounded-md cursor-pointer font-medium transition-all duration-200 border-0 relative gradient-border-content {variantClasses[variant]} {sizeClasses[size]} {fullWidth ? 'w-full' : ''} focus:outline-2 focus:outline-primary-500 focus:outline-offset-2 active:bg-white active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+      {disabled}
+      on:click={handleClick}
+      on:mouseenter={handleMouseEnter}
+    >
+      <slot />
+    </button>
+  {/if}
 </div> 
 
 <style>

@@ -63,88 +63,25 @@
 <div class="vacancy-actions">
   <div class="actions-container">
       <div class="secondary-action">
-        <button type="button" class="action-link" on:click={handleBackClick}>
-          <GradientButton variant="outline" size="lg">
-            <span class="button-content">
-              <span class="button-icon" aria-hidden="true">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </span>
-              <span class="button-text">
-                {backLabel}
-              </span>
+        <GradientButton variant="outline" size="lg" on:click={handleBackClick}>
+          <span class="button-content">
+            <span class="button-icon" aria-hidden="true">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M19 12H5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M12 19L5 12L12 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
             </span>
-          </GradientButton>
-        </button>
+            <span class="button-text">
+              {backLabel}
+            </span>
+          </span>
+        </GradientButton>
       </div>
       
       <!-- Кнопка удаления -->
       {#if showDeleteButton && vacancyId}
         <div class="delete-action">
-          <button 
-            type="button" 
-            class="action-link delete-link" 
-            on:click={handleDelete}
-            disabled={isDeleting}
-          >
-            <GradientButton variant="outline" size="lg" disabled={isDeleting}>
-              <span class="button-content">
-                <span class="button-icon" aria-hidden="true">
-                  {#if isDeleting}
-                    ⏳
-                  {:else}
-                    🗑️
-                  {/if}
-                </span>
-                <span class="button-text">
-                  {isDeleting ? 'Удаление...' : 'Удалить'}
-                </span>
-              </span>
-            </GradientButton>
-          </button>
-        </div>
-      {/if}
-      
-      {#if url}
-        <div class="primary-action ml-auto">
-          <a 
-            href={url} 
-            target="_blank" 
-            rel="noopener noreferrer"
-            class="action-link"
-          >
-            <GradientButton variant="primary" size="lg">
-              <span class="button-content">
-                <span class="button-text">
-                  Посмотреть на {source || 'сайте'}
-                </span>
-                <span class="button-icon" aria-hidden="true">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M7 17L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                    <path d="M7 7H17V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </span>
-              </span>
-            </GradientButton>
-          </a>
-        </div>
-      {/if}
-    </div>
-  </div>
-{:else if showDeleteButton && vacancyId}
-  <!-- Главная страница - показываем только кнопку удаления при hover -->
-  <div class="vacancy-actions main-page-actions">
-    <div class="actions-container">
-      <div class="delete-action-hover">
-        <button 
-          type="button" 
-          class="action-link delete-link-main" 
-          on:click={handleDelete}
-          disabled={isDeleting}
-        >
-          <GradientButton variant="outline" size="lg" disabled={isDeleting}>
+          <GradientButton variant="outline" size="lg" disabled={isDeleting} on:click={handleDelete}>
             <span class="button-content">
               <span class="button-icon" aria-hidden="true">
                 {#if isDeleting}
@@ -158,7 +95,47 @@
               </span>
             </span>
           </GradientButton>
-        </button>
+        </div>
+      {/if}
+      
+      {#if url}
+        <div class="primary-action ml-auto">
+          <GradientButton variant="primary" size="lg" href={url} target="_blank" rel="noopener noreferrer">
+            <span class="button-content">
+              <span class="button-text">
+                Посмотреть на {source || 'сайте'}
+              </span>
+              <span class="button-icon" aria-hidden="true">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M7 17L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                  <path d="M7 7H17V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </span>
+            </span>
+          </GradientButton>
+        </div>
+      {/if}
+    </div>
+  </div>
+{:else if showDeleteButton && vacancyId}
+  <!-- Главная страница - показываем только кнопку удаления при hover -->
+  <div class="vacancy-actions main-page-actions">
+    <div class="actions-container">
+      <div class="delete-action-hover">
+        <GradientButton variant="outline" size="lg" disabled={isDeleting} on:click={handleDelete}>
+          <span class="button-content">
+            <span class="button-icon" aria-hidden="true">
+              {#if isDeleting}
+                ⏳
+              {:else}
+                🗑️
+              {/if}
+            </span>
+            <span class="button-text">
+              {isDeleting ? 'Удаление...' : 'Удалить'}
+            </span>
+          </span>
+        </GradientButton>
       </div>
     </div>
   </div>
@@ -189,14 +166,7 @@
     @apply flex-1 sm:flex-initial;
   }
   
-  .action-link {
-    @apply block w-full;
-    @apply no-underline;
-    @apply transition-all duration-200;
-    @apply focus:outline-2 focus:outline-offset-2 focus:outline-primary-500;
-    @apply rounded-lg;
-    @apply border-none bg-transparent p-0 cursor-pointer;
-  }
+  /* legacy .action-link removed */
   
   .button-content {
     @apply flex items-center justify-center gap-2;
@@ -212,11 +182,11 @@
   }
   
   /* Hover эффекты только для кликабельных элементов */
-  .primary-action .action-link:hover .button-icon {
+  :global(.primary-action .gradient-button:hover .button-icon) {
     @apply transform translate-x-1 -translate-y-1;
   }
   
-  .secondary-action .action-link:hover .button-icon {
+  :global(.secondary-action .gradient-button:hover .button-icon) {
     @apply transform -translate-x-1;
   }
   
@@ -235,19 +205,22 @@
     @apply flex;
   }
   
-  .delete-link-main {
-    @apply block w-full;
-    @apply no-underline;
-    @apply transition-all duration-200;
-    @apply focus:outline-2 focus:outline-offset-2 focus:outline-red-500;
-    @apply rounded-lg;
-    @apply border-none bg-transparent p-0 cursor-pointer;
+  /* Кнопка удаления как GradientButton */
+  :global(.delete-action .gradient-button) {
+    @apply text-red-600;
   }
-  
-  .delete-link-main:disabled {
-    @apply cursor-not-allowed opacity-50;
+  :global(.dark .delete-action .gradient-button) {
+    @apply text-red-400;
   }
-  
+  :global(.delete-action .gradient-button:hover) {
+    @apply text-red-700;
+  }
+  :global(.dark .delete-action .gradient-button:hover) {
+    @apply text-red-300;
+  }
+  :global(.delete-action .gradient-button:disabled) {
+    @apply opacity-50 cursor-not-allowed;
+  }
 
 
   /* Responsive design */
@@ -271,8 +244,8 @@
       transition: none;
     }
     
-    .primary-action .action-link:hover .button-icon,
-    .secondary-action .action-link:hover .button-icon {
+    :global(.primary-action .gradient-button:hover .button-icon),
+    :global(.secondary-action .gradient-button:hover .button-icon) {
       @apply transform-none;
     }
   }
@@ -288,30 +261,7 @@
     }
   }
   
-  /* Focus стили для клавиатурной навигации */
-  .action-link:focus-visible {
-    @apply outline-2 outline-offset-2 outline-primary-500;
-  }
+  /* Focus стили для клавиатурной навигации — применяются внутри GradientButton */
 
-  /* Стили для кнопки удаления */
-  .delete-action .action-link {
-    @apply text-red-600;
-  }
-
-  :global(.dark) .delete-action .action-link {
-    @apply text-red-400;
-  }
-
-  .delete-action .action-link:hover {
-    @apply text-red-700;
-  }
-
-  :global(.dark) .delete-action .action-link:hover {
-    @apply text-red-300;
-  }
-
-  /* Дополнительный стиль для отключенного состояния */
-  .delete-action .action-link:disabled {
-    @apply opacity-50 cursor-not-allowed;
-  }
+  /* Стили для кнопки удаления — см. блок выше */
 </style> 
