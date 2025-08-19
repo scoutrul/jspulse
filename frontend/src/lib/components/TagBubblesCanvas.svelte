@@ -86,6 +86,11 @@
 
   // Хеш функция для детерминированного цвета
   function hashCode(str: string): number {
+    // Проверяем, что строка не undefined и не null
+    if (!str || typeof str !== 'string') {
+      return 0;
+    }
+    
     let hash = 0;
     for (let i = 0; i < str.length; i++) {
       const char = str.charCodeAt(i);
@@ -96,6 +101,11 @@
   }
 
   function getColorForTag(tagName: string, isDark: boolean = false): string {
+    // Проверяем, что tagName валидный
+    if (!tagName || typeof tagName !== 'string') {
+      tagName = 'unknown';
+    }
+    
     const hash = hashCode(tagName);
     const palette = isDark ? darkColorPalette : lightColorPalette;
     return palette[hash % palette.length];
@@ -103,30 +113,40 @@
 
   // Создание пузырьков из данных тегов
   function createBubbles(tagData: TagData[], isDark: boolean = false): Bubble[] {
-    if (!tagData.length) return [];
+    if (!tagData || !Array.isArray(tagData) || tagData.length === 0) {
+      return [];
+    }
 
-    const maxCount = Math.max(...tagData.map(t => t.count));
-    const minCount = Math.min(...tagData.map(t => t.count));
+    // Фильтруем только валидные данные для подсчета min/max
+    const validTags = tagData.filter(tag => tag && tag.name && typeof tag.name === 'string' && typeof tag.count === 'number');
     
-    return tagData.map((tag, index) => {
-      // Нормализация размера пузыря
-      const normalizedSize = minCount === maxCount ? 0.5 : 
-        (tag.count - minCount) / (maxCount - minCount);
-      const radius = minRadius + normalizedSize * (maxRadius - minRadius);
-      
-      return {
-        id: `bubble-${index}`,
-        name: tag.name,
-        count: tag.count,
-        radius,
-        x: Math.random() * width,
-        y: Math.random() * height,
-        vx: 0,
-        vy: 0,
-        color: getColorForTag(tag.name, isDark),
-        oscillationPhase: Math.random() * Math.PI * 2,
-        targetRadius: radius,
-        currentRadius: radius,
+    if (validTags.length === 0) {
+      return [];
+    }
+
+    const maxCount = Math.max(...validTags.map(t => t.count));
+    const minCount = Math.min(...validTags.map(t => t.count));
+    
+    return validTags
+      .map((tag, index) => {
+        // Нормализация размера пузыря
+        const normalizedSize = minCount === maxCount ? 0.5 : 
+          (tag.count - minCount) / (maxCount - minCount);
+        const radius = minRadius + normalizedSize * (maxRadius - minRadius);
+        
+        return {
+          id: `bubble-${index}`,
+          name: tag.name,
+          count: tag.count || 0,
+          radius,
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: 0,
+          vy: 0,
+          color: getColorForTag(tag.name, isDark),
+          oscillationPhase: Math.random() * Math.PI * 2,
+          targetRadius: radius,
+          currentRadius: radius,
       };
     });
   }

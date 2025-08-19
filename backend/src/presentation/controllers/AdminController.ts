@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { GetSystemStatsUseCase } from '../../application/use-cases/GetSystemStatsUseCase.js';
+import { ClearCacheUseCase } from '../../application/use-cases/ClearCacheUseCase.js';
 
 /**
  * Controller для административных операций
@@ -7,7 +8,8 @@ import { GetSystemStatsUseCase } from '../../application/use-cases/GetSystemStat
  */
 export class AdminController {
   constructor(
-    private readonly getSystemStatsUseCase: GetSystemStatsUseCase
+    private readonly getSystemStatsUseCase: GetSystemStatsUseCase,
+    private readonly clearCacheUseCase: ClearCacheUseCase
   ) { }
 
   /**
@@ -71,10 +73,16 @@ export class AdminController {
    */
   async clearCache(req: Request, res: Response): Promise<void> {
     try {
-      // В будущем здесь будет отдельный Use Case
+      // Делегируем бизнес-логику в Use Case
+      const result = await this.clearCacheUseCase.execute();
+
+      // Отправляем ответ
       res.json({
         success: true,
-        message: 'Cache clear endpoint - to be implemented'
+        data: {
+          clearedKeys: result.clearedKeys,
+          timestamp: result.timestamp.toISOString()
+        }
       });
     } catch (error) {
       console.error('Error in AdminController.clearCache:', error);

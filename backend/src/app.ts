@@ -6,7 +6,6 @@ import { createDIMiddleware, diErrorHandler } from './middleware/diMiddleware.js
 import vacancyRoutes from './routes/vacancyRoutes.js';
 import schedulerRoutes from './routes/schedulerRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
-import adminRoutesClean from './routes/adminRoutesClean.js';
 import skillsRoutes from './routes/skillsRoutes.js';
 import { SchedulerService } from './services/SchedulerService.js';
 
@@ -23,20 +22,32 @@ export async function createApp(): Promise<{ app: express.Application; container
   // Создание production DI Container со всеми зависимостями
   const rootContainer = containerFactory.createProduction();
 
-  // Валидация корректности настройки контейнера
+  // Валидация контейнера
   const validation = containerFactory.validateContainer(rootContainer);
   if (!validation.isValid) {
     console.error('❌ DI Container validation failed:', validation.errors);
-    throw new Error('Invalid DI Container configuration');
+    process.exit(1);
   }
 
-  console.log('✅ DI Container validation passed');
-  console.log('🔧 Testing console.log output');
-
-  // Инициализация и запуск SchedulerService
-  const scheduler = rootContainer.resolve<SchedulerService>('SchedulerService');
+  // Запуск scheduler
+  const scheduler = rootContainer.resolve('SchedulerService') as SchedulerService;
   await scheduler.start();
-  console.log('⏰ SchedulerService started successfully');
+
+  // Middleware для логирования запросов в development
+  if (process.env.NODE_ENV === 'development') {
+    app.use((req, res, next) => {
+      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+      next();
+    });
+  }
+
+  // Middleware для документации
+  app.use('/docs', (req, res, next) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`[DEV-MIDDLEWARE] Docs request: ${req.originalUrl}`);
+    }
+    next();
+  });
 
   // Настройка базовых middleware
   app.use(cors());
@@ -46,22 +57,10 @@ export async function createApp(): Promise<{ app: express.Application; container
   // Регистрируем DI middleware для всех маршрутов
   app.use(createDIMiddleware(rootContainer));
 
-  // Логирование в development режиме
-  if (process.env.NODE_ENV === 'development') {
-    app.use((req, res, next) => {
-      console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
-      if (req.path.includes('/docs/')) {
-        console.log(`[DEV-MIDDLEWARE] Docs request: ${req.originalUrl}`);
-      }
-      next();
-    });
-  }
-
   // Регистрация маршрутов
-  app.use('/api/vacancies', vacancyRoutes);
+  app.use('/api/vacancies', vacancyRoutes); // Заменяем старый на новый с Clean Architecture
   app.use('/api/scheduler', schedulerRoutes);
-  app.use('/api/admin', adminRoutes);
-  app.use('/api/admin-clean', adminRoutesClean); // Новый route с Clean Architecture
+  app.use('/api/admin', adminRoutes); // Заменяем старый на новый с Clean Architecture
   app.use('/api/skills', skillsRoutes);
 
   // Health check endpoint
@@ -114,7 +113,6 @@ export async function createApp(): Promise<{ app: express.Application; container
 
   // 404 handler
   app.use((req, res) => {
-    console.log(`[404] Unmatched route: ${req.method} ${req.originalUrl}`);
     res.status(404).json({
       success: false,
       error: {
@@ -135,18 +133,10 @@ export async function gracefulShutdown(container: any, scheduler: SchedulerServi
 
   try {
     // Останавливаем scheduler первым делом
-    console.log('⏰ Stopping scheduler...');
     await scheduler.stop();
-    console.log('✅ Scheduler stopped successfully');
 
     // Освобождаем ресурсы DI Container
     await container.dispose();
-    console.log('✅ DI Container disposed successfully');
-
-    // Здесь можно добавить другие cleanup операции:
-    // - Закрытие подключений к БД
-    // - Завершение background tasks
-    // - Сохранение state
 
     console.log('✅ Graceful shutdown completed');
     process.exit(0);

@@ -11,10 +11,8 @@ export class VacancyDomainService {
    * Фильтрация вакансий по навыкам
    */
   filterBySkills(vacancies: Vacancy[], skillNames: string[]): Vacancy[] {
-    if (skillNames.length === 0) return vacancies;
-
     return vacancies.filter(vacancy =>
-      vacancy.hasAnySkill(skillNames)
+      skillNames.some(skillName => vacancy.hasSkill(skillName))
     );
   }
 
@@ -77,7 +75,7 @@ export class VacancyDomainService {
    * Фильтрация только архивных вакансий
    */
   filterArchived(vacancies: Vacancy[]): Vacancy[] {
-    return vacancies.filter(vacancy => vacancy.isArchived());
+    return vacancies.filter(vacancy => !vacancy.isActive());
   }
 
   /**
@@ -208,7 +206,7 @@ export class VacancyDomainService {
     return {
       total: vacancies.length,
       active: vacancies.filter(v => v.isActive()).length,
-      archived: vacancies.filter(v => v.isArchived()).length,
+      archived: vacancies.filter(v => !v.isActive()).length,
       highSalary: vacancies.filter(v => v.isHighSalary()).length,
       remote: vacancies.filter(v => v.isRemote()).length,
       office: vacancies.filter(v => v.isOffice()).length,

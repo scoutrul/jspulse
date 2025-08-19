@@ -3,11 +3,12 @@ import { IVacancyRepository } from '../../domain/repositories/IVacancyRepository
 import { VacancyDomainService } from '../../domain/services/VacancyDomainService.js';
 import { Vacancy } from '../../domain/entities/Vacancy.js';
 import { Skill } from '../../domain/entities/Skill.js';
-import { Salary } from '../../domain/entities/Salary.js';
-import { Company } from '../../domain/entities/Company.js';
+import { Salary } from '../../domain/value-objects/Salary.js';
+import { Company } from '../../domain/value-objects/Company.js';
+import { VacancyApiResponseDto } from '../dto/VacancyApiResponseDto.js';
 
 /**
- * DTO для запроса вакансий
+ * DTO для запроса получения вакансий
  */
 export interface GetVacanciesRequest {
   page?: number;
@@ -27,10 +28,11 @@ export interface GetVacanciesRequest {
 }
 
 /**
- * DTO для ответа с вакансиями
+ * DTO для ответа получения вакансий
  */
 export interface GetVacanciesResponse {
-  vacancies: Record<string, any>[];
+  success: boolean;
+  data: any[];
   meta: {
     page: number;
     limit: number;
@@ -38,6 +40,7 @@ export interface GetVacanciesResponse {
     totalPages: number;
     hasNextPage: boolean;
     hasPrevPage: boolean;
+    totalItems: number;
   };
 }
 
@@ -53,108 +56,65 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
 
   async execute(request: GetVacanciesRequest): Promise<GetVacanciesResponse> {
     try {
-      const {
-        page = 0,
-        limit = 10,
-        skills = [],
-        salaryRange,
-        sources = [],
-        publishedAfter,
-        publishedBefore,
-        searchText,
-        sortBy = 'publishedAt',
-        sortDirection = 'desc',
-        includeArchived = false
-      } = request;
-
-      // Получаем все вакансии из репозитория
-      const allVacanciesResult = await this.vacancyRepository.findWithFilters({
-        page: 0,
-        limit: 10000, // Получаем все для применения domain логики
-        skills,
-        salaryRange,
-        sources,
-        publishedAfter,
-        publishedBefore,
-        searchText,
-        includeArchived
+      // Получаем данные из репозитория
+      const result = await this.vacancyRepository.findMany({
+        page: request.page || 0,
+        limit: request.limit || 10,
+        skills: request.skills || [],
+        salaryRange: request.salaryRange,
+        sources: request.sources || [],
+        publishedAfter: request.publishedAfter,
+        publishedBefore: request.publishedBefore,
+        searchText: request.searchText,
+        includeArchived: request.includeArchived
       });
 
-      // Преобразуем в domain entities
-      const domainVacancies = this.mapToDomainEntities(allVacanciesResult.data);
+      // Преобразуем DTO в domain entities
+      const vacancies = this.mapToDomainEntities(result.data);
 
-      // Применяем domain логику
-      let filteredVacancies = domainVacancies;
+      // Применяем фильтрацию и сортировку через domain service
+      let filteredVacancies = vacancies;
 
-      // Фильтрация по навыкам (если не была применена в репозитории)
-      if (skills.length > 0) {
-        filteredVacancies = this.vacancyDomainService.filterBySkills(filteredVacancies, skills);
+      if (request.skills && request.skills.length > 0) {
+        filteredVacancies = this.vacancyDomainService.filterBySkills(filteredVacancies, request.skills);
       }
 
-      // Фильтрация по зарплате
-      if (salaryRange) {
+      if (request.salaryRange) {
         filteredVacancies = this.vacancyDomainService.filterBySalaryRange(
           filteredVacancies,
-          salaryRange.from,
-          salaryRange.to
+          request.salaryRange.from,
+          request.salaryRange.to
         );
       }
 
-      // Фильтрация по источнику
-      if (sources.length > 0) {
-        filteredVacancies = this.vacancyDomainService.filterBySource(filteredVacancies, sources);
-      }
-
-      // Фильтрация по дате
-      if (publishedAfter || publishedBefore) {
-        filteredVacancies = this.vacancyDomainService.filterByDateRange(
-          filteredVacancies,
-          publishedAfter,
-          publishedBefore
-        );
-      }
-
-      // Фильтрация по архивности
-      if (!includeArchived) {
-        filteredVacancies = this.vacancyDomainService.filterActive(filteredVacancies);
-      }
-
-      // Текстовый поиск
-      if (searchText) {
-        filteredVacancies = this.vacancyDomainService.searchByText(filteredVacancies, searchText);
-      }
-
-      // Сортировка
+      // Сортируем вакансии
+      const sortBy = request.sortBy || 'publishedAt';
+      const sortDirection = request.sortDirection || 'desc';
       filteredVacancies = this.vacancyDomainService.sortVacancies(
         filteredVacancies,
         sortBy,
         sortDirection
       );
 
-      // Применяем пагинацию
-      const total = filteredVacancies.length;
-      const totalPages = Math.ceil(total / limit);
-      const startIndex = page * limit;
-      const endIndex = startIndex + limit;
-      const paginatedVacancies = filteredVacancies.slice(startIndex, endIndex);
+      // Преобразуем domain entities в API DTO
+      const apiVacancies = filteredVacancies.map(vacancy =>
+        VacancyApiResponseDto.fromVacancy(vacancy)
+      );
 
-      // Преобразуем обратно в DTO для API
-      const vacancyDtos = paginatedVacancies.map(vacancy => vacancy.toJSON());
+      const page = request.page || 0;
+      const limit = request.limit || 10;
 
-      return {
-        vacancies: vacancyDtos,
-        meta: {
-          page,
-          limit,
-          total,
-          totalPages,
-          hasNextPage: page < totalPages - 1,
-          hasPrevPage: page > 0
-        }
-      };
+      return VacancyApiResponseDto.createApiResponse(apiVacancies, {
+        page,
+        limit,
+        total: result.meta.total,
+        totalPages: result.meta.totalPages,
+        hasNextPage: result.meta.hasNextPage,
+        hasPrevPage: result.meta.hasPrevPage
+      });
     } catch (error) {
       console.error('Error in GetVacanciesUseCase:', error);
-      throw new Error('Failed to get vacancies');
+      throw error;
     }
   }
 
@@ -163,14 +123,21 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
    */
   private mapToDomainEntities(vacancyDtos: any[]): Vacancy[] {
     return vacancyDtos.map(dto => {
+      // Проверяем, что у нас есть валидный ID
+      const id = dto._id || dto.id;
+      if (!id) {
+        console.warn('Vacancy without ID found:', dto);
+        return null; // Пропускаем вакансии без ID
+      }
+
       // Создаем Value Objects
       const skills = dto.skills?.map((skillName: string) => new Skill(skillName)) || [];
-      const salary = new Salary(dto.salaryFrom, dto.salaryTo, dto.salaryCurrency);
-      const company = new Company(dto.company, dto.companyTrusted || false);
+      const salary = new Salary(dto.salary?.from || dto.salaryFrom, dto.salary?.to || dto.salaryTo, dto.salary?.currency || dto.salaryCurrency || 'RUR');
+      const company = new Company(dto.company?.name || dto.company, dto.company?.trusted || dto.companyTrusted || false);
 
       // Создаем domain entity
       return new Vacancy(
-        dto._id || dto.id,
+        id,
         dto.title,
         company,
         skills,
@@ -180,8 +147,9 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
         dto.location,
         dto.description,
         dto.experience,
-        dto.employment
+        dto.employment,
+        dto.url
       );
-    });
+    }).filter(Boolean) as Vacancy[]; // Убираем null значения
   }
 }

@@ -11,7 +11,7 @@ interface HomePageData {
   limit: number;
   totalPages: number;
   availableSkills: string[];
-  skillsStats: Array<{ skill: string; count: number }>;
+  skillsStats: Array<{ name: string; count: number }>;
   error?: string;
 }
 

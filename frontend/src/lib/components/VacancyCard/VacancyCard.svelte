@@ -27,6 +27,11 @@
   
   $: sanitizedDescription = vacancy?.description ? sanitizeDescription(vacancy.description) : '';
   
+  // Вспомогательная функция для получения ID вакансии
+  function getVacancyId(vacancy: VacancyDTO | VacancyWithHtml): string {
+    return (vacancy as any).id || vacancy._id || '';
+  }
+  
   function handleSkillClick(event: CustomEvent<string>) {
     dispatch('skillClick', event.detail);
   }
@@ -35,7 +40,7 @@
     if (!isDetailPage) {
       // Сохраняем позицию скролла перед переходом
       saveScrollPosition();
-      goto(`/v/${vacancy._id}`, { noScroll: true });
+      goto(`/v/${getVacancyId(vacancy)}`, { noScroll: true });
     }
   }
 
@@ -66,7 +71,7 @@
       company={vacancy.company}
       location={vacancy.location || undefined}
       publishedAt={typeof vacancy.publishedAt === 'string' ? vacancy.publishedAt : vacancy.publishedAt?.toISOString()}
-      vacancyId={vacancy._id}
+      vacancyId={getVacancyId(vacancy)}
       {showDetailLink}
       salaryFrom={vacancy.salaryFrom || undefined}
       salaryTo={vacancy.salaryTo || undefined}
@@ -82,7 +87,7 @@
       description={sanitizedDescription}
       fullDescription={vacancy.fullDescription}
       processedHtml={vacancy.processedHtml}
-      vacancyId={vacancy._id}
+      vacancyId={getVacancyId(vacancy)}
       {isDetailPage}
       {theme}
       on:skillClick={handleSkillClick}
@@ -95,7 +100,7 @@
       source={vacancy.source}
       {backUrl}
       {backLabel}
-      vacancyId={vacancy._id}
+      vacancyId={getVacancyId(vacancy)}
       vacancyTitle={vacancy.title}
       {showDeleteButton}
       on:deleted={handleVacancyDeleted}

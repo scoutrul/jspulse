@@ -7,7 +7,11 @@ import { IVacancyRepository } from "../domain/repositories/IVacancyRepository.js
 import { GetUniqueSkillsUseCase } from "../application/use-cases/GetUniqueSkillsUseCase.js";
 import { GetVacanciesUseCase } from "../application/use-cases/GetVacanciesUseCase.js";
 import { GetSystemStatsUseCase } from "../application/use-cases/GetSystemStatsUseCase.js";
+import { GetVacancyByIdUseCase } from "../application/use-cases/GetVacancyByIdUseCase.js";
+import { ClearCacheUseCase } from "../application/use-cases/ClearCacheUseCase.js";
 import { VacancyDomainService } from "../domain/services/VacancyDomainService.js";
+import { GetSkillsUseCase } from '../application/use-cases/GetSkillsUseCase.js';
+import { GetSkillsStatsUseCase } from '../application/use-cases/GetSkillsStatsUseCase.js';
 
 /**
  * Фабрика для создания и настройки DI Container с различными конфигурациями.
@@ -102,10 +106,43 @@ export class ContainerFactory implements IDIContainerFactory {
       }
     );
 
+    container.registerSingleton(
+      'GetVacancyByIdUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetVacancyByIdUseCase(vacancyRepository);
+      }
+    );
+
+    container.registerSingleton(
+      'ClearCacheUseCase',
+      (container: IDIContainer) => {
+        const cacheService = container.resolve(DI_TOKENS.CACHE_SERVICE) as ICacheService;
+        return new ClearCacheUseCase(cacheService);
+      }
+    );
+
     // Регистрируем SchedulerService как singleton
     container.registerSingleton(
       'SchedulerService',
       () => new SchedulerService()
+    );
+
+    // Регистрируем новые Use Cases для skills
+    container.registerSingleton(
+      'GetSkillsUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetSkillsUseCase(vacancyRepository);
+      }
+    );
+
+    container.registerSingleton(
+      'GetSkillsStatsUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetSkillsStatsUseCase(vacancyRepository);
+      }
     );
 
     // Можно добавить другие production сервисы
@@ -181,6 +218,39 @@ export class ContainerFactory implements IDIContainerFactory {
       }
     );
 
+    container.registerSingleton(
+      'GetVacancyByIdUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetVacancyByIdUseCase(vacancyRepository);
+      }
+    );
+
+    container.registerSingleton(
+      'ClearCacheUseCase',
+      (container: IDIContainer) => {
+        const cacheService = container.resolve(DI_TOKENS.CACHE_SERVICE) as ICacheService;
+        return new ClearCacheUseCase(cacheService);
+      }
+    );
+
+    // Регистрируем новые Use Cases для skills в тестовом контейнере
+    container.registerSingleton(
+      'GetSkillsUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetSkillsUseCase(vacancyRepository);
+      }
+    );
+
+    container.registerSingleton(
+      'GetSkillsStatsUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetSkillsStatsUseCase(vacancyRepository);
+      }
+    );
+
     return container;
   }
 
@@ -243,6 +313,10 @@ export class ContainerFactory implements IDIContainerFactory {
       'GetUniqueSkillsUseCase',
       'GetVacanciesUseCase',
       'GetSystemStatsUseCase',
+      'GetVacancyByIdUseCase',
+      'ClearCacheUseCase',
+      'GetSkillsUseCase',
+      'GetSkillsStatsUseCase',
     ];
 
     for (const token of requiredServices) {

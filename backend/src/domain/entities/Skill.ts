@@ -1,6 +1,6 @@
 /**
- * Domain Entity для навыков
- * Содержит бизнес-правила и валидацию
+ * Domain Entity для навыка
+ * Инкапсулирует бизнес-логику работы с навыками
  */
 export class Skill {
   constructor(
@@ -19,62 +19,30 @@ export class Skill {
   }
 
   /**
-   * Валидация навыка
-   */
-  private validate(): void {
-    if (!this._name || this._name.trim().length === 0) {
-      throw new Error('Skill name cannot be empty');
-    }
-
-    if (this._name.length > 100) {
-      throw new Error('Skill name cannot exceed 100 characters');
-    }
-  }
-
-  /**
-   * Нормализация названия навыка
+   * Нормализованное название навыка (для поиска)
    */
   get normalizedName(): string {
     return this._name.toLowerCase().trim();
   }
 
   /**
-   * Проверка соответствия навыка
+   * Проверяет, соответствует ли навык поисковому запросу
    */
   matches(searchTerm: string): boolean {
     const normalizedSearch = searchTerm.toLowerCase().trim();
-    return this.normalizedName.includes(normalizedSearch) ||
-      normalizedSearch.includes(this.normalizedName);
+    return this.normalizedName.includes(normalizedSearch);
   }
 
   /**
-   * Сравнение навыков
+   * Валидация данных
    */
-  equals(other: Skill): boolean {
-    return this.normalizedName === other.normalizedName;
-  }
+  private validate(): void {
+    if (!this._name || this._name.trim().length === 0) {
+      throw new Error('Название навыка не может быть пустым');
+    }
 
-  /**
-   * Создание копии с изменениями
-   */
-  withCategory(category: string): Skill {
-    return new Skill(this._name, category);
-  }
-
-  /**
-   * Преобразование в строку
-   */
-  toString(): string {
-    return this._name;
-  }
-
-  /**
-   * Преобразование в простой объект для сериализации
-   */
-  toJSON(): { name: string; category?: string } {
-    return {
-      name: this._name,
-      category: this._category
-    };
+    if (this._name.trim().length < 2) {
+      throw new Error('Название навыка должно содержать минимум 2 символа');
+    }
   }
 }

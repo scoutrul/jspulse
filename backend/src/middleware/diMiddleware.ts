@@ -101,13 +101,7 @@ export function withDI<T extends any[]>(
  */
 export function createDIStatsMiddleware(rootContainer: IDIContainer) {
   return (req: Request, res: Response, next: NextFunction): void => {
-    if (process.env.NODE_ENV === 'development') {
-      // Логируем статистику только в development режиме
-      const stats = (rootContainer as any).getStats?.();
-      if (stats) {
-        console.log(`[DI Stats] Services: ${stats.registeredServices}, Singletons: ${stats.singletonInstances}, Scopes: ${stats.childScopes}`);
-      }
-    }
+    // В production режиме не логируем статистику
     next();
   };
 }

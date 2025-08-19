@@ -59,21 +59,26 @@
   }
 
   let availableSkills: string[] = data.availableSkills || [];
-  let skillsStats: Array<{ skill: string; count: number }> = data.skillsStats || [];
+  let skillsStats: Array<{ name: string; count: number }> = (data.skillsStats || []).map(stat => ({
+    name: (stat as any).name || stat.skill || 'unknown',
+    count: stat.count || 0
+  })).filter(stat => stat.name && stat.name !== 'unknown');
   
   // Если нет статистики с сервера, создаём fallback данные
   if (skillsStats.length === 0 && availableSkills.length > 0) {
     skillsStats = availableSkills.map(skill => ({
-      skill: skill,
+      name: skill,
       count: Math.floor(Math.random() * 100) + 20
     }));
   }
 
   // Данные для TagBubblesCanvas из реальной статистики
   $: tagsForBubbles = skillsStats.map(stat => ({
-    name: stat.skill,
-    count: stat.count
-  }));
+    name: stat.name,
+    count: stat.count || 0
+  })).filter(tag => tag.name && tag.name !== 'unknown');
+
+
 
   // Подписка на store
   $: store = $vacancyStore;
@@ -133,14 +138,20 @@
           try {
             const stats = await vacancyService.fetchSkillsStatsClient();
             if (stats && stats.length > 0) {
-              skillsStats = stats;
+              // Преобразуем данные в правильный формат
+              const normalizedStats = stats.map(stat => ({
+                name: stat.skill || (stat as any).name || (stat as any).skillName || 'unknown',
+                count: stat.count || 0
+              }));
+              skillsStats = normalizedStats;
             } else {
               throw new Error("Пустой ответ от API статистики");
             }
           } catch (error) {
+
             // Используем fallback данные на основе availableSkills
             skillsStats = availableSkills.map(skill => ({
-              skill: skill,
+              name: skill,
               count: Math.floor(Math.random() * 100) + 20
             }));
           }
@@ -151,7 +162,25 @@
           vacancyStore.setLoading(false);
         }
       } else {
-        // данные уже загружены с сервера, пропускаем API запрос
+        // данные уже загружены с сервера, но статистику навыков загружаем всегда
+        try {
+          const stats = await vacancyService.fetchSkillsStatsClient();
+          if (stats && stats.length > 0) {
+            // Преобразуем данные в правильный формат
+            const normalizedStats = stats.map(stat => ({
+              name: stat.skill || (stat as any).name || (stat as any).skillName || 'unknown',
+              count: stat.count || 0
+            }));
+            skillsStats = normalizedStats;
+            
+            // Принудительно обновляем реактивные переменные
+            setTimeout(() => {
+              skillsStats = [...skillsStats];
+            }, 100);
+          }
+        } catch (error) {
+          // Ошибка загрузки статистики навыков
+        }
       }
 
     }
@@ -213,7 +242,7 @@
 
   // Клик по тегу-навыку
   function handleSkillClick(event: CustomEvent<string>) {
-    handleSkillsChange(event.detail);
+    handleSkillsChange([event.detail]);
   }
 
   // Обработчик удаления вакансии
@@ -270,7 +299,12 @@
 
             const newStats = await vacancyService.fetchSkillsStatsClient();
             if (newStats && newStats.length > 0) {
-              skillsStats = newStats;
+              // Преобразуем данные в правильный формат
+              const normalizedStats = newStats.map(stat => ({
+                name: stat.skill || (stat as any).name || (stat as any).skillName || 'unknown',
+                count: stat.count || 0
+              }));
+              skillsStats = normalizedStats;
             }
           } catch (error) {
           }

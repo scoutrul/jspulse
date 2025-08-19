@@ -19,6 +19,11 @@
   $: showNoVacanciesMessage = !loadingFilter && !clientError && vacancies && vacancies.length === 0;
   $: showVacancyList = !loadingFilter && vacancies && vacancies.length > 0;
 
+  // Вспомогательная функция для получения ID вакансии
+  function getVacancyId(vacancy: VacancyWithHtml): string {
+    return (vacancy as any).id || vacancy._id || '';
+  }
+
   function handleSkillClick(event: CustomEvent<string>) {
     dispatch('skillClick', event.detail);
   }
@@ -33,7 +38,7 @@
     
     // Задержка для анимации
     setTimeout(() => {
-      vacancies = vacancies.filter(v => v._id !== vacancyId);
+      vacancies = vacancies.filter(v => getVacancyId(v) !== vacancyId);
       deletingVacancyId = null;
       
       dispatch('vacancyDeleted', { vacancyId, title });
@@ -50,13 +55,13 @@
       </p>
     {:else if showVacancyList}
       <ul class="vacancy-list" class:loading-more={loadingMore}>
-        {#each vacancies as vacancy, index (vacancy._id)}
+        {#each vacancies as vacancy, index (getVacancyId(vacancy) || `vacancy-${index}`)}
           <li class="vacancy-item">
             <VacancyCard 
               {vacancy} 
               showDetailLink={true} 
               showDeleteButton={true}
-              isDeleting={deletingVacancyId === vacancy._id}
+              isDeleting={deletingVacancyId === getVacancyId(vacancy)}
               theme={$theme}
               on:skillClick={handleSkillClick}
               on:deleted={handleVacancyDeleted}

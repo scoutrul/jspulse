@@ -156,9 +156,9 @@ export class VacancyApi {
       }
 
       // Преобразуем данные к нужному формату
-      const rawData = typedResponse.data as Array<{ skill: string; count: number }>;
+      const rawData = typedResponse.data as Array<{ name: string; count: number }>;
       return rawData.map(item => ({
-        skill: item.skill,
+        skill: item.name, // API возвращает 'name', но мы ожидаем 'skill'
         count: item.count
       }));
     } catch (error) {

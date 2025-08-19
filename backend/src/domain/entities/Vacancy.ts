@@ -1,10 +1,10 @@
 import { Skill } from './Skill.js';
-import { Salary } from './Salary.js';
-import { Company } from './Company.js';
+import { Salary } from '../value-objects/Salary.js';
+import { Company } from '../value-objects/Company.js';
 
 /**
  * Domain Entity для вакансии
- * Содержит бизнес-правила и валидацию
+ * Инкапсулирует бизнес-логику и правила валидации
  */
 export class Vacancy {
   constructor(
@@ -15,10 +15,11 @@ export class Vacancy {
     private readonly _salary: Salary,
     private readonly _publishedAt: Date,
     private readonly _source: string,
-    private readonly _location?: string,
-    private readonly _description?: string,
-    private readonly _experience?: string,
-    private readonly _employment?: string
+    private readonly _location: string,
+    private readonly _description: string,
+    private readonly _experience: string,
+    private readonly _employment: string,
+    private readonly _url?: string
   ) {
     this.validate();
   }
@@ -31,56 +32,31 @@ export class Vacancy {
   get salary(): Salary { return this._salary; }
   get publishedAt(): Date { return this._publishedAt; }
   get source(): string { return this._source; }
-  get location(): string | undefined { return this._location; }
-  get description(): string | undefined { return this._description; }
-  get experience(): string | undefined { return this._experience; }
-  get employment(): string | undefined { return this._employment; }
+  get location(): string { return this._location; }
+  get description(): string { return this._description; }
+  get experience(): string { return this._experience; }
+  get employment(): string { return this._employment; }
+  get url(): string | undefined { return this._url; }
 
   /**
-   * Валидация вакансии
-   */
-  private validate(): void {
-    if (!this._id || this._id.trim().length === 0) {
-      throw new Error('Vacancy ID cannot be empty');
-    }
-    if (!this._title || this._title.trim().length === 0) {
-      throw new Error('Vacancy title cannot be empty');
-    }
-    if (this._title.length > 500) {
-      throw new Error('Vacancy title cannot exceed 500 characters');
-    }
-    if (this._skills.length === 0) {
-      throw new Error('Vacancy must have at least one skill');
-    }
-    if (this._publishedAt > new Date()) {
-      throw new Error('Published date cannot be in the future');
-    }
-  }
-
-  /**
-   * Бизнес-правила
+   * Проверяет, активна ли вакансия (опубликована в последние 30 дней)
    */
   isActive(): boolean {
-    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     return this._publishedAt > thirtyDaysAgo;
   }
 
-  isArchived(): boolean {
-    return !this.isActive();
-  }
-
-  hasSkill(skillName: string): boolean {
-    return this._skills.some(skill => skill.matches(skillName));
-  }
-
-  hasAnySkill(skillNames: string[]): boolean {
-    return skillNames.some(skillName => this.hasSkill(skillName));
-  }
-
+  /**
+   * Проверяет, является ли зарплата высокой
+   */
   isHighSalary(): boolean {
     return this._salary.isHighSalary();
   }
 
+  /**
+   * Проверяет, является ли вакансия удаленной
+   */
   isRemote(): boolean {
     if (!this._location) return false;
     const location = this._location.toLowerCase();
@@ -89,69 +65,74 @@ export class Vacancy {
       location.includes('удаленка');
   }
 
+  /**
+   * Проверяет, является ли вакансия офисной
+   */
   isOffice(): boolean {
     if (!this._location) return false;
     const location = this._location.toLowerCase();
     return location.includes('офис') ||
       location.includes('office') ||
-      !this.isRemote();
+      !(location.includes('удаленно') ||
+        location.includes('remote') ||
+        location.includes('удаленка'));
   }
 
   /**
-   * Создание копии с изменениями
+   * Проверяет, содержит ли вакансия указанный навык
    */
-  withSkills(skills: Skill[]): Vacancy {
-    return new Vacancy(
-      this._id,
-      this._title,
-      this._company,
-      skills,
-      this._salary,
-      this._publishedAt,
-      this._source,
-      this._location,
-      this._description,
-      this._experience,
-      this._employment
-    );
-  }
-
-  withSalary(salary: Salary): Vacancy {
-    return new Vacancy(
-      this._id,
-      this._title,
-      this._company,
-      this._skills,
-      salary,
-      this._publishedAt,
-      this._source,
-      this._location,
-      this._description,
-      this._experience,
-      this._employment
+  hasSkill(skillName: string): boolean {
+    return this._skills.some(skill =>
+      skill.name.toLowerCase() === skillName.toLowerCase()
     );
   }
 
   /**
-   * Преобразование в простой объект для сериализации
+   * Валидация данных
    */
-  toJSON(): Record<string, any> {
-    return {
-      id: this._id,
-      title: this._title,
-      company: this._company.toJSON(),
-      skills: this._skills.map(skill => skill.toJSON()),
-      salary: this._salary.toJSON(),
-      publishedAt: this._publishedAt.toISOString(),
-      source: this._source,
-      location: this._location,
-      description: this._description,
-      experience: this._experience,
-      employment: this._employment,
-      isActive: this.isActive(),
-      isHighSalary: this.isHighSalary(),
-      isRemote: this.isRemote(),
-      isOffice: this.isOffice()
-    };
+  private validate(): void {
+    if (!this._id || this._id.trim().length === 0) {
+      throw new Error('ID вакансии не может быть пустым');
+    }
+
+    if (!this._title || this._title.trim().length === 0) {
+      throw new Error('Название вакансии не может быть пустым');
+    }
+
+    if (!this._company) {
+      throw new Error('Компания обязательна');
+    }
+
+    if (!this._skills || this._skills.length === 0) {
+      throw new Error('Вакансия должна содержать хотя бы один навык');
+    }
+
+    if (!this._salary) {
+      throw new Error('Информация о зарплате обязательна');
+    }
+
+    if (!this._publishedAt) {
+      throw new Error('Дата публикации обязательна');
+    }
+
+    if (!this._source || this._source.trim().length === 0) {
+      throw new Error('Источник вакансии обязателен');
+    }
+
+    if (!this._location || this._location.trim().length === 0) {
+      throw new Error('Локация вакансии обязательна');
+    }
+
+    if (!this._description || this._description.trim().length === 0) {
+      throw new Error('Описание вакансии обязательно');
+    }
+
+    if (!this._experience || this._experience.trim().length === 0) {
+      throw new Error('Требования к опыту обязательны');
+    }
+
+    if (!this._employment || this._employment.trim().length === 0) {
+      throw new Error('Тип занятости обязателен');
+    }
   }
 }
