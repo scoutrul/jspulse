@@ -59,7 +59,6 @@
           <li class="vacancy-item">
             <VacancyCard 
               {vacancy} 
-              showDetailLink={true} 
               showDeleteButton={true}
               isDeleting={deletingVacancyId === getVacancyId(vacancy)}
               theme={$theme}

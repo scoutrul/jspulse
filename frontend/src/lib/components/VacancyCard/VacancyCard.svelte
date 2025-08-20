@@ -14,7 +14,6 @@
   export let vacancy: VacancyDTO | VacancyWithHtml;
   export let backUrl: string = '/';
   export let backLabel: string = 'Вернуться к списку';
-  export let showDetailLink: boolean = false; // Для отображения ссылки на детальную страницу
   export let isDetailPage: boolean = false; // Указывает, что это детальная страница
   export let theme: 'light' | 'dark' = DEFAULT_THEME; // Тема карточки (теперь используется только для переопределения глобальной темы)
   export let showDeleteButton: boolean = false; // Показывать ли кнопку удаления
@@ -38,9 +37,11 @@
   
   function handleDescriptionClick() {
     if (!isDetailPage) {
+      const id = getVacancyId(vacancy);
+      if (!id) return;
       // Сохраняем позицию скролла перед переходом
       saveScrollPosition();
-      goto(`/v/${getVacancyId(vacancy)}`, { noScroll: true });
+      goto(`/v/${id}`, { noScroll: true });
     }
   }
 
@@ -72,7 +73,7 @@
       location={vacancy.location || undefined}
       publishedAt={typeof vacancy.publishedAt === 'string' ? vacancy.publishedAt : vacancy.publishedAt?.toISOString()}
       vacancyId={getVacancyId(vacancy)}
-      {showDetailLink}
+      showDetailLink={!isDetailPage}
       salaryFrom={vacancy.salaryFrom || undefined}
       salaryTo={vacancy.salaryTo || undefined}
       salaryCurrency={vacancy.salaryCurrency || undefined}

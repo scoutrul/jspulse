@@ -30,6 +30,7 @@ export const BaseVacancySchema = z.object({
  * Схема DTO вакансии для передачи между бэкендом и фронтендом
  */
 export const VacancyDTOSchema = BaseVacancySchema.extend({
+  id: z.string().optional(),
   _id: z.string().optional(),
   description: z.string().optional(),
   fullDescription: z.string().optional(),       // JSON строка с полным описанием
@@ -82,6 +83,7 @@ export const VacancySearchSchema = z.object({
 
 export type BaseVacancy = z.infer<typeof BaseVacancySchema>;
 export type VacancyDTO = Omit<z.infer<typeof BaseVacancySchema>, 'publishedAt'> & {
+  id?: string;
   _id?: string;
   description?: string;
   fullDescription?: string;        // JSON строка с полным описанием

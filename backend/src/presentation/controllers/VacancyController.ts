@@ -55,7 +55,22 @@ export class VacancyController {
     try {
       const { id } = req.params;
       const result = await this.getVacancyByIdUseCase.execute({ id });
-      res.json(result);
+
+      if (!result.vacancy) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 404,
+            message: 'Vacancy not found'
+          }
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: result.vacancy
+      });
     } catch (error) {
       console.error('Error in VacancyController.getVacancyById:', error);
       res.status(500).json({

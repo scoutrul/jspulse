@@ -64,7 +64,7 @@
   }
   
   .header-nav {
-    @apply flex items-center ml-auto mr-4;
+    @apply flex items-center ml-auto mr-4 gap-2;
   }
   
   .header-actions {
