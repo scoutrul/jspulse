@@ -632,6 +632,7 @@ export class VacancyRepository implements IVacancyRepository {
     }
 
     return {
+      id: doc._id.toString(),
       _id: doc._id.toString(),
       externalId: doc.externalId,
       title: doc.title,

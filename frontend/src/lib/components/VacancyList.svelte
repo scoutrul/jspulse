@@ -21,7 +21,7 @@
 
   // Вспомогательная функция для получения ID вакансии
   function getVacancyId(vacancy: VacancyWithHtml): string {
-    return (vacancy as any).id || vacancy._id || '';
+    return (vacancy as any).id || '';
   }
 
   function handleSkillClick(event: CustomEvent<string>) {

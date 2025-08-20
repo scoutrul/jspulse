@@ -33,7 +33,7 @@ export class VacancyApiResponseDto {
    */
   static fromVacancy(vacancy: Vacancy): VacancyApiResponseDto {
     return new VacancyApiResponseDto(
-      vacancy.id || vacancy.id, // Убеждаемся, что ID всегда есть
+      vacancy.id, // Канонический id
       vacancy.title,
       vacancy.company.name, // Извлекаем только имя компании
       vacancy.skills.map(skill => skill.name), // Извлекаем только названия навыков

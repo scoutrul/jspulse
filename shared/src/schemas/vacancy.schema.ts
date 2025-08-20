@@ -31,7 +31,7 @@ export const BaseVacancySchema = z.object({
  */
 export const VacancyDTOSchema = BaseVacancySchema.extend({
   id: z.string().optional(),
-  _id: z.string().optional(),
+  _id: z.string().optional(), // временно для совместимости, фронт читает id
   description: z.string().optional(),
   fullDescription: z.string().optional(),       // JSON строка с полным описанием
   testFullDesc: z.string().optional(),          // Тестовое поле
