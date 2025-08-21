@@ -90,6 +90,7 @@
       processedHtml={vacancy.processedHtml}
       vacancyId={getVacancyId(vacancy)}
       {isDetailPage}
+      {isDeleting}
       {theme}
       on:skillClick={handleSkillClick}
       on:descriptionClick={handleDescriptionClick}

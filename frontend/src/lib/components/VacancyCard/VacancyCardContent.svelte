@@ -11,6 +11,7 @@
   export let fullDescription: any = undefined; // DescriptionContent из backend
   export let processedHtml: string | undefined = undefined;
   export let isDetailPage: boolean = false;
+  export let isDeleting: boolean = false; // Состояние удаления
   export let vacancyId: string | undefined = undefined; // Добавляем ID для префетча
   export let theme: 'light' | 'dark' = 'dark';
   
@@ -84,7 +85,8 @@
   
   // Префетч страницы при наведении для оптимизации
   async function handleDescriptionHover() {
-    if (!isDetailPage && hasDescription && vacancyId) {
+    // Не делаем preload если вакансия удаляется
+    if (!isDetailPage && hasDescription && vacancyId && !isDeleting) {
       try {
         await preloadData(`/v/${vacancyId}`);
         console.debug('✅ Prefetched vacancy page:', vacancyId);

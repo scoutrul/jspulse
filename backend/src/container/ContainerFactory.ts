@@ -9,6 +9,7 @@ import { GetVacanciesUseCase } from "../application/use-cases/GetVacanciesUseCas
 import { GetSystemStatsUseCase } from "../application/use-cases/GetSystemStatsUseCase.js";
 import { GetVacancyByIdUseCase } from "../application/use-cases/GetVacancyByIdUseCase.js";
 import { ClearCacheUseCase } from "../application/use-cases/ClearCacheUseCase.js";
+import { DeleteVacancyUseCase } from "../application/use-cases/DeleteVacancyUseCase.js";
 import { VacancyDomainService } from "../domain/services/VacancyDomainService.js";
 import { GetSkillsUseCase } from '../application/use-cases/GetSkillsUseCase.js';
 import { GetSkillsStatsUseCase } from '../application/use-cases/GetSkillsStatsUseCase.js';
@@ -142,6 +143,14 @@ export class ContainerFactory implements IDIContainerFactory {
       (container: IDIContainer) => {
         const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
         return new GetSkillsStatsUseCase(vacancyRepository);
+      }
+    );
+
+    container.registerSingleton(
+      'DeleteVacancyUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new DeleteVacancyUseCase(vacancyRepository);
       }
     );
 
@@ -315,6 +324,7 @@ export class ContainerFactory implements IDIContainerFactory {
       'GetSystemStatsUseCase',
       'GetVacancyByIdUseCase',
       'ClearCacheUseCase',
+      'DeleteVacancyUseCase',
       'GetSkillsUseCase',
       'GetSkillsStatsUseCase',
     ];

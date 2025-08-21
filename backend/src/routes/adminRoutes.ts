@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import { AdminController } from '../presentation/controllers/AdminController.js';
 import { GetSystemStatsUseCase } from '../application/use-cases/GetSystemStatsUseCase.js';
 import { ClearCacheUseCase } from '../application/use-cases/ClearCacheUseCase.js';
+import { DeleteVacancyUseCase } from '../application/use-cases/DeleteVacancyUseCase.js';
 
 const router: Router = Router();
 
@@ -13,7 +14,8 @@ const createAdminController = (req: Request): AdminController => {
   // Получаем Use Cases из DI Container
   const getSystemStatsUseCase = req.resolve<GetSystemStatsUseCase>('GetSystemStatsUseCase');
   const clearCacheUseCase = req.resolve<ClearCacheUseCase>('ClearCacheUseCase');
-  return new AdminController(getSystemStatsUseCase, clearCacheUseCase);
+  const deleteVacancyUseCase = req.resolve<DeleteVacancyUseCase>('DeleteVacancyUseCase');
+  return new AdminController(getSystemStatsUseCase, clearCacheUseCase, deleteVacancyUseCase);
 };
 
 /**
@@ -63,6 +65,25 @@ router.post('/clear-cache', async (req: Request, res: Response) => {
     await adminController.clearCache(req, res);
   } catch (error) {
     console.error('Error in admin clear-cache route:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: 'Internal server error'
+      }
+    });
+  }
+});
+
+/**
+ * DELETE /admin/vacancy/:id - удаление вакансии
+ */
+router.delete('/vacancy/:id', async (req: Request, res: Response) => {
+  try {
+    const adminController = createAdminController(req);
+    await adminController.deleteVacancy(req, res);
+  } catch (error) {
+    console.error('Error in admin delete-vacancy route:', error);
     res.status(500).json({
       success: false,
       error: {

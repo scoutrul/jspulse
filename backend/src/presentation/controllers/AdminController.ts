@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { GetSystemStatsUseCase } from '../../application/use-cases/GetSystemStatsUseCase.js';
 import { ClearCacheUseCase } from '../../application/use-cases/ClearCacheUseCase.js';
+import { DeleteVacancyUseCase } from '../../application/use-cases/DeleteVacancyUseCase.js';
 
 /**
  * Controller для административных операций
@@ -9,7 +10,8 @@ import { ClearCacheUseCase } from '../../application/use-cases/ClearCacheUseCase
 export class AdminController {
   constructor(
     private readonly getSystemStatsUseCase: GetSystemStatsUseCase,
-    private readonly clearCacheUseCase: ClearCacheUseCase
+    private readonly clearCacheUseCase: ClearCacheUseCase,
+    private readonly deleteVacancyUseCase: DeleteVacancyUseCase
   ) { }
 
   /**
@@ -91,6 +93,58 @@ export class AdminController {
         error: {
           code: 500,
           message: 'Failed to clear cache'
+        }
+      });
+    }
+  }
+
+  /**
+   * DELETE /admin/vacancy/:id - удаление вакансии
+   */
+  async deleteVacancy(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      if (!id) {
+        res.status(400).json({
+          success: false,
+          error: {
+            code: 400,
+            message: 'Vacancy ID is required'
+          }
+        });
+        return;
+      }
+
+      // Делегируем бизнес-логику в Use Case
+      const result = await this.deleteVacancyUseCase.execute({ id });
+
+      if (!result.deleted) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 404,
+            message: 'Vacancy not found'
+          }
+        });
+        return;
+      }
+
+      // Отправляем ответ об успешном удалении
+      res.json({
+        success: true,
+        data: {
+          id: result.id,
+          deleted: result.deleted
+        }
+      });
+    } catch (error) {
+      console.error('Error in AdminController.deleteVacancy:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 500,
+          message: 'Failed to delete vacancy'
         }
       });
     }

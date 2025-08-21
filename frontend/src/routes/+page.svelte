@@ -245,15 +245,11 @@
     handleSkillsChange([event.detail]);
   }
 
-  // Обработчик удаления вакансии
+  // Обработчик удаления вакансии (вакансия уже удалена через API в VacancyCardActions)
   async function handleVacancyDeleted(event: CustomEvent<{ vacancyId: string; title: string }>) {
     const { vacancyId, title } = event.detail;
     
     try {
-      // Вызываем API удаления
-      const result = await vacancyService.deleteVacancy(vacancyId);
-      
-      if (result.success) {
         // Toast уведомление об успешном удалении
         showNotification('success', `Вакансия удалена`, `"${title}" успешно удалена из базы данных`);
         
@@ -320,12 +316,9 @@
           skillsStats = [...skillsStats];
         }, 100);
         
-      } else {
-        showNotification('error', 'Ошибка удаления', result.error || 'Не удалось удалить вакансию');
-      }
     } catch (error) {
       vacancyStore.setLoading(false);
-      showNotification('error', 'Ошибка удаления', 'Произошла ошибка при удалении вакансии');
+      showNotification('error', 'Ошибка обновления', 'Произошла ошибка при обновлении списка');
     }
   }
 
