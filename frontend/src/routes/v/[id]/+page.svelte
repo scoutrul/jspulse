@@ -97,6 +97,7 @@
     @apply text-lg font-medium;
     @apply m-0;
   }
+
   
   .loading-spinner {
     @apply w-8 h-8 border-2 border-neutral-200 border-t-primary-500 rounded-full;

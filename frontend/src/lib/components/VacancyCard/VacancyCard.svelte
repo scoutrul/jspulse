@@ -74,9 +74,9 @@
       publishedAt={typeof vacancy.publishedAt === 'string' ? vacancy.publishedAt : vacancy.publishedAt?.toISOString()}
       vacancyId={getVacancyId(vacancy)}
       showDetailLink={!isDetailPage}
-      salaryFrom={vacancy.salaryFrom || undefined}
-      salaryTo={vacancy.salaryTo || undefined}
-      salaryCurrency={vacancy.salaryCurrency || undefined}
+      salaryFrom={vacancy.salaryFrom ?? undefined}
+      salaryTo={vacancy.salaryTo ?? undefined} 
+      salaryCurrency={vacancy.salaryCurrency ?? undefined}
       {theme}
     />
     

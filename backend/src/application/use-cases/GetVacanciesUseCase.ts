@@ -132,7 +132,7 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
 
       // Создаем Value Objects
       const skills = dto.skills?.map((skillName: string) => new Skill(skillName)) || [];
-      const salary = new Salary(dto.salary?.from || dto.salaryFrom, dto.salary?.to || dto.salaryTo, dto.salary?.currency || dto.salaryCurrency || 'RUR');
+      const salary = new Salary(dto.salaryFrom, dto.salaryTo, dto.salaryCurrency || 'RUR');
       const company = new Company(dto.company?.name || dto.company, dto.company?.trusted || dto.companyTrusted || false);
 
       // Создаем domain entity

@@ -11,8 +11,8 @@ export const transformVacancies = (
     ...vacancy,
     publishedAt: new Date(vacancy.publishedAt),
     // Преобразуем null значения в undefined для совместимости с типом VacancyDTO
-    salaryFrom: vacancy.salaryFrom === null ? undefined : vacancy.salaryFrom,
-    salaryTo: vacancy.salaryTo === null ? undefined : vacancy.salaryTo,
+    salaryFrom: vacancy.salaryFrom !== null ? vacancy.salaryFrom : undefined,
+    salaryTo: vacancy.salaryTo !== null ? vacancy.salaryTo : undefined,
     // Приоритизируем существующее htmlDescription, если оно есть
     htmlDescription: vacancy.htmlDescription
       ? vacancy.htmlDescription

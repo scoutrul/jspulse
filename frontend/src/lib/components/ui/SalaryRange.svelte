@@ -9,16 +9,18 @@
   export let href: string | undefined = undefined; // Пропускаем href в InfoBadge
   export let darkTheme: boolean = false;
   
-  $: hasRange = salaryFrom !== undefined || salaryTo !== undefined;
+  $: hasRange = salaryFrom != null || salaryTo != null;
   $: formattedFrom = salaryFrom?.toLocaleString('ru-RU');
   $: formattedTo = salaryTo?.toLocaleString('ru-RU');
   
   $: salaryText = (() => {
-    if (salaryFrom && salaryTo) {
+    const hasFrom = salaryFrom != null;
+    const hasTo = salaryTo != null;
+    if (hasFrom && hasTo) {
       return `от ${formattedFrom} до ${formattedTo} ${currency}`;
-    } else if (salaryFrom) {
+    } else if (hasFrom) {
       return `от ${formattedFrom} ${currency}`;
-    } else if (salaryTo) {
+    } else if (hasTo) {
       return `до ${formattedTo} ${currency}`;
     }
     return '';

@@ -65,7 +65,10 @@ export class VacancyApiResponseDto {
       title: this.title,
       company: this.company,
       skills: this.skills,
-      salary: this.salary,
+      // Плоские поля зарплаты для совместимости с фронтендом
+      salaryFrom: this.salary.from,
+      salaryTo: this.salary.to,
+      salaryCurrency: this.salary.currency,
       publishedAt: this.publishedAt,
       source: this.source,
       location: this.location,
