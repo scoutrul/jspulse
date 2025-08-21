@@ -41,10 +41,12 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
 
     // Загружаем навыки и статистику параллельно
 
-    const [availableSkills, skillsStats] = await Promise.all([
+    const [availableSkills, skillsStatsRaw] = await Promise.all([
       fetchSkillsServer(_fetch),
       fetchSkillsStatsServer(_fetch)
     ]);
+
+    const skillsStats = skillsStatsRaw.map(({ skill, count }) => ({ name: skill, count }));
 
     logger.debug(CONTEXT, `Получено ${availableSkills.length} навыков и ${skillsStats.length} статистик`);
 

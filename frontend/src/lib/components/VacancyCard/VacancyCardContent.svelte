@@ -396,7 +396,7 @@
   
   .description-content :global(ul),
   .description-content :global(ol) {
-    @apply mb-2 last:mb-0 pl-4;
+    @apply mb-2 last:mb-2 pl-4;
   }
   
   .description-content :global(li) {

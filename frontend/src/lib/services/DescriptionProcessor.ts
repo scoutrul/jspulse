@@ -18,7 +18,7 @@ export class DescriptionProcessor {
     }
 
     // Удаляем HTML теги для анализа текста
-    const textOnly = this.stripHtml(html);
+    const textOnly = DescriptionProcessor.stripHtml(html);
 
     if (textOnly.length <= maxLength) {
       return textOnly;
@@ -87,7 +87,7 @@ export class DescriptionProcessor {
     if (!html) return '';
 
     // Сначала санитизируем HTML
-    const sanitized = this.sanitizeHtml(html);
+    const sanitized = DescriptionProcessor.sanitizeHtml(html);
 
     if (mode === 'preview') {
       // Для превью генерируем текстовую версию
@@ -104,7 +104,7 @@ export class DescriptionProcessor {
   createDescriptionContent(rawHtml: string): DescriptionContent {
     const processed = this.serializeForDesignSystem(rawHtml);
     const preview = this.generateSmartPreview(rawHtml);
-    const textOnly = this.stripHtml(rawHtml);
+    const textOnly = DescriptionProcessor.stripHtml(rawHtml);
 
     return {
       raw: rawHtml,
@@ -117,7 +117,7 @@ export class DescriptionProcessor {
   /**
    * Удаляет HTML теги, оставляя только текст
    */
-  private stripHtml(html: string): string {
+  static stripHtml(html: string): string {
     if (!html) return '';
 
     return html
@@ -137,7 +137,7 @@ export class DescriptionProcessor {
   /**
    * Базовая санитизация HTML (расширяет существующую функциональность)
    */
-  private sanitizeHtml(html: string): string {
+  static sanitizeHtml(html: string): string {
     if (!html) return '';
 
     // Список разрешенных тегов для описания вакансий
