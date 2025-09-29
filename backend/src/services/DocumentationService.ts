@@ -64,8 +64,9 @@ export class DocumentationService {
   private readonly allowedExtensions = ['.md', '.txt', '.json', '.yaml', '.yml'];
 
   constructor() {
-    // Путь к Memory Bank от корня проекта
-    this.memoryBankPath = path.resolve(process.cwd(), 'memory-bank');
+    // Путь к Memory Bank от корня проекта (backend находится в подпапке)
+    // Memory Bank доступен только в development режиме
+    this.memoryBankPath = path.resolve(process.cwd(), '..', 'memory-bank');
   }
 
   /**
@@ -73,9 +74,17 @@ export class DocumentationService {
    */
   async getFilesList(): Promise<DocumentationFile[]> {
     try {
+      // Memory Bank доступен только в development режиме
+      if (process.env.NODE_ENV === 'production') {
+        console.log('DocumentationService: Memory Bank недоступен в production режиме');
+        return [];
+      }
+
+      console.log('DocumentationService: Scanning memory-bank at:', this.memoryBankPath);
       const files: DocumentationFile[] = [];
 
       await this.scanDirectory(this.memoryBankPath, '', files);
+      console.log('DocumentationService: Found', files.length, 'files');
 
       // Сортируем: папки сначала, потом файлы по дате модификации
       files.sort((a, b) => {
@@ -145,6 +154,11 @@ export class DocumentationService {
    */
   async getFileContent(relativePath: string): Promise<FileContent> {
     try {
+      // Memory Bank доступен только в development режиме
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Memory Bank недоступен в production режиме');
+      }
+
       // Безопасность: проверяем что путь не выходит за пределы Memory Bank
       const safePath = this.sanitizePath(relativePath);
       const fullPath = path.join(this.memoryBankPath, safePath);

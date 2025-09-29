@@ -71,6 +71,8 @@ services:
       - ./backend/src:/app/backend/src
       - ./shared/src:/app/shared/src
       - ./shared/dist:/app/shared/dist
+      # Memory Bank только для development - документация разработки
+      - ./memory-bank:/app/memory-bank
       # Убираем volumes для node_modules - они конфликтуют с pnpm workspace
       # - backend_node_modules:/app/backend/node_modules
       # - shared_node_modules:/app/shared/node_modules
