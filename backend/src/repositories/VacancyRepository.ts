@@ -528,7 +528,11 @@ export class VacancyRepository implements IVacancyRepository {
       max: number;
     };
   }> {
-    const cacheKey = 'statistics:all';
+    // Считаем статистику только по активным вакансиям (≤ 30 дней)
+    const archiveThreshold = this.getArchiveDateThreshold();
+    const matchActive = { publishedAt: { $gte: archiveThreshold } } as const;
+
+    const cacheKey = 'statistics:active';
 
     if (this.cacheService) {
       const cached = await this.cacheService.get<any>(cacheKey);
@@ -538,33 +542,28 @@ export class VacancyRepository implements IVacancyRepository {
     }
 
     const [totalCount, sourceStats, skillStats, salaryStats] = await Promise.all([
-      // Общее количество
-      Vacancy.countDocuments(),
+      // Общее количество активных вакансий
+      Vacancy.countDocuments(matchActive),
 
-      // Статистика по источникам
+      // Статистика по источникам для активных вакансий
       Vacancy.aggregate([
+        { $match: matchActive },
         { $group: { _id: "$source", count: { $sum: 1 } } },
         { $sort: { count: -1 } }
       ]),
 
-      // Топ навыков
+      // Топ навыков только по активным вакансиям
       Vacancy.aggregate([
+        { $match: matchActive },
         { $unwind: "$skills" },
         { $group: { _id: "$skills", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 20 }
       ]),
 
-      // Статистика по зарплатам
+      // Статистика по зарплатам среди активных вакансий
       Vacancy.aggregate([
-        {
-          $match: {
-            $and: [
-              { salaryFrom: { $ne: null } },
-              { salaryTo: { $ne: null } }
-            ]
-          }
-        },
+        { $match: { $and: [matchActive, { salaryFrom: { $ne: null } }, { salaryTo: { $ne: null } }] } },
         {
           $group: {
             _id: null,

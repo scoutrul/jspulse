@@ -32,13 +32,13 @@ export class GetSkillsStatsUseCase implements IUseCaseWithoutParams<GetSkillsSta
 
   async execute(): Promise<GetSkillsStatsResponse> {
     try {
-      // Получаем все вакансии для анализа
+      // Получаем только активные вакансии (≤ 30 дней) для анализа
       const result = await this.vacancyRepository.findMany({
         page: 0,
         limit: 10000,
         skills: [],
         sources: [],
-        includeArchived: true
+        includeArchived: false
       });
 
       // Собираем статистику по навыкам

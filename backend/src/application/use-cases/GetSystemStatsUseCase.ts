@@ -36,14 +36,14 @@ export class GetSystemStatsUseCase implements IUseCaseWithoutParams<SystemStatsR
 
   async execute(): Promise<SystemStatsResponse> {
     try {
-      // Получаем статистику из репозитория
+      // Получаем статистику из репозитория (только активные вакансии)
       const repoStats = await this.vacancyRepository.getStatistics();
 
-      // Получаем все вакансии для дополнительных расчетов
+      // Получаем только активные вакансии для дополнительных расчетов
       const allVacanciesResult = await this.vacancyRepository.findWithFilters({
         page: 0,
         limit: 10000,
-        includeArchived: true
+        includeArchived: false
       });
 
       // Преобразуем в domain entities

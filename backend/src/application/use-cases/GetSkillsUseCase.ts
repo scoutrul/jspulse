@@ -21,13 +21,13 @@ export class GetSkillsUseCase implements IUseCaseWithoutParams<GetSkillsResponse
 
   async execute(): Promise<GetSkillsResponse> {
     try {
-      // Получаем все вакансии для извлечения навыков
+      // Получаем только активные вакансии (≤ 30 дней) для извлечения навыков
       const result = await this.vacancyRepository.findMany({
         page: 0,
-        limit: 10000, // Получаем все вакансии для полного списка навыков
+        limit: 10000, // Получаем достаточный объем для полного списка навыков
         skills: [],
         sources: [],
-        includeArchived: true
+        includeArchived: false
       });
 
       // Извлекаем все навыки из вакансий
