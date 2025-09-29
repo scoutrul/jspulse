@@ -77,6 +77,8 @@
       salaryFrom={vacancy.salaryFrom ?? undefined}
       salaryTo={vacancy.salaryTo ?? undefined} 
       salaryCurrency={vacancy.salaryCurrency ?? undefined}
+      url={vacancy.url}
+      source={vacancy.source}
       {theme}
     />
     

@@ -12,6 +12,8 @@
   export let salaryTo: number | undefined | null = undefined;
   export let salaryCurrency: string | undefined = undefined;
   export let theme: 'light' | 'dark' = 'light';
+  export let url: string | undefined = undefined;
+  export let source: string | undefined = undefined;
   
   $: formattedDate = publishedAt ? new Date(publishedAt).toLocaleDateString('ru-RU') : '';
   $: hasSalary = salaryFrom != null || salaryTo != null;
@@ -51,6 +53,18 @@
       {#if location}
         <span class="dot-sep">•</span>
         <span class="location-text">{location}</span>
+      {/if}
+      {#if url}
+        <span class="dot-sep">•</span>
+        <a class="source-link" href={url} target="_blank" rel="noopener noreferrer" title={`Открыть на ${source || 'источнике'}`}>
+          <span class="source-text">{source || 'Источник'}</span>
+          <span class="source-icon" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M7 17L17 7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M7 7H17V17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </span>
+        </a>
       {/if}
     </div>
     {#if formattedDate}
@@ -295,6 +309,19 @@
     @apply text-neutral-600; 
   }
 
+  .source-link {
+    @apply inline-flex items-center gap-1 text-sm font-medium no-underline;
+    @apply text-warning-400 hover:text-warning-300 transition-colors;
+  }
+  :global(:not(.dark)) .source-link {
+    @apply text-primary-600 hover:text-primary-700;
+  }
+  :global(.dark) .source-link {
+    @apply text-purple-300 hover:text-purple-200;
+  }
+  .source-text { @apply truncate max-w-[12rem]; }
+  .source-icon { @apply inline-flex items-center justify-center; }
+
   .meta-right { @apply flex items-center gap-1; }
   
   .published-label { 
@@ -354,6 +381,7 @@
     .vacancy-title {
       @apply text-lg;
     }
+    .source-text { @apply max-w-[8rem]; }
   }
   
   /* Accessibility */
