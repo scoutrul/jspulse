@@ -113,7 +113,8 @@
       // Для карточки в списке показываем ОГРАНИЧЕННЫЙ по количеству блоков HTML
       const sourceHtml = parsedFullDescription?.processed || processedHtml || description || '';
       const full = processDescription(sourceHtml, 'full');
-      return trimHtmlToFirstBlocks(full, 3);
+      const firstBlocks = trimHtmlToFirstBlocks(full, 3);
+      return truncateHtmlByChars(firstBlocks, 1200, '');
     }
   })();
   
@@ -137,6 +138,52 @@
         // Игнорируем ошибки префетча - это не критично
         console.debug('❌ Prefetch failed for vacancy:', vacancyId, error);
       }
+    }
+  }
+
+  function truncateHtmlByChars(html: string, maxChars: number = 1000, readMoreText: string = 'Читать далее'): string {
+    try {
+      if (!html || maxChars <= 0) return '';
+      if (!browser) {
+        // Простой SSR-фолбэк: усечение строки HTML
+        if (html.length <= maxChars) return html;
+        return html.slice(0, maxChars) + '…';
+      }
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(`<div data-wrap>${html}</div>`, 'text/html');
+      const wrap = doc.body.querySelector('[data-wrap]');
+      if (!wrap) return html;
+      const outDoc = new DOMParser().parseFromString('<div data-wrap></div>', 'text/html');
+      const outRoot = outDoc.body.querySelector('[data-wrap]');
+      if (!outRoot) return html;
+      let currentLength = 0;
+      let truncated = false;
+      for (const node of Array.from(wrap.childNodes)) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const el = node as Element;
+          const nodeHtml = el.outerHTML || '';
+          if (currentLength + nodeHtml.length > maxChars) {
+            truncated = true;
+            break;
+          }
+          outRoot.appendChild(el.cloneNode(true));
+          currentLength += nodeHtml.length;
+        } else if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent?.trim() ?? '';
+          if (currentLength + text.length > maxChars) {
+            truncated = true;
+            break;
+          }
+          outRoot.appendChild(node.cloneNode(true));
+          currentLength += text.length;
+        }
+      }
+      // Хвост не добавляем здесь — «Читать далее» рендерим отдельной строкой
+ 
+      return outRoot.innerHTML || '';
+    } catch (e) {
+      console.error('[truncateHtmlByChars] error:', e);
+      return html;
     }
   }
 </script>
@@ -203,6 +250,7 @@
           {:else}
             <p class="description-text">{displayContent}</p>
           {/if}
+          <span class="read-more">Читать далее</span>
         </div>
       </a>
     {:else}
@@ -479,12 +527,21 @@
     @apply italic;
   }
   
-  /* Ограничение высоты для карточек (не для detail page) */
   .description-container:not(.detail-page) .description-content {
     overflow: hidden;
     position: relative;
   }
 
+  /* Строка «Читать далее» в кратком описании */
+  .read-more {
+    display: block;
+    margin-top: 0.25rem;
+    color: var(--link-color, #3b82f6);
+    font-weight: 600;
+  }
+  .clickable .read-more:hover {
+    text-decoration: underline;
+  }
   
   /* Responsive design */
   @media (max-width: 640px) {

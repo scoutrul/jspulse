@@ -86,8 +86,20 @@ export class VacancyRepository implements IVacancyRepository {
   async findMany(criteria: IVacancyFindCriteria): Promise<IFindResult<VacancyDTO>> {
     const { page = PAGINATION.VALIDATION.MIN_PAGE, limit = PAGINATION.DEFAULT_PAGE_SIZE, where = {}, orderBy, includeArchived = false } = criteria;
 
-    // Кэшируем простые запросы списков
-    const cacheKey = this.buildListCacheKey('findMany', { page, limit, where, orderBy, includeArchived });
+    // Кэшируем запрос с учетом всех фильтров
+    const cacheKey = this.buildListCacheKey('findMany', {
+      page,
+      limit,
+      where,
+      orderBy,
+      includeArchived,
+      skills: (criteria as any).skills,
+      salaryRange: (criteria as any).salaryRange,
+      sources: (criteria as any).sources,
+      publishedAfter: (criteria as any).publishedAfter,
+      publishedBefore: (criteria as any).publishedBefore,
+      searchText: (criteria as any).searchText
+    });
     if (this.cacheService) {
       const cached = await this.cacheService.get<IFindResult<VacancyDTO>>(cacheKey);
       if (cached) {
@@ -95,10 +107,19 @@ export class VacancyRepository implements IVacancyRepository {
       }
     }
 
-    // Строим MongoDB query из критериев поиска
-    const query = this.buildMongoQuery(where);
+    // Строим MongoDB query из полного набора критериев
+    const queryInput: any = {
+      ...where,
+      skills: (criteria as any).skills,
+      salaryRange: (criteria as any).salaryRange,
+      sources: (criteria as any).sources,
+      publishedAfter: (criteria as any).publishedAfter,
+      publishedBefore: (criteria as any).publishedBefore,
+      searchText: (criteria as any).searchText
+    };
+    const query = this.buildMongoQuery(queryInput);
 
-    // Добавляем фильтр архивности если не включаем архивные
+    // Добавляем фильтр активных вакансий если архивные не запрошены
     if (!includeArchived) {
       query.publishedAt = { $gte: this.getArchiveDateThreshold() };
     }
@@ -111,7 +132,6 @@ export class VacancyRepository implements IVacancyRepository {
       .skip(offset)
       .lean();
 
-    // Обрабатываем сортировку
     if (orderBy) {
       const sortObj: Record<string, 1 | -1> = {};
       Object.entries(orderBy).forEach(([key, direction]) => {
@@ -119,7 +139,6 @@ export class VacancyRepository implements IVacancyRepository {
       });
       mongoQuery = mongoQuery.sort(sortObj);
     } else {
-      // Сортировка по умолчанию - новые вакансии первыми
       mongoQuery = mongoQuery.sort({ publishedAt: -1 });
     }
 
@@ -137,7 +156,6 @@ export class VacancyRepository implements IVacancyRepository {
       }
     };
 
-    // Кэшируем результат на 5 минут
     if (this.cacheService) {
       await this.cacheService.set(cacheKey, result, 300);
     }
@@ -677,13 +695,69 @@ export class VacancyRepository implements IVacancyRepository {
    * Построение MongoDB query из простых критериев.
    * Обрабатывает базовые типы данных для поиска.
    */
-  private buildMongoQuery(criteria: Partial<VacancyDTO>): any {
+  private buildMongoQuery(criteria: Partial<VacancyDTO> & {
+    skills?: string[];
+    salaryRange?: { from?: number; to?: number };
+    sources?: string[];
+    publishedAfter?: Date | string;
+    publishedBefore?: Date | string;
+    searchText?: string;
+  }): any {
     const query: any = {};
 
     Object.entries(criteria).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        // Простое равенство для большинства полей
-        query[key] = value;
+      if (value === undefined || value === null) return;
+
+      switch (key) {
+        case 'skills': {
+          const skills = value as string[];
+          if (skills && skills.length > 0) {
+            const regexes = skills.map((s) => new RegExp(`^${s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i'));
+            query.skills = { $in: regexes };
+          }
+          break;
+        }
+        case 'salaryRange': {
+          const { from, to } = value as any;
+          if (from !== undefined || to !== undefined) {
+            query.$and = query.$and || [];
+            if (from !== undefined) query.$and.push({ salaryFrom: { $gte: from } });
+            if (to !== undefined) query.$and.push({ salaryTo: { $lte: to } });
+          }
+          break;
+        }
+        case 'sources': {
+          const sources = value as string[];
+          if (sources && sources.length > 0) {
+            query.source = { $in: sources };
+          }
+          break;
+        }
+        case 'publishedAfter': {
+          query.publishedAt = query.publishedAt || {};
+          query.publishedAt.$gte = new Date(String(value));
+          break;
+        }
+        case 'publishedBefore': {
+          query.publishedAt = query.publishedAt || {};
+          query.publishedAt.$lte = new Date(String(value));
+          break;
+        }
+        case 'searchText': {
+          const text = String(value).trim();
+          if (text.length > 0) {
+            query.$or = [
+              { title: { $regex: text, $options: 'i' } },
+              { company: { $regex: text, $options: 'i' } },
+              { description: { $regex: text, $options: 'i' } }
+            ];
+          }
+          break;
+        }
+        default: {
+          query[key] = value;
+          break;
+        }
       }
     });
 
@@ -731,6 +805,7 @@ export class VacancyRepository implements IVacancyRepository {
     // Для простоты очищаем все (в production лучше использовать префиксы)
     await this.cacheService.delete('skills:unique');
     await this.cacheService.delete('statistics:all');
+    await this.cacheService.delete('statistics:active');
   }
 
   /**
