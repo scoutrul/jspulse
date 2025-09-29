@@ -1,5 +1,6 @@
 import { IUseCaseWithoutParams } from '../interfaces/IUseCase.js';
 import { IVacancyRepository } from '../../domain/repositories/IVacancyRepository.js';
+import { normalizeSkill } from '../../utils/transformations.js';
 
 /**
  * DTO для статистики навыка
@@ -45,12 +46,12 @@ export class GetSkillsStatsUseCase implements IUseCaseWithoutParams<GetSkillsSta
       const skillsMap = new Map<string, { count: number; totalSalary: number; salaryCount: number }>();
       let totalVacancies = 0;
 
-      result.data.forEach(vacancy => {
+      result.data.forEach((vacancy: any) => {
         totalVacancies++;
 
         if (vacancy.skills && Array.isArray(vacancy.skills)) {
-          vacancy.skills.forEach(skill => {
-            const skillName = typeof skill === 'string' ? skill : 'unknown';
+          vacancy.skills.forEach((skill: any) => {
+            const skillName = typeof skill === 'string' ? normalizeSkill(skill) : 'unknown';
 
             if (!skillsMap.has(skillName)) {
               skillsMap.set(skillName, { count: 0, totalSalary: 0, salaryCount: 0 });

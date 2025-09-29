@@ -1,5 +1,6 @@
 import type { TelegramMessage, TelegramParsingResult, TelegramConfig } from '@jspulse/shared';
 import { TELEGRAM_CONFIG } from '../../config/telegram.js';
+import { normalizeSkill } from '../../utils/transformations.js';
 
 /**
  * Процессор для обработки Telegram сообщений и извлечения данных о вакансиях
@@ -91,7 +92,7 @@ export class MessageProcessor {
     const errors: string[] = [];
 
     // Проверяем наличие обязательных ключевых слов
-    const hasRequiredKeywords = this.config.keyWords.some(keyword =>
+    const hasRequiredKeywords = this.config.keyWords.some((keyword: string) =>
       text.includes(keyword.toLowerCase())
     );
 
@@ -340,7 +341,7 @@ export class MessageProcessor {
     const textLower = text.toLowerCase();
     techKeywords.forEach(tech => {
       if (textLower.includes(tech)) {
-        skills.add(tech);
+        skills.add(normalizeSkill(tech));
       }
     });
 
@@ -354,7 +355,7 @@ export class MessageProcessor {
     // Разделяем по запятым, точкам с запятой, переносам строк
     return skillsText
       .split(/[,;|\n]+/)
-      .map(skill => skill.trim())
+      .map(skill => normalizeSkill(skill.trim()))
       .filter(skill => skill.length > 1 && skill.length < 30)
       .map(skill => this.cleanText(skill));
   }
@@ -388,7 +389,7 @@ export class MessageProcessor {
     let confidence = 0;
 
     // Базовая уверенность за наличие ключевых слов
-    const hasKeywords = this.config.keyWords.some(keyword =>
+    const hasKeywords = this.config.keyWords.some((keyword: string) =>
       text.toLowerCase().includes(keyword.toLowerCase())
     );
     if (hasKeywords) confidence += 0.3;
@@ -553,9 +554,9 @@ export class MessageProcessor {
     const allHashtags = this.extractHashtags(text);
     allHashtags.forEach(tag => {
       // Проверяем известные технологии
-      const techPattern = /^(react|vue|angular|javascript|typescript|nodejs?|nestjs|express|frontend|backend|fullstack|python|java|php|csharp|dotnet|docker|kubernetes|aws|azure|sql|mongodb|postgresql|redis|html|css|sass|scss|webpack|vite|git)$/i;
+      const techPattern = /^(react|vue|angular|javascript|typescript|nodejs?|nestjs|express|frontend|backend|fullstack|python|java|php|csharp|dotnet|docker|kubernetes|aws|azure|sql|mongodb|postgresql|redis|html|css|sass|scss|webpack|vite|git|nextjs|next\.js|nuxt|nuxtjs|nuxt\.js|svelte|sveltekit|rxjs|redux|redux[-\s]?toolkit|vuex|pinia|babel|prettier|jest|vitest|testing[-\s]?library|cypress|playwright|storybook|tailwind|tailwindcss|styled[-\s]?components|emotion|graphql|apollo|three\.js|threejs|d3|chart\.js|chartjs|webgl|pwa|service[-\s]?worker)$/i;
       if (techPattern.test(tag)) {
-        skills.add(tag.toLowerCase());
+        skills.add(normalizeSkill(tag));
       }
     });
 
@@ -680,7 +681,7 @@ export class MessageProcessor {
     let confidence = 0;
 
     // Базовая уверенность за наличие ключевых слов (0.2)
-    const hasKeywords = TELEGRAM_CONFIG.KEYWORDS.REQUIRED.some(keyword =>
+    const hasKeywords = TELEGRAM_CONFIG.KEYWORDS.REQUIRED.some((keyword: string) =>
       text.toLowerCase().includes(keyword.toLowerCase())
     );
     if (hasKeywords) confidence += 0.2;

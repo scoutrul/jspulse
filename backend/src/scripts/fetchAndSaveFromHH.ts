@@ -1,6 +1,7 @@
 import mongoose from "../config/database.js";
 import ky, { HTTPError } from "ky";
 import { transformHHVacancyToIVacancy, transformHHVacancyWithFullDescription } from "../utils/transformations.js";
+import { normalizeSkill } from "../utils/transformations.js";
 import type { HHResponseRaw } from "@jspulse/shared";
 import dotenv from "dotenv";
 dotenv.config();
@@ -164,20 +165,26 @@ async function fetchAndSaveHHVacancies() {
             // Если навыков нет, добавляем хотя бы один базовый навык из заголовка вакансии
             const titleWords = transformedData.title.toLowerCase().split(/\W+/);
             const possibleSkills = [
-              "javascript",
-              "react",
-              "vue",
-              "angular",
-              "typescript",
-              "frontend",
-              "backend",
+              "javascript", "js", "typescript", "ts",
+              "react", "reactjs", "react.js", "nextjs", "next.js",
+              "redux", "redux-toolkit", "redux toolkit",
+              "vue", "vuejs", "vue.js", "vuex", "pinia", "nuxt", "nuxtjs", "nuxt.js",
+              "angular", "rxjs",
+              "svelte", "sveltekit",
+              "webpack", "vite", "babel", "eslint", "prettier",
+              "jest", "vitest", "testing-library", "testing library", "cypress", "playwright", "storybook",
+              "tailwind", "tailwindcss", "scss", "sass", "styled-components", "styled components", "emotion",
+              "graphql", "apollo",
+              "three.js", "threejs", "d3", "chart.js", "chartjs", "webgl", "pwa", "service worker",
+              "html", "html5", "css", "css3",
+              "frontend", "backend"
             ];
             const detectedSkills = possibleSkills.filter(
               (skill) =>
                 titleWords.includes(skill) ||
                 (transformedData.description &&
                   transformedData.description.toLowerCase().includes(skill))
-            );
+            ).map(normalizeSkill);
 
             transformedData.skills = detectedSkills.length > 0 ? detectedSkills : ["javascript"]; // Дефолтный навык, если ничего не найдено
           }

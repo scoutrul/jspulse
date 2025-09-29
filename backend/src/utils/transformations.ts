@@ -60,8 +60,31 @@ interface HHVacancyFull extends HHVacancyRaw {
 /**
  * Нормализует строку навыка: удаляет лишние пробелы и приводит к нижнему регистру
  */
-function normalizeSkill(skill: string): string {
-  return skill.trim().toLowerCase();
+export function normalizeSkill(skill: string): string {
+  const s = skill.trim().toLowerCase();
+  const map: Record<string, string> = {
+    'js': 'javascript', 'javascript': 'javascript', 'javascript ': 'javascript',
+    'ts': 'typescript', 'typescript': 'typescript',
+    'react.js': 'react', 'reactjs': 'react', 'react': 'react',
+    'next.js': 'nextjs', 'nextjs': 'nextjs',
+    'vue.js': 'vue', 'vuejs': 'vue', 'vue': 'vue',
+    'nuxt.js': 'nuxt', 'nuxtjs': 'nuxt', 'nuxt': 'nuxt',
+    'redux toolkit': 'redux-toolkit', 'redux-toolkit': 'redux-toolkit', 'redux': 'redux',
+    'vuex': 'vuex', 'pinia': 'pinia',
+    'angular': 'angular', 'rxjs': 'rxjs',
+    'svelte': 'svelte', 'sveltekit': 'sveltekit',
+    'webpack': 'webpack', 'vite': 'vite', 'babel': 'babel', 'eslint': 'eslint', 'prettier': 'prettier',
+    'jest': 'jest', 'vitest': 'vitest', 'testing library': 'testing-library', 'testing-library': 'testing-library',
+    'cypress': 'cypress', 'playwright': 'playwright', 'storybook': 'storybook',
+    'tailwind': 'tailwind', 'tailwindcss': 'tailwind', 'styled components': 'styled-components', 'styled-components': 'styled-components', 'emotion': 'emotion',
+    'graphql': 'graphql', 'apollo': 'apollo',
+    'three.js': 'threejs', 'threejs': 'threejs', 'd3': 'd3', 'chart.js': 'chartjs', 'chartjs': 'chartjs', 'webgl': 'webgl',
+    'pwa': 'pwa', 'service worker': 'service-worker', 'service-worker': 'service-worker',
+    'html': 'html', 'html5': 'html', 'css': 'css', 'css3': 'css',
+    'node.js': 'nodejs', 'nodejs': 'nodejs', 'nestjs': 'nestjs', 'express': 'express',
+    'frontend': 'frontend', 'backend': 'backend', 'fullstack': 'fullstack'
+  };
+  return map[s] || s;
 }
 
 /**

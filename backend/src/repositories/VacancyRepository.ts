@@ -1,14 +1,14 @@
-import {
+import type {
   IVacancyRepository,
   IVacancyFindCriteria,
   IFindResult,
   VacancyDTO,
-  ICacheService,
-  PAGINATION,
-  ARCHIVE
+  ICacheService
 } from "@jspulse/shared";
+import { PAGINATION, ARCHIVE } from "@jspulse/shared";
 import { Vacancy, IVacancyDocument } from "../models/Vacancy.js";
 import mongoose from "../config/database.js";
+import { normalizeSkill } from "../utils/transformations.js";
 
 /**
  * Конкретная реализация репозитория для работы с вакансиями в MongoDB.
@@ -413,19 +413,49 @@ export class VacancyRepository implements IVacancyRepository {
     }
 
     const skillsAggregation = await Vacancy.aggregate([
+      { $match: { publishedAt: { $gte: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000) } } },
       { $unwind: "$skills" },
-      { $group: { _id: "$skills" } },
+      { $project: { skill: { $toLower: "$skills" } } },
+      {
+        $project: {
+          skill: {
+            $switch: {
+              branches: [
+                { case: { $in: ["$skill", ["js"]] }, then: "javascript" },
+                { case: { $in: ["$skill", ["ts"]] }, then: "typescript" },
+                { case: { $in: ["$skill", ["react.js", "reactjs", "react"]] }, then: "react" },
+                { case: { $in: ["$skill", ["next.js", "nextjs"]] }, then: "nextjs" },
+                { case: { $in: ["$skill", ["vue.js", "vuejs", "vue"]] }, then: "vue" },
+                { case: { $in: ["$skill", ["nuxt.js", "nuxtjs", "nuxt"]] }, then: "nuxt" },
+                { case: { $in: ["$skill", ["redux toolkit", "redux-toolkit"]] }, then: "redux-toolkit" },
+                { case: { $in: ["$skill", ["tailwindcss", "tailwind"]] }, then: "tailwind" },
+                { case: { $in: ["$skill", ["styled components", "styled-components"]] }, then: "styled-components" },
+                { case: { $in: ["$skill", ["three.js", "threejs"]] }, then: "threejs" },
+                { case: { $in: ["$skill", ["chart.js", "chartjs"]] }, then: "chartjs" },
+                { case: { $in: ["$skill", ["node.js", "nodejs"]] }, then: "nodejs" },
+                { case: { $in: ["$skill", ["html5", "html"]] }, then: "html" },
+                { case: { $in: ["$skill", ["css3", "css"]] }, then: "css" }
+              ],
+              default: "$skill"
+            }
+          }
+        }
+      },
+      { $group: { _id: "$skill" } },
       { $sort: { _id: 1 } }
     ]);
 
     const result = skillsAggregation.map((item: any) => item._id);
 
+    // Дополнительная страховка: канонизация и удаление дублей
+    const normalizedUnique = Array.from(new Set(result.map((s: string) => normalizeSkill(String(s))))).sort();
+
     // Кэшируем навыки на 30 минут (данные меняются редко)
     if (this.cacheService) {
-      await this.cacheService.set(cacheKey, result, 1800);
+      await this.cacheService.set(cacheKey, normalizedUnique, 1800);
     }
 
-    return result;
+    return normalizedUnique;
   }
 
   /**
@@ -574,7 +604,33 @@ export class VacancyRepository implements IVacancyRepository {
       Vacancy.aggregate([
         { $match: matchActive },
         { $unwind: "$skills" },
-        { $group: { _id: "$skills", count: { $sum: 1 } } },
+        { $project: { skill: { $toLower: "$skills" } } },
+        {
+          $project: {
+            skill: {
+              $switch: {
+                branches: [
+                  { case: { $in: ["$skill", ["js"]] }, then: "javascript" },
+                  { case: { $in: ["$skill", ["ts"]] }, then: "typescript" },
+                  { case: { $in: ["$skill", ["react.js", "reactjs", "react"]] }, then: "react" },
+                  { case: { $in: ["$skill", ["next.js", "nextjs"]] }, then: "nextjs" },
+                  { case: { $in: ["$skill", ["vue.js", "vuejs", "vue"]] }, then: "vue" },
+                  { case: { $in: ["$skill", ["nuxt.js", "nuxtjs", "nuxt"]] }, then: "nuxt" },
+                  { case: { $in: ["$skill", ["redux toolkit", "redux-toolkit"]] }, then: "redux-toolkit" },
+                  { case: { $in: ["$skill", ["tailwindcss", "tailwind"]] }, then: "tailwind" },
+                  { case: { $in: ["$skill", ["styled components", "styled-components"]] }, then: "styled-components" },
+                  { case: { $in: ["$skill", ["three.js", "threejs"]] }, then: "threejs" },
+                  { case: { $in: ["$skill", ["chart.js", "chartjs"]] }, then: "chartjs" },
+                  { case: { $in: ["$skill", ["node.js", "nodejs"]] }, then: "nodejs" },
+                  { case: { $in: ["$skill", ["html5", "html"]] }, then: "html" },
+                  { case: { $in: ["$skill", ["css3", "css"]] }, then: "css" }
+                ],
+                default: "$skill"
+              }
+            }
+          }
+        },
+        { $group: { _id: "$skill", count: { $sum: 1 } } },
         { $sort: { count: -1 } },
         { $limit: 20 }
       ]),

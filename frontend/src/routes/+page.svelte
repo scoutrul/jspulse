@@ -59,10 +59,13 @@
   }
 
   let availableSkills: string[] = data.availableSkills || [];
-  let skillsStats: Array<{ name: string; count: number }> = (data.skillsStats || []).map(stat => ({
-    name: (stat as any).name || stat.skill || 'unknown',
-    count: stat.count || 0
-  })).filter(stat => stat.name && stat.name !== 'unknown');
+  const rawStats = (data.skillsStats || []) as Array<{ name?: string; skill?: string; count?: number }>
+  let skillsStats: Array<{ name: string; count: number }> = rawStats
+    .map((stat) => ({
+      name: stat.name ?? stat.skill ?? 'unknown',
+      count: stat.count ?? 0
+    }))
+    .filter((stat) => stat.name && stat.name !== 'unknown');
   
   // Если нет статистики с сервера, создаём fallback данные
   if (skillsStats.length === 0 && availableSkills.length > 0) {

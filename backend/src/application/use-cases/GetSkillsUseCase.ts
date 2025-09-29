@@ -21,35 +21,14 @@ export class GetSkillsUseCase implements IUseCaseWithoutParams<GetSkillsResponse
 
   async execute(): Promise<GetSkillsResponse> {
     try {
-      // Получаем только активные вакансии (≤ 30 дней) для извлечения навыков
-      const result = await this.vacancyRepository.findMany({
-        page: 0,
-        limit: 10000, // Получаем достаточный объем для полного списка навыков
-        skills: [],
-        sources: [],
-        includeArchived: false
-      });
-
-      // Извлекаем все навыки из вакансий
-      const allSkills: string[] = [];
-      result.data.forEach(vacancy => {
-        if (vacancy.skills && Array.isArray(vacancy.skills)) {
-          vacancy.skills.forEach(skill => {
-            if (typeof skill === 'string') {
-              allSkills.push(skill);
-            }
-          });
-        }
-      });
-
-      // Убираем дубликаты и сортируем
-      const uniqueSkills = [...new Set(allSkills)].sort();
+      // Берем уже нормализованный список уникальных навыков из репозитория
+      const uniqueSkills = await this.vacancyRepository.getUniqueSkills();
 
       return {
         success: true,
         data: uniqueSkills,
         meta: {
-          total: allSkills.length,
+          total: uniqueSkills.length,
           uniqueCount: uniqueSkills.length
         }
       };
