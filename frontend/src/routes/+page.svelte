@@ -66,7 +66,22 @@
       count: stat.count ?? 0
     }))
     .filter((stat) => stat.name && stat.name !== 'unknown');
-  
+
+  // Управление видимостью заголовка «Популярные технологии»
+  let showPopularTech: boolean = true;
+  if (browser) {
+    const saved = localStorage.getItem('jspulse:showPopularTech');
+    if (saved !== null) {
+      showPopularTech = saved === '1';
+    }
+  }
+  function togglePopularTech() {
+    showPopularTech = !showPopularTech;
+    if (browser) {
+      localStorage.setItem('jspulse:showPopularTech', showPopularTech ? '1' : '0');
+    }
+  }
+
   // Если нет статистики с сервера, создаём fallback данные
   if (skillsStats.length === 0 && availableSkills.length > 0) {
     skillsStats = availableSkills.map(skill => ({
