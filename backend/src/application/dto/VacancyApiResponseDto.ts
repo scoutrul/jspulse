@@ -25,7 +25,8 @@ export class VacancyApiResponseDto {
     public readonly isHighSalary: boolean,
     public readonly isRemote: boolean,
     public readonly isOffice: boolean,
-    public readonly url?: string // Добавляем URL для совместимости
+    public readonly url?: string, // Добавляем URL для совместимости
+    public readonly htmlDescription?: string
   ) { }
 
   /**
@@ -52,7 +53,8 @@ export class VacancyApiResponseDto {
       vacancy.isHighSalary(),
       vacancy.isRemote(),
       vacancy.isOffice(),
-      vacancy.url || `https://hh.ru/vacancy/${vacancy.id}` // Генерируем URL если нет
+      vacancy.url || `https://hh.ru/vacancy/${vacancy.id}`, // Генерируем URL если нет
+      vacancy.htmlDescription
     );
   }
 
@@ -79,7 +81,8 @@ export class VacancyApiResponseDto {
       isHighSalary: this.isHighSalary,
       isRemote: this.isRemote,
       isOffice: this.isOffice,
-      url: this.url
+      url: this.url,
+      htmlDescription: this.htmlDescription
     };
   }
 

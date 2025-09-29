@@ -19,7 +19,8 @@ export class Vacancy {
     private readonly _description: string,
     private readonly _experience: string,
     private readonly _employment: string,
-    private readonly _url?: string
+    private readonly _url?: string,
+    private readonly _htmlDescription?: string
   ) {
     this.validate();
   }
@@ -37,6 +38,7 @@ export class Vacancy {
   get experience(): string { return this._experience; }
   get employment(): string { return this._employment; }
   get url(): string | undefined { return this._url; }
+  get htmlDescription(): string | undefined { return this._htmlDescription; }
 
   /**
    * Проверяет, активна ли вакансия (опубликована в последние 30 дней)

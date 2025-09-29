@@ -89,7 +89,7 @@
       skills={vacancy.skills || []}
       description={sanitizedDescription}
       fullDescription={vacancy.fullDescription}
-      processedHtml={vacancy.processedHtml}
+      processedHtml={vacancy.htmlDescription}
       vacancyId={getVacancyId(vacancy)}
       {isDetailPage}
       {isDeleting}

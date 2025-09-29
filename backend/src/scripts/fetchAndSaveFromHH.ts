@@ -218,46 +218,34 @@ async function fetchAndSaveHHVacancies() {
         console.log(`📄 Страница ${page + 1} итог: ✨${pageNew} новых, 🔄${pageUpdated} обновлено, ⚪${receivedCount - pageNew - pageUpdated - pageSkipped} без изменений, ❌${pageSkipped} пропущено`);
 
         // Добавляем небольшую задержку между запросами для избежания rate limiting
-        if (page < MAX_PAGES_TO_FETCH - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
-        console.error(`❌ Ошибка при запросе страницы ${page + 1}:`, error);
+        console.error(`❌ Ошибка при обработке страницы ${page + 1}:`, error);
         if (error instanceof HTTPError) {
-          const errorBody = await error.response.text();
-          console.error(
-            `📋 Ответ сервера при ошибке (${error.response.status}):`,
-            errorBody.slice(0, 500)
-          );
+          console.error(`📋 Ответ сервера (${error.response.status}):`, await error.response.text());
         }
-        // Продолжаем работу при ошибках отдельных страниц
       }
     }
 
-    // Финальная статистика
-    const finalCount = await Vacancy.countDocuments();
     console.log("\n🎯 ИТОГОВАЯ СТАТИСТИКА INCREMENTAL UPDATE:");
     console.log(`📊 Всего получено от API: ${totalReceived}`);
     console.log(`✨ Новых добавлено: ${totalNew}`);
     console.log(`🔄 Обновлено существующих: ${totalUpdated}`);
     console.log(`❌ Пропущено (ошибки трансформации): ${totalSkipped}`);
-    console.log(`📋 Было в БД: ${initialCount} → Стало: ${finalCount} (изменение: +${finalCount - initialCount})`);
-    console.log(`🎉 Merge операция завершена успешно! Дубликаты исключены.`);
 
+    const finalCount = await Vacancy.countDocuments();
+    console.log(`📋 Было в БД: ${initialCount} → Стало: ${finalCount} (изменение: +${finalCount - initialCount})`);
+    console.log("🎉 Merge операция завершена успешно! Дубликаты исключены.");
   } catch (error) {
-    console.error("💥 Произошла критическая ошибка во время выполнения скрипта:", error);
+    console.error("❌ Ошибка при выполнении импорта:", error);
   } finally {
-    if (connection) {
-      // mongoose уже импортирован
+    // Закрываем соединение
+    if (mongoose.connection.readyState === 1) {
       await mongoose.disconnect();
       console.log("🔌 Соединение с MongoDB закрыто");
     }
   }
 }
 
-// Запускать только при прямом вызове как CLI скрипт
-if (import.meta.url === `file://${process.argv[1]}`) {
-  fetchAndSaveHHVacancies();
-}
-
-export default fetchAndSaveHHVacancies;
+// Запускаем процесс
+fetchAndSaveHHVacancies();

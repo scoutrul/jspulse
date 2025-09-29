@@ -46,6 +46,9 @@ import { DescriptionService } from "../services/DescriptionService.js";
 // Константы для источников данных
 const SOURCE_HH = "hh.ru";
 
+// Фиксированная длина превью
+const PREVIEW_LENGTH = 1200;
+
 /**
  * Интерфейс для полной информации о вакансии с HH.ru
  */
@@ -126,7 +129,7 @@ export function transformHHVacancyToIVacancy(hhVacancy: HHVacancyRaw): Omit<
     snippet: hhVacancy.snippet,
     description: hhVacancy.description,
     fullDescription: undefined // Будет заполнено позже через API
-  });
+  }, PREVIEW_LENGTH);
 
   // Приводим данные к нашему формату
   const transformed = {
@@ -176,7 +179,7 @@ export async function transformHHVacancyWithFullDescription(
         snippet: hhVacancy.snippet,
         description: baseTransform.description,
         fullDescription: fullDescriptionHtml
-      });
+      }, PREVIEW_LENGTH);
 
       // Обновляем данные с обработанным полным описанием
       baseTransform.fullDescription = processedDescriptions.fullDescription;

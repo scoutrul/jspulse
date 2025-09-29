@@ -3,6 +3,7 @@
   import { createEventDispatcher } from 'svelte';
   import { processDescription } from '$lib/utils/sanitize';
   import { preloadData } from '$app/navigation';
+  import { browser } from '$app/environment';
   
   export let experience: string | undefined = undefined;
   export let employment: string | undefined = undefined;
@@ -50,21 +51,69 @@
     return undefined;
   })();
   
+  // Укорачиваем HTML до первых N корневых элементов
+  function trimHtmlToFirstBlocks(html: string, maxBlocks: number = 3): string {
+    try {
+      if (!html || maxBlocks <= 0) return '';
+      if (!browser) {
+        // SSR-фолбэк: грубо ограничим по блокам через split по <p/ul/ol>
+        const matches = html.match(/<\/(p|ul|ol)>/gi) || [];
+        if (matches.length === 0) return html;
+        let count = 0;
+        let endIndex = html.length;
+        const regex = /<\/(p|ul|ol)>/gi;
+        let m: RegExpExecArray | null;
+        while ((m = regex.exec(html)) !== null) {
+          count++;
+          if (count === maxBlocks) {
+            endIndex = m.index + m[0].length;
+            break;
+          }
+        }
+        return html.slice(0, endIndex);
+      }
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(`<div data-wrap>${html}</div>`, 'text/html');
+      const wrap = doc.body.querySelector('[data-wrap]');
+      if (!wrap) return html;
+      const container = doc.createElement('div');
+      let blocksAdded = 0;
+      for (const node of Array.from(wrap.childNodes)) {
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          if (blocksAdded < maxBlocks) {
+            container.appendChild(node.cloneNode(true));
+            blocksAdded++;
+          } else {
+            break;
+          }
+        } else if (node.nodeType === Node.TEXT_NODE) {
+          const text = node.textContent?.trim() ?? '';
+          if (text.length > 0 && blocksAdded < maxBlocks) {
+            const p = doc.createElement('p');
+            p.textContent = text;
+            container.appendChild(p);
+            blocksAdded++;
+          }
+        }
+        if (blocksAdded >= maxBlocks) break;
+      }
+      return container.innerHTML || '';
+    } catch (e) {
+      console.error('[trimHtmlToFirstBlocks] error:', e);
+      return html;
+    }
+  }
+  
   // Обработка контента для отображения
   $: displayContent = (() => {
     if (isDetailPage) {
       // Для страницы деталей показываем полный контент
       return parsedFullDescription?.processed || processedHtml || description || '';
     } else {
-      // Для карточки показываем preview
-      if (parsedFullDescription?.preview) {
-        return parsedFullDescription.preview;
-      } else if (processedHtml || description) {
-        // Создаем preview из имеющегося контента
-        const content = processedHtml || description || '';
-        return processDescription(content, 'preview', 220);
-      }
-      return '';
+      // Для карточки в списке показываем ОГРАНИЧЕННЫЙ по количеству блоков HTML
+      const sourceHtml = parsedFullDescription?.processed || processedHtml || description || '';
+      const full = processDescription(sourceHtml, 'full');
+      return trimHtmlToFirstBlocks(full, 3);
     }
   })();
   
@@ -75,12 +124,6 @@
   
   function handleSkillClick(skill: string) {
     dispatch('skillClick', skill);
-  }
-  
-  function handleDescriptionClick() {
-    if (!isDetailPage && hasDescription) {
-      dispatch('descriptionClick');
-    }
   }
   
   // Префетч страницы при наведении для оптимизации
@@ -147,31 +190,36 @@
 
   <!-- Описание без лишней вложенности -->
   {#if hasDescription}
-    <div 
-      id={isDetailPage ? 'vacancy-description' : undefined} 
-      class="description-container" 
-      class:clickable={!isDetailPage}
-      class:detail-page={isDetailPage}
-      on:click={handleDescriptionClick}
-      on:mouseenter={handleDescriptionHover}
-      on:keydown={(e) => {
-        if ((e.key === 'Enter' || e.key === ' ') && !isDetailPage) {
-          e.preventDefault();
-          handleDescriptionClick();
-        }
-      }}
-      tabindex={!isDetailPage ? 0 : undefined}
-      role={!isDetailPage ? 'button' : 'region'}
-      aria-label={!isDetailPage ? 'Нажмите для просмотра полного описания вакансии' : 'Описание вакансии'}
-    >
-      <div class="description-content">
-        {#if displayContent.includes('<')}
-          {@html displayContent}
-        {:else}
-          <p class="description-text">{displayContent}</p>
-        {/if}
+    {#if !isDetailPage}
+      <a 
+        href={vacancyId ? `/v/${vacancyId}` : undefined}
+        class="description-container clickable"
+        on:mouseenter={handleDescriptionHover}
+        aria-label="Нажмите для просмотра полного описания вакансии"
+      >
+        <div class="description-content">
+          {#if displayContent.includes('<')}
+            {@html displayContent}
+          {:else}
+            <p class="description-text">{displayContent}</p>
+          {/if}
+        </div>
+      </a>
+    {:else}
+      <div 
+        id={'vacancy-description'} 
+        class="description-container detail-page"
+        aria-label={'Описание вакансии'}
+      >
+        <div class="description-content">
+          {#if displayContent.includes('<')}
+            {@html displayContent}
+          {:else}
+            <p class="description-text">{displayContent}</p>
+          {/if}
+        </div>
       </div>
-    </div>
+    {/if}
   {/if}
 </div>
 
@@ -433,7 +481,6 @@
   
   /* Ограничение высоты для карточек (не для detail page) */
   .description-container:not(.detail-page) .description-content {
-    max-height: 6.4em; /* ~4 lines at 1.6 line-height */
     overflow: hidden;
     position: relative;
   }
@@ -467,7 +514,7 @@
     }
     
     .description-container:not(.detail-page) .description-content {
-      max-height: 4.8em; /* ~3 lines */
+
     }
     
     .content-section {

@@ -148,7 +148,8 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
         dto.description,
         dto.experience,
         dto.employment,
-        dto.url
+        dto.url,
+        dto.htmlDescription
       );
     }).filter(Boolean) as Vacancy[]; // Убираем null значения
   }

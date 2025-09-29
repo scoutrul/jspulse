@@ -1,7 +1,7 @@
 import type { DescriptionContent } from "../types/DescriptionContent.js";
 
 /**
- * Сервис для обработки описаний вакансий на бэкенде
+ * Сервис для обработки описаний вакансий
  * Интегрируется с HH.ru парсером и подготавливает данные для фронтенда
  */
 export class DescriptionService {
@@ -11,7 +11,8 @@ export class DescriptionService {
    */
   static processFullDescription(
     rawHtml: string,
-    shortDescription?: string
+    shortDescription?: string,
+    previewLength?: number
   ): DescriptionContent {
     if (!rawHtml && !shortDescription) {
       return {
@@ -28,8 +29,11 @@ export class DescriptionService {
     // Базовая санитизация HTML
     const sanitized = this.sanitizeHtml(sourceHtml);
 
+    // Жёстко фиксируем длину превью 1200 символов (если не передан кастомный параметр)
+    const targetLength = previewLength && previewLength > 0 ? previewLength : 1200;
+
     // Генерируем превью из полного описания
-    const preview = this.generatePreview(sanitized, 200);
+    const preview = this.generatePreview(sanitized, targetLength);
 
     // Создаем версию только с текстом
     const textOnly = this.stripHtmlTags(sanitized);
@@ -46,7 +50,7 @@ export class DescriptionService {
    * Создает интеллектуальное превью описания
    * Сохраняет границы предложений и структуру
    */
-  private static generatePreview(html: string, maxLength: number = 200): string {
+  private static generatePreview(html: string, maxLength: number = 1200): string {
     if (!html) return '';
 
     // Сначала извлекаем текст из HTML
@@ -135,7 +139,7 @@ export class DescriptionService {
     snippet?: { responsibility?: string; requirement?: string };
     description?: string;
     fullDescription?: string;
-  }): {
+  }, previewLength?: number): {
     description: string;
     fullDescription?: DescriptionContent;
     processedHtml?: string;
@@ -151,7 +155,7 @@ export class DescriptionService {
 
     if (fullHtml) {
       // Если есть полное описание, обрабатываем его
-      const processed = this.processFullDescription(fullHtml, shortDescription);
+      const processed = this.processFullDescription(fullHtml, shortDescription, previewLength);
 
       return {
         description: shortDescription, // Сохраняем краткое для обратной совместимости

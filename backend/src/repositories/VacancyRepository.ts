@@ -630,6 +630,14 @@ export class VacancyRepository implements IVacancyRepository {
       throw new Error('Invalid document: missing _id field');
     }
 
+    // Определяем отформатированное HTML-описание
+    const htmlDescription: string | undefined =
+      doc.processedHtml
+        ? doc.processedHtml
+        : (doc.fullDescription && doc.fullDescription.processed)
+          ? doc.fullDescription.processed
+          : undefined;
+
     return {
       id: doc._id.toString(),
       _id: doc._id.toString(),
@@ -641,9 +649,9 @@ export class VacancyRepository implements IVacancyRepository {
       publishedAt: doc.publishedAt,
       source: doc.source,
       description: doc.description,
-      fullDescription: doc.fullDescription ? JSON.stringify(doc.fullDescription) : undefined, // Полное описание как JSON строка
-      testFullDesc: doc.fullDescription ? "HAS_FULL_DESC" : "NO_FULL_DESC", // Тестовое поле
-      htmlDescription: doc.htmlDescription, // Оставляем как есть
+      fullDescription: doc.fullDescription ? JSON.stringify(doc.fullDescription) : undefined,
+      testFullDesc: doc.fullDescription ? "HAS_FULL_DESC" : "NO_FULL_DESC",
+      htmlDescription, // корректно отдаем отформатированный HTML
       schedule: doc.schedule,
       skills: doc.skills || [],
       salaryFrom: doc.salaryFrom,
