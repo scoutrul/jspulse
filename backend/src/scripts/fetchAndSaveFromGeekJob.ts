@@ -44,6 +44,17 @@ function detectSkillsFromText(text: string): string[] {
 // Явный denylist по заголовку
 const TITLE_DENY_KEYWORDS = ['backend', 'php', 'python', 'c++'];
 
+// Определение английского текста: если латиницы подавляюще больше кириллицы
+function isMostlyEnglish(text: string): boolean {
+  if (!text) return false;
+  const onlyLetters = text.replace(/[^A-Za-zА-Яа-яЁё]+/g, '');
+  if (onlyLetters.length === 0) return false;
+  const latin = (onlyLetters.match(/[A-Za-z]/g) || []).length;
+  const cyr = (onlyLetters.match(/[А-Яа-яЁё]/g) || []).length;
+  // Признаём английским, если латиницы >= 85% и кириллицы совсем мало (< 10 символов)
+  return latin / (latin + cyr) >= 0.85 && cyr < 10;
+}
+
 // Возвращает ПОЛНЫЙ HTML описания (с сохранением форматирования)
 async function fetchDetailDescription(detailUrl: string): Promise<string | undefined> {
   try {
@@ -279,6 +290,15 @@ async function run() {
             if (TITLE_DENY_KEYWORDS.some(k => titleLower.includes(k))) {
               totalSkipped++;
               console.log(`  🚫 ПРОПУСК (исключающее слово в заголовке): ${title}`);
+              continue;
+            }
+
+            // Фильтрация английских вакансий: если заголовок и/или описание в основном на английском — пропускаем
+            const descTextForLang = descriptionHtml ? cheerio.load(descriptionHtml).text() : '';
+            const combinedForLang = `${title} ${descTextForLang}`;
+            if (isMostlyEnglish(combinedForLang)) {
+              totalSkipped++;
+              console.log(`  🚫 ПРОПУСК (англ. вакансия): ${title}`);
               continue;
             }
             // Обработка форматирования и краткого превью
