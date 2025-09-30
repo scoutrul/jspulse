@@ -8,6 +8,9 @@
   export let selectedSkills: string[] = [];
   export let totalVacancies: number = 0;
   export let showUnvisited: boolean = false;
+// Новые пропсы для фильтра по источникам
+export let availableSources: string[] = ['hh.ru', 'geekjob.ru', 'telegram'];
+export let selectedSources: string[] = [];
   
   // Состояние коллапса - автоматически открывается при активных фильтрах
   let isExpanded: boolean = false;
@@ -19,6 +22,7 @@
     change: string[];
     reset: void;
     unvisitedChange: boolean;
+    sourcesChange: string[];
   }>();
 
   function handleChange(skill: string) {
@@ -41,6 +45,13 @@
     if (selectedSkills.length === 0 && !showUnvisited) {
       isExpanded = !isExpanded;
     }
+  }
+
+  function handleSourceToggle(src: string) {
+    let list = selectedSources.includes(src)
+      ? selectedSources.filter(s => s !== src)
+      : [...selectedSources, src];
+    dispatch('sourcesChange', list);
   }
 </script>
 
@@ -79,6 +90,19 @@
           <span class="filter-text">Не просмотренные</span>
         </label>
       </div>
+
+      <!-- Фильтр по источникам -->
+      <div class="sources mb-4">
+        <h3 class="skills-title">Источники:</h3>
+        <div class="sources-list">
+          {#each availableSources as src (src)}
+            <label>
+              <input type="checkbox" checked={selectedSources.includes(src)} on:change={() => handleSourceToggle(src)} />
+              {src}
+            </label>
+          {/each}
+        </div>
+      </div>
       
       {#if availableSkills && availableSkills.length > 0}
         <div class="skills-list mb-4">
@@ -109,6 +133,17 @@
 
 <style>
   /* Стили для фильтров */
+  .sources-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.25rem;
+  }
+  .sources-list label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.375rem;
+  }
   .filters {
     @apply bg-neutral-50 p-6 rounded-lg mb-8 border border-neutral-300;
     @apply transition-colors duration-300;

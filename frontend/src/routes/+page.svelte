@@ -214,7 +214,8 @@
       page: 0,
       limit: PAGINATION.DEFAULT_PAGE_SIZE,
       skills,
-      showUnvisited: store.showUnvisited
+      showUnvisited: store.showUnvisited,
+      sources: store.sources
     });
     
     if (response.error) {
@@ -242,7 +243,8 @@
     const response = await vacancyService.fetchVacanciesClient({
       page: 0,
       limit: PAGINATION.DEFAULT_PAGE_SIZE,
-      skills: []
+      skills: [],
+      sources: []
     });
     
     if (response.error) {
@@ -270,7 +272,8 @@
       page: 0,
       limit: PAGINATION.DEFAULT_PAGE_SIZE,
       skills: store.selectedSkills,
-      showUnvisited
+      showUnvisited,
+      sources: store.sources
     });
     
     if (response.error) {
@@ -291,6 +294,35 @@
   // Клик по тегу-навыку
   function handleSkillClick(event: CustomEvent<string>) {
     handleSkillsChange([event.detail]);
+  }
+
+  // Обработка изменения источников
+  async function handleSourcesChange(sources: string[]) {
+    vacancyStore.setSources(sources);
+    vacancyStore.setPageSize(PAGINATION.DEFAULT_PAGE_SIZE);
+    vacancyStore.setLoading(true);
+
+    const response = await vacancyService.fetchVacanciesClient({
+      page: 0,
+      limit: PAGINATION.DEFAULT_PAGE_SIZE,
+      skills: store.selectedSkills,
+      showUnvisited: store.showUnvisited,
+      sources
+    });
+
+    if (response.error) {
+      vacancyStore.setVacancies([], 0, 0, 0);
+      vacancyStore.setError(response.error);
+    } else {
+      vacancyStore.setVacancies(
+        response.vacancies.map(convertVacancy),
+        response.total,
+        response.totalPages,
+        response.page
+      );
+      vacancyStore.setError(null);
+    }
+    vacancyStore.setLoading(false);
   }
 
   // Обработчик удаления вакансии (вакансия уже удалена через API в VacancyCardActions)
@@ -602,7 +634,18 @@
 
 {/if}
 
-<Filters {availableSkills} selectedSkills={store.selectedSkills} showUnvisited={store.showUnvisited} totalVacancies={store.total} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} on:unvisitedChange={e => handleUnvisitedChange(e.detail)} />
+<Filters 
+  {availableSkills}
+  selectedSkills={store.selectedSkills}
+  showUnvisited={store.showUnvisited}
+  totalVacancies={store.total}
+  availableSources={["hh.ru","geekjob.ru","telegram"]}
+  selectedSources={store.sources || []}
+  on:change={e => handleSkillsChange(e.detail)}
+  on:reset={handleReset}
+  on:unvisitedChange={e => handleUnvisitedChange(e.detail)}
+  on:sourcesChange={e => handleSourcesChange(e.detail)}
+/>
 
 {#if store.loading && store.vacancies.length === 0}
   <LoadingIndicator text="Применение фильтров..." />

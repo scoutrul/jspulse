@@ -5,6 +5,8 @@
   "type": "module",
   "main": "./dist/index.js",
   "scripts": {
+    "db:clear:gj": "tsx src/scripts/clearGeekJob.ts",
+    "db:gj:one": "tsx src/scripts/fetchGeekJobOne.ts",
     "start": "node dist/index.js",
     "dev": "sleep 5 && nodemon --exec tsx src/index.ts",
     "build": "rm -rf dist && mkdir -p dist/config dist/models dist/routes dist/scripts dist/utils dist/data && npx tsc --project tsconfig.build.json",
@@ -29,6 +31,7 @@
   "dependencies": {
     "@jspulse/shared": "workspace:*",
     "@types/node-cron": "^3.0.11",
+    "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",

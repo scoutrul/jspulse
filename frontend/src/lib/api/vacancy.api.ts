@@ -18,6 +18,7 @@ export interface VacanciesOptions {
   skills?: string[];
   includeArchived?: boolean;
   showUnvisited?: boolean; // Фильтр для показа только не просмотренных вакансий
+  sources?: string[]; // Новое: фильтр по источникам
 }
 
 /**
@@ -84,6 +85,11 @@ export class VacancyApi {
       // Добавляем параметр фильтра "не просмотренные"
       if (options.showUnvisited) {
         queryParams.append('showUnvisited', options.showUnvisited.toString());
+      }
+
+      // Фильтр по источникам (comma-separated)
+      if (options.sources && options.sources.length > 0) {
+        queryParams.append('sources', options.sources.join(','));
       }
 
       // Конструируем URL с параметрами пагинации и фильтрации

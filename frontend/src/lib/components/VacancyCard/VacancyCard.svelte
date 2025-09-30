@@ -25,7 +25,11 @@
     deleted: { vacancyId: string; title: string }; // Событие удаления
   }>();
   
-  $: sanitizedDescription = vacancy?.description ? sanitizeDescription(vacancy.description) : '';
+  // Краткое описание: берем vacancy.description, иначе fallback на fullDescriptionPreview
+  $: sanitizedDescription = (() => {
+    const short = (vacancy as any)?.description || (vacancy as any)?.fullDescriptionPreview || '';
+    return short ? sanitizeDescription(short) : '';
+  })();
   
   // Вспомогательная функция для получения ID вакансии
   function getVacancyId(vacancy: VacancyDTO | VacancyWithHtml): string {

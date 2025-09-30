@@ -92,7 +92,8 @@ export class VacancyService {
         page: params.page,
         limit: params.limit,
         skills: params.skills,
-        showUnvisited: params.showUnvisited
+        showUnvisited: params.showUnvisited,
+        sources: params.sources
       });
 
       // Приведение типов необходимо, поскольку API может возвращать

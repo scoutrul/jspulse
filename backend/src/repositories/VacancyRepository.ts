@@ -722,8 +722,10 @@ export class VacancyRepository implements IVacancyRepository {
       url: doc.url,
       publishedAt: doc.publishedAt,
       source: doc.source,
-      description: doc.description,
+      description: doc.description || (doc.fullDescription?.preview ? String(doc.fullDescription.preview) : undefined),
       fullDescription: doc.fullDescription ? JSON.stringify(doc.fullDescription) : undefined,
+      // Упрощенный доступ к превью для клиентов, чтобы не парсить JSON-строку
+      fullDescriptionPreview: doc.fullDescription?.preview,
       testFullDesc: doc.fullDescription ? "HAS_FULL_DESC" : "NO_FULL_DESC",
       htmlDescription, // корректно отдаем отформатированный HTML
       schedule: doc.schedule,

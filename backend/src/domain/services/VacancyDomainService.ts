@@ -52,9 +52,10 @@ export class VacancyDomainService {
    * Исключает вакансии, которые содержат технологии, не относящиеся к JavaScript/TypeScript экосистеме
    */
   filterByBackendStopWords(vacancies: Vacancy[]): Vacancy[] {
+    // Фильтруем ТОЛЬКО по заголовку (согласно текущим правилам проекта)
     return vacancies.filter(vacancy => {
-      const vacancyText = `${vacancy.title} ${vacancy.description || ''}`.toLowerCase();
-      return !containsBackendStopWords(vacancyText);
+      const titleOnly = `${vacancy.title}`.toLowerCase();
+      return !containsBackendStopWords(titleOnly);
     });
   }
 

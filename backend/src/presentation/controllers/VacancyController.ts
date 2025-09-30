@@ -21,7 +21,15 @@ export class VacancyController {
    */
   async getVacancies(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 0, limit = 10, skills = '', location = '', experience = '', employment = '', source = '', showUnvisited = false } = req.query;
+      const { page = 0, limit = 10, skills = '', location = '', experience = '', employment = '', source = '', sources = '', showUnvisited = false } = req.query;
+
+      // Поддержка как одиночного 'source', так и множественного 'sources' (comma-separated)
+      const sourcesArray = (() => {
+        const fromSources = sources ? String(sources).split(',').map(s => s.trim()).filter(Boolean) : [];
+        const fromSource = source ? [String(source).trim()] : [];
+        const merged = Array.from(new Set([...fromSources, ...fromSource])).filter(Boolean);
+        return merged;
+      })();
 
       const request = {
         page: Number(page),
@@ -30,7 +38,9 @@ export class VacancyController {
         location: String(location),
         experience: String(experience),
         employment: String(employment),
+        // Оставляем старое поле для обратной совместимости (не используется в use-case)
         source: String(source),
+        sources: sourcesArray,
         showUnvisited: showUnvisited === 'true'
       };
 

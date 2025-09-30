@@ -16,6 +16,7 @@ export interface VacancyState {
   error: string | null;
   selectedSkills: string[];
   showUnvisited: boolean; // Фильтр для показа только не просмотренных вакансий
+  sources: string[]; // Фильтр по источникам
 }
 
 // Начальное состояние
@@ -28,7 +29,8 @@ const initialState: VacancyState = {
   loading: false,
   error: null,
   selectedSkills: [],
-  showUnvisited: false
+  showUnvisited: false,
+  sources: []
 };
 
 // Ключ для localStorage
@@ -48,6 +50,7 @@ function saveStateToStorage(state: VacancyState) {
       limit: state.limit,
       selectedSkills: state.selectedSkills,
       showUnvisited: state.showUnvisited,
+      sources: state.sources,
       timestamp: Date.now()
     };
     localStorage.setItem(VACANCY_STATE_STORAGE_KEY, JSON.stringify(stateToSave));
@@ -200,6 +203,14 @@ function restoreState(): boolean {
   return true;
 }
 
+function setSources(sources: string[]) {
+  update(state => {
+    const newState = { ...state, sources };
+    saveStateToStorage(newState);
+    return newState;
+  });
+}
+
 // Экспортируем store с дополнительными методами
 export const vacancyStore = {
   subscribe,
@@ -213,5 +224,6 @@ export const vacancyStore = {
   reset,
   restoreState,
   clearStoredState,
-  removeVacancy
+  removeVacancy,
+  setSources
 }; 
