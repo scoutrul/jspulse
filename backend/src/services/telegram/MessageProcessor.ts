@@ -1,6 +1,7 @@
 import type { TelegramMessage, TelegramParsingResult, TelegramConfig } from '@jspulse/shared';
 import { TELEGRAM_CONFIG } from '../../config/telegram.js';
 import { normalizeSkill } from '../../utils/transformations.js';
+import { containsBackendStopWords, findBackendStopWords } from '../../config/backendStopWords.js';
 
 /**
  * Процессор для обработки Telegram сообщений и извлечения данных о вакансиях
@@ -108,6 +109,12 @@ export class MessageProcessor {
 
     if (hasExcludedWords) {
       errors.push('Contains excluded keywords (spam/advertisement)');
+    }
+
+    // Проверяем стоп-слова для технологий бэкенда (кроме Node.js)
+    if (containsBackendStopWords(text)) {
+      const foundStopWords = findBackendStopWords(text);
+      errors.push(`Contains backend technology stop words: ${foundStopWords.join(', ')}`);
     }
 
     // Проверяем минимальную длину

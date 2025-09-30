@@ -2,6 +2,7 @@ import mongoose from "../config/database.js";
 import ky, { HTTPError } from "ky";
 import { transformHHVacancyToIVacancy, transformHHVacancyWithFullDescription } from "../utils/transformations.js";
 import { normalizeSkill } from "../utils/transformations.js";
+import { containsBackendStopWords } from "../config/backendStopWords.js";
 import type { HHResponseRaw } from "@jspulse/shared";
 import dotenv from "dotenv";
 dotenv.config();
@@ -153,6 +154,14 @@ async function fetchAndSaveHHVacancies() {
 
           if (!transformedData) {
             pageSkipped++;
+            continue;
+          }
+
+          // Проверяем стоп-слова для технологий бэкенда (кроме Node.js)
+          const vacancyText = `${transformedData.title} ${transformedData.description || ''}`.toLowerCase();
+          if (containsBackendStopWords(vacancyText)) {
+            pageSkipped++;
+            console.log(`  🚫 ПРОПУЩЕНА (стоп-слова): "${transformedData.title}"`);
             continue;
           }
 

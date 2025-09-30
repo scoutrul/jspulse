@@ -1,5 +1,6 @@
 import { Vacancy } from '../entities/Vacancy.js';
 import { Skill } from '../entities/Skill.js';
+import { containsBackendStopWords } from '../../config/backendStopWords.js';
 
 /**
  * Domain Service для вакансий
@@ -44,6 +45,17 @@ export class VacancyDomainService {
     return vacancies.filter(vacancy =>
       sources.includes(vacancy.source)
     );
+  }
+
+  /**
+   * Фильтрация вакансий по стоп-словам технологий бэкенда (кроме Node.js)
+   * Исключает вакансии, которые содержат технологии, не относящиеся к JavaScript/TypeScript экосистеме
+   */
+  filterByBackendStopWords(vacancies: Vacancy[]): Vacancy[] {
+    return vacancies.filter(vacancy => {
+      const vacancyText = `${vacancy.title} ${vacancy.description || ''}`.toLowerCase();
+      return !containsBackendStopWords(vacancyText);
+    });
   }
 
   /**

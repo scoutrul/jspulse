@@ -75,6 +75,9 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
       // Применяем фильтрацию и сортировку через domain service
       let filteredVacancies = vacancies;
 
+      // Сначала применяем фильтрацию по стоп-словам бэкенда
+      filteredVacancies = this.vacancyDomainService.filterByBackendStopWords(filteredVacancies);
+
       if (request.skills && request.skills.length > 0) {
         filteredVacancies = this.vacancyDomainService.filterBySkills(filteredVacancies, request.skills);
       }
