@@ -130,39 +130,44 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
    */
   private mapToDomainEntities(vacancyDtos: any[]): Vacancy[] {
     return vacancyDtos.map(dto => {
-      // Проверяем, что у нас есть валидный ID
-      const id = dto._id || dto.id;
-      if (!id) {
-        console.warn('Vacancy without ID found:', dto);
-        return null; // Пропускаем вакансии без ID
-      }
+      try {
+        // Проверяем, что у нас есть валидный ID
+        const id = dto._id || dto.id;
+        if (!id) {
+          console.warn('Vacancy without ID found:', dto);
+          return null; // Пропускаем вакансии без ID
+        }
 
-      // Создаем Value Objects
-      let skills = dto.skills?.map((skillName: string) => new Skill(skillName)) || [];
-      if (skills.length === 0) {
-        // Гарантируем хотя бы один навык для прохождения доменной валидации
-        skills = [new Skill('javascript')];
-      }
-      const salary = new Salary(dto.salaryFrom, dto.salaryTo, dto.salaryCurrency || 'RUR');
-      const company = new Company(dto.company?.name || dto.company || 'Неизвестная компания', dto.company?.trusted || dto.companyTrusted || false);
+        // Создаем Value Objects
+        let skills = dto.skills?.map((skillName: string) => new Skill(skillName)) || [];
+        if (skills.length === 0) {
+          // Гарантируем хотя бы один навык для прохождения доменной валидации
+          skills = [new Skill('javascript')];
+        }
+        const salary = new Salary(dto.salaryFrom, dto.salaryTo, dto.salaryCurrency || 'RUR');
+        const company = new Company(dto.company?.name || dto.company || 'Неизвестная компания', dto.company?.trusted || dto.companyTrusted || false);
 
-      // Создаем domain entity
-      return new Vacancy(
-        id,
-        dto.title || 'Без названия',
-        company,
-        skills,
-        salary,
-        new Date(dto.publishedAt || Date.now()),
-        dto.source || 'unknown',
-        dto.location || 'Неизвестное местоположение',
-        dto.description || 'Описание отсутствует',
-        dto.experience || 'Не указано',
-        dto.employment || 'Не указано',
-        dto.url,
-        dto.htmlDescription,
-        dto.visited
-      );
+        // Создаем domain entity с безопасными фолбэками
+        return new Vacancy(
+          id,
+          dto.title || 'Без названия',
+          company,
+          skills,
+          salary,
+          new Date(dto.publishedAt || Date.now()),
+          dto.source || 'unknown',
+          (dto.location && String(dto.location).trim()) ? dto.location : '—',
+          dto.description || 'Описание отсутствует',
+          dto.experience || 'Не указано',
+          dto.employment || 'Не указано',
+          dto.url,
+          dto.htmlDescription,
+          dto.visited
+        );
+      } catch (e) {
+        console.warn('Skipping invalid vacancy DTO due to validation error:', e instanceof Error ? e.message : e, dto && (dto._id || dto.id));
+        return null;
+      }
     }).filter(Boolean) as Vacancy[]; // Убираем null значения
   }
 }

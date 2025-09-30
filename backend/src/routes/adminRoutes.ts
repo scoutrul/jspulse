@@ -168,4 +168,25 @@ router.post('/parse-habr', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /admin/parse-telegram-ulbi - запуск парсинга Telegram канала @vacancy_it_ulbitv
+ */
+router.post('/parse-telegram-ulbi', async (req: Request, res: Response) => {
+  try {
+    // Fire-and-forget: не блокируем HTTP поток
+    (async () => {
+      try {
+        const { default: noop } = await import('../scripts/parseTelegramUlbi.ts').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
+      } catch (e) {
+        console.error('Error starting parseTelegramUlbi task:', e);
+      }
+    })();
+
+    res.json({ success: true, data: { started: true, source: 'telegram', channel: '@vacancy_it_ulbitv' } });
+  } catch (error) {
+    console.error('Error in admin parse-telegram-ulbi route:', error);
+    res.status(500).json({ success: false, error: { code: 500, message: 'Failed to start Telegram parsing' } });
+  }
+});
+
 export default router;

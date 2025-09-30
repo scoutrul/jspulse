@@ -14,6 +14,7 @@
     "db:hh": "tsx src/scripts/fetchAndSaveFromHH.ts",
     "db:habr": "tsx src/scripts/fetchAndSaveFromHabr.ts",
     "db:clear": "tsx src/scripts/clearDatabase.ts",
+    "tg:ulbi": "tsx src/scripts/parseTelegramUlbi.ts",
     "db": "pnpm run db:hh",
     "test": "jest",
     "test:watch": "jest --watch",
