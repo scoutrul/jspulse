@@ -470,7 +470,9 @@
 
 <style>
   .bubbles-container {
-    @apply relative w-full h-full min-h-96 bg-transparent overflow-hidden;
+    @apply relative w-full h-full bg-transparent overflow-hidden;
+    /* Увеличиваем высоту ~в 1.5 раза относительно прежней (~24rem → ~36rem) */
+    min-height: 36rem;
     @apply transition-colors duration-300;
   }
 
@@ -486,6 +488,10 @@
     @apply -mx-4; /* Выходим за границы main контейнера */
     width: calc(100vw - 17px);
     margin-left: calc(-50vw + 50%);
+    /* Скрываем на мобильных: до md (768px) — не показываем */
+    display: block;
+    /* Подтягиваем родителя под размер канваса */
+    min-height: 36rem;
   }
 
   .tags-canvas-container {
@@ -497,6 +503,9 @@
   @media (max-width: 768px) {
     .tags-canvas-container {
       height: 300px;
+    }
+    .tags-visualization-section {
+      display: none;
     }
   }
 
