@@ -159,7 +159,7 @@ router.get('/docs', async (req: Request, res: Response) => {
 router.post('/parse-habr', async (req: Request, res: Response) => {
   try {
     // Динамический импорт скрипта (запуск как функции)
-    const { default: run } = await import('../scripts/fetchAndSaveFromHabr.ts').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
+    const { default: run } = await import('../scripts/fetchAndSaveFromHabr.js').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
     // Скрипт автономный, поэтому просто отвечаем, что задача запущена (fire-and-forget)
     res.json({ success: true, data: { started: true, source: 'habr' } });
   } catch (error) {
@@ -176,7 +176,7 @@ router.post('/parse-telegram-ulbi', async (req: Request, res: Response) => {
     // Fire-and-forget: не блокируем HTTP поток
     (async () => {
       try {
-        const { default: noop } = await import('../scripts/parseTelegramUlbi.ts').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
+        const { default: noop } = await import('../scripts/parseTelegramUlbi.js').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
       } catch (e) {
         console.error('Error starting parseTelegramUlbi task:', e);
       }
@@ -186,6 +186,27 @@ router.post('/parse-telegram-ulbi', async (req: Request, res: Response) => {
   } catch (error) {
     console.error('Error in admin parse-telegram-ulbi route:', error);
     res.status(500).json({ success: false, error: { code: 500, message: 'Failed to start Telegram parsing' } });
+  }
+});
+
+/**
+ * POST /admin/parse-careered - запуск парсинга вакансий с Careered.io
+ */
+router.post('/parse-careered', async (req: Request, res: Response) => {
+  try {
+    // Fire-and-forget: не блокируем HTTP поток
+    (async () => {
+      try {
+        const { default: noop } = await import('../scripts/fetchAndSaveFromCareered.js').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
+      } catch (e) {
+        console.error('Error starting Careered parsing task:', e);
+      }
+    })();
+
+    res.json({ success: true, data: { started: true, source: 'careered' } });
+  } catch (error) {
+    console.error('Error in admin parse-careered route:', error);
+    res.status(500).json({ success: false, error: { code: 500, message: 'Failed to start Careered parsing' } });
   }
 });
 

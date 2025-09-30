@@ -97,6 +97,7 @@
       fullDescription={vacancy.fullDescription}
       processedHtml={vacancy.htmlDescription}
       vacancyId={getVacancyId(vacancy)}
+      isRemote={vacancy.isRemote}
       {isDetailPage}
       {isDeleting}
       {theme}

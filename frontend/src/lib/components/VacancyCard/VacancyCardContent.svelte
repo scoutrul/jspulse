@@ -15,6 +15,7 @@
   export let isDeleting: boolean = false; // Состояние удаления
   export let vacancyId: string | undefined = undefined; // Добавляем ID для префетча
   export let theme: 'light' | 'dark' = 'dark';
+  export let isRemote: boolean | undefined = undefined; // Удаленный формат работы
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
@@ -50,6 +51,49 @@
     
     return undefined;
   })();
+
+  function normalizeTelegraphHtml(html: string, title?: string): string {
+    try {
+      if (!html || typeof html !== 'string') return html;
+      
+      // Убираем первый h1 и заменяем пустые параграфы с <br> на один <br>
+      let cleaned = html
+        .replace(/<h1\b[^>]*>.*?<\/h1>/i, '') // убираем первый h1
+        .replace(/<address>\s*<br>\s*<\/address>/gi, '') // убираем пустой address
+        .replace(/<p[^>]*>\s*<br>\s*<\/p>/gi, '<br>') // заменяем <p><br></p> на <br>
+        .trim();
+      
+      if (!browser) {
+        // SSR fallback: дополнительная очистка
+        cleaned = cleaned.replace(/^\s*<br>\s*/, ''); // убираем br в начале
+        return cleaned;
+      }
+      
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(`<div data-wrap>${cleaned}</div>`, 'text/html');
+      const wrap = doc.body.querySelector('[data-wrap]') as HTMLElement | null;
+      if (!wrap) return cleaned;
+
+      // Дополнительная очистка в браузере
+      const container = document.createElement('div');
+      container.innerHTML = wrap.innerHTML;
+      
+      // Убираем все h1 (на всякий случай)
+      container.querySelectorAll('h1').forEach(h1 => h1.remove());
+      
+      // Убираем пустые элементы
+      container.querySelectorAll('p, div').forEach(el => {
+        if (el.textContent?.trim() === '' || el.innerHTML === '<br>') {
+          el.remove();
+        }
+      });
+
+      return container.innerHTML;
+    } catch (e) {
+      console.error('[normalizeTelegraphHtml] error:', e);
+      return html;
+    }
+  }
   
   // Укорачиваем HTML до первых N корневых элементов
   function trimHtmlToFirstBlocks(html: string, maxBlocks: number = 3): string {
@@ -108,7 +152,9 @@
   $: displayContent = (() => {
     if (isDetailPage) {
       // Для страницы деталей показываем полный контент
-      return parsedFullDescription?.processed || processedHtml || description || '';
+      const source = parsedFullDescription?.processed || processedHtml || description || '';
+      const normalized = normalizeTelegraphHtml(source);
+      return normalized;
     } else {
       // Для карточки в списке: в приоритете короткое описание
       if (description && description.trim().length > 0) {
@@ -117,13 +163,14 @@
       }
       // Если короткого описания нет — показываем ограниченный по блокам HTML
       const sourceHtml = parsedFullDescription?.processed || processedHtml || '';
-      const full = processDescription(sourceHtml, 'full');
+      const normalized = normalizeTelegraphHtml(sourceHtml);
+      const full = processDescription(normalized, 'full');
       const firstBlocks = trimHtmlToFirstBlocks(full, 3);
       return truncateHtmlByChars(firstBlocks, 1200, '');
     }
   })();
   
-  $: hasRequirements = experience || employment;
+  $: hasRequirements = experience || employment || isRemote;
   $: hasSkills = skills && skills.length > 0;
   $: hasRequirementsOrSkills = hasRequirements || hasSkills;
   $: hasDescription = displayContent && displayContent.trim().length > 0;
@@ -209,10 +256,20 @@
               </div>
             {/if}
             
-            {#if employment}
+            {#if employment || isRemote}
               <div class="requirement-item">
                 <span class="requirement-label">Тип занятости:</span>
-                <span class="requirement-value">{employment}</span>
+                <span class="requirement-value">
+                  {#if isRemote && employment && employment !== 'Не указано'}
+                    {employment} • Удалённая
+                  {:else if isRemote}
+                    Удалённая
+                  {:else if employment && employment !== 'Не указано'}
+                    {employment}
+                  {:else if employment}
+                    {employment}
+                  {/if}
+                </span>
               </div>
             {/if}
           </div>
@@ -426,20 +483,31 @@
   /* Контент описания */
   .description-content {
     @apply w-full;
-    /* Убираем все возможные hover эффекты у дочерних элементов */
-    pointer-events: none;
   }
-  
+
+  /* Ссылки внутри описания должны быть кликабельны и стилизованы как ссылки */
+  .description-content :global(a) {
+    pointer-events: auto !important;
+    @apply underline;
+    color: #3b82f6; /* blue-500 */
+    cursor: pointer;
+  }
+
+  :global(:not(.dark)) .description-content :global(a) {
+    color: #2563eb; /* blue-600 */
+  }
+
+  :global(.dark) .description-content :global(a) {
+    color: #60a5fa; /* blue-400 */
+  }
+
+  /* Сбрасываем возможные фоновые эффекты/transition у вложенных элементов, но не блокируем клики */
   .description-content * {
-    /* Отключаем интерактивность дочерних элементов */
-    pointer-events: none !important;
-    /* Убираем возможные фоновые эффекты */
     background-color: transparent !important;
-    /* Сбрасываем все transitions */
     transition: none !important;
     transform: none !important;
   }
-  
+
   .description-text {
     @apply leading-relaxed m-0;
     /* По умолчанию темная тема */

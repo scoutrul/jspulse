@@ -3,6 +3,8 @@ import type { IVacancyRepository } from '@jspulse/shared';
 import { TelegramClient } from './telegram/TelegramClient.js';
 import { MessageProcessor } from './telegram/MessageProcessor.js';
 import { TELEGRAM_CONFIG } from '../config/telegram.js';
+import * as cheerio from 'cheerio';
+import ky from 'ky';
 
 /**
  * Сервис для парсинга Telegram каналов и сохранения вакансий в базу данных
@@ -16,6 +18,111 @@ export class TelegramParserService {
     this.telegramClient = new TelegramClient();
     this.messageProcessor = new MessageProcessor();
     this.vacancyRepository = vacancyRepository;
+  }
+
+  private makePreview(text: string, limit = 500): string {
+    const norm = (text || '').replace(/\s+/g, ' ').trim();
+    if (norm.length <= limit) return norm;
+    const slice = norm.slice(0, limit);
+    const last = Math.max(slice.lastIndexOf('.'), slice.lastIndexOf('!'), slice.lastIndexOf('?'));
+    return (last > 100 ? slice.slice(0, last + 1) : slice) + '…';
+  }
+
+  private extractFirstParagraph(htmlOrText: string): string {
+    if (!htmlOrText) return '';
+
+    // Если это HTML, извлекаем первый параграф
+    if (htmlOrText.includes('<')) {
+      try {
+        const $ = require('cheerio').load(htmlOrText);
+        const firstP = $('p').first();
+        if (firstP.length > 0) {
+          const text = firstP.text().trim();
+          if (text) return text;
+        }
+      } catch (e) {
+        console.warn('Failed to parse HTML for first paragraph:', e);
+      }
+    }
+
+    // Fallback: берем первые 2-3 предложения из текста
+    const sentences = htmlOrText.replace(/<[^>]*>/g, '').split(/[.!?]+/).filter(s => s.trim());
+    if (sentences.length > 0) {
+      const firstSentence = sentences[0].trim();
+      if (firstSentence.length > 20) {
+        return firstSentence + (sentences[0].includes('.') ? '' : '.');
+      }
+      // Если первое предложение короткое, берем первые два
+      if (sentences.length > 1) {
+        return (firstSentence + ' ' + sentences[1]).trim() + '.';
+      }
+    }
+
+    // Последний fallback: обрезаем до 200 символов
+    return this.makePreview(htmlOrText.replace(/<[^>]*>/g, ''), 200);
+  }
+
+  private extractTelegraphUrl(text?: string): string | undefined {
+    if (!text) return undefined;
+    const m = text.match(/https?:\/\/(?:te\.legra\.ph|telegra\.ph|telegraph\.ph)\/[\w\-\/]+/i);
+    return m ? m[0] : undefined;
+  }
+
+  private async fetchTelegraphHtml(url?: string): Promise<{ raw: string; text: string } | undefined> {
+    if (!url) return undefined;
+    try {
+      const html = await ky.get(url, {
+        timeout: 20000,
+        headers: {
+          'User-Agent': 'JS-Pulse/1.0 (+https://jspulse.ru) NodeFetch',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'ru,en;q=0.8'
+        }
+      }).text();
+      const $ = cheerio.load(html);
+
+      // Telegraph использует #_tl_editor как основной контейнер
+      let content = $('#_tl_editor').first();
+      if (content.length === 0) {
+        content = $('.tl_article_content').first();
+      }
+      if (content.length === 0) {
+        content = $('article').first();
+      }
+
+      if (content.length === 0) {
+        console.warn(`No content found in telegraph ${url}`);
+        return undefined;
+      }
+
+      // Клонируем контент и удаляем первый h1 (дублированный заголовок)
+      const contentClone = content.clone();
+      contentClone.find('h1').first().remove();
+
+      // Убираем пустые элементы и заменяем пустые параграфы с <br> на один <br>
+      contentClone.find('address').remove();
+      contentClone.find('p').each((_, el) => {
+        const $el = $(el);
+        if ($el.text().trim() === '') {
+          if ($el.html() === '<br>' || $el.html() === '<br></br>') {
+            // Заменяем пустой параграф с <br> на один <br>
+            $el.replaceWith('<br>');
+          } else {
+            // Удаляем полностью пустые параграфы
+            $el.remove();
+          }
+        }
+      });
+
+      const raw = contentClone.html() || '';
+      const text = contentClone.text() || '';
+
+      const normText = (text || '').replace(/\s+/g, ' ').trim();
+      return { raw, text: normText };
+    } catch (error) {
+      console.warn(`Failed to fetch telegraph ${url}:`, error instanceof Error ? error.message : error);
+      return undefined;
+    }
   }
 
   /**
@@ -153,27 +260,35 @@ export class TelegramParserService {
     // Создаем уникальный sourceId для предотвращения дубликатов
     const sourceId = `telegram_${channelUsername}_${result.message.id}`;
 
-    // Проверяем, существует ли уже вакансия с таким sourceId
-    const existingVacancy = await this.vacancyRepository.findBySourceId(sourceId);
-    if (existingVacancy) {
-      console.log(`⚠️ Vacancy from message ${result.message.id} already exists, skipping`);
-      return false;
+    // Ищем ссылку на Telegraph в описании из Telegram
+    const telegramText = data.description || (result.message as any)?.text || '';
+    const telegraphUrl = this.extractTelegraphUrl(telegramText);
+
+    // Подтягиваем полное описание с Telegraph (если есть ссылка)
+    let telegraphData = null;
+    if (telegraphUrl) {
+      console.log(`🔗 Fetching Telegraph content from: ${telegraphUrl}`);
+      telegraphData = await this.fetchTelegraphHtml(telegraphUrl);
     }
 
-    // Подготавливаем данные для сохранения
-    const vacancyData = {
-      // Обязательные поля для MongoDB
-      externalId: sourceId, // Используем sourceId как externalId
+    // Формируем описание: приоритет Telegraph, иначе Telegram
+    const fullText = telegraphData?.text || telegramText;
+    const rawHtml = telegraphData?.raw;
+
+    // Извлекаем первый параграф как краткое описание
+    const preview = this.extractFirstParagraph(rawHtml || fullText);
+
+    // Формируем данные
+    const vacancyData: any = {
+      externalId: sourceId,
       title: data.title || 'Unknown Position',
       company: data.company || 'Unknown Company',
-      location: data.location || 'Remote',
-      url: (data as any).descriptionUrl || `https://t.me/${channelUsername.replace('@', '')}/${result.message.id}`,
+      location: data.location || '—',
+      url: telegraphUrl || `https://t.me/${channelUsername.replace('@', '')}/${result.message.id}`,
       publishedAt: result.message.date || new Date(),
       source: 'telegram' as const,
-
-      // Дополнительные поля
-      description: data.description,
-      fullDescription: (data as any).fullDescription,
+      description: preview,
+      fullDescription: rawHtml ? { raw: rawHtml, preview, processed: rawHtml, textOnly: fullText } : undefined,
       skills: data.skills || [],
       salaryFrom: data.salary?.from,
       salaryTo: data.salary?.to,
@@ -181,11 +296,9 @@ export class TelegramParserService {
       contact: data.contact,
       workFormat: (data as any).format,
       employment: (data as any).employment,
-
-      // Telegram-специфичные поля
       sourceId,
       sourceChannel: channelUsername,
-      sourceUrl: (data as any).descriptionUrl,
+      sourceUrl: telegraphUrl,
       parsedAt: new Date(),
       hashtags: (data as any).hashtags || [],
       confidence: data.confidence
@@ -193,7 +306,7 @@ export class TelegramParserService {
 
     try {
       const savedVacancy = await this.vacancyRepository.create(vacancyData);
-      console.log(`✅ Saved vacancy: ${savedVacancy.title} at ${savedVacancy.company}`);
+      console.log(`✅ Saved vacancy: ${savedVacancy.title} at ${savedVacancy.company}${telegraphUrl ? ' (with Telegraph content)' : ''}`);
       return true;
     } catch (error) {
       console.error('❌ Error saving vacancy:', error);

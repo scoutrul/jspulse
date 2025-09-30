@@ -70,7 +70,7 @@ const BASE_PARAMS = {
 };
 const MAX_PAGES = 5;
 
-function extractText($el: cheerio.Cheerio): string {
+function extractText($el: cheerio.Cheerio<any>): string {
   return $el.text().replace(/\s+/g, " ").trim();
 }
 

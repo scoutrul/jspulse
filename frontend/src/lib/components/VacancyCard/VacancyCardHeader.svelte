@@ -105,7 +105,7 @@
   <div class="row-meta">
     <div class="meta-left">
       <span class="company-strong">{company}</span>
-      {#if location}
+      {#if location && location !== '—' && location !== 'Remote'}
         <span class="dot-sep">•</span>
         <span class="location-text">{location}</span>
       {/if}

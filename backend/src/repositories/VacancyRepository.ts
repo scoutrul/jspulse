@@ -716,7 +716,7 @@ export class VacancyRepository implements IVacancyRepository {
     const computedLocation: string = (() => {
       const raw = (doc.location || "").toString().trim();
       if (raw.length > 0) return raw;
-      if (doc.isRemote === true) return 'Remote';
+      // Если города нет, показываем "—". Удаленный формат отображается в требованиях через isRemote
       return '—';
     })();
 
