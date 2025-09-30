@@ -21,7 +21,7 @@ export class VacancyController {
    */
   async getVacancies(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 0, limit = 10, skills = '', location = '', experience = '', employment = '', source = '' } = req.query;
+      const { page = 0, limit = 10, skills = '', location = '', experience = '', employment = '', source = '', showUnvisited = false } = req.query;
 
       const request = {
         page: Number(page),
@@ -30,7 +30,8 @@ export class VacancyController {
         location: String(location),
         experience: String(experience),
         employment: String(employment),
-        source: String(source)
+        source: String(source),
+        showUnvisited: showUnvisited === 'true'
       };
 
       const result = await this.getVacanciesUseCase.execute(request);
@@ -105,6 +106,52 @@ export class VacancyController {
       res.json(result);
     } catch (error) {
       console.error('Error in VacancyController.getSkillsStats:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 500,
+          message: 'Internal server error'
+        }
+      });
+    }
+  }
+
+  /**
+   * PATCH /vacancies/:id/visit - отметка вакансии как посещенной
+   */
+  async markAsVisited(req: Request, res: Response): Promise<void> {
+    try {
+      const { id } = req.params;
+
+      // Импортируем модель напрямую для простоты
+      const { Vacancy } = await import('../../models/Vacancy.js');
+
+      const result = await Vacancy.findByIdAndUpdate(
+        id,
+        { visited: true },
+        { new: true }
+      );
+
+      if (!result) {
+        res.status(404).json({
+          success: false,
+          error: {
+            code: 404,
+            message: 'Vacancy not found'
+          }
+        });
+        return;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          id: result._id,
+          visited: result.visited
+        }
+      });
+    } catch (error) {
+      console.error('Error in VacancyController.markAsVisited:', error);
       res.status(500).json({
         success: false,
         error: {

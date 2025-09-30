@@ -213,7 +213,8 @@
     const response = await vacancyService.fetchVacanciesClient({
       page: 0,
       limit: PAGINATION.DEFAULT_PAGE_SIZE,
-      skills
+      skills,
+      showUnvisited: store.showUnvisited
     });
     
     if (response.error) {
@@ -234,6 +235,7 @@
   // Сброс фильтра
   async function handleReset() {
     vacancyStore.setSkills([]);
+    vacancyStore.setShowUnvisited(false);
     vacancyStore.reset(); // Это очистит localStorage и сбросит состояние
     vacancyStore.setLoading(true);
     
@@ -241,6 +243,34 @@
       page: 0,
       limit: PAGINATION.DEFAULT_PAGE_SIZE,
       skills: []
+    });
+    
+    if (response.error) {
+      vacancyStore.setVacancies([], 0, 0, 0);
+      vacancyStore.setError(response.error);
+    } else {
+      vacancyStore.setVacancies(
+        response.vacancies.map(convertVacancy),
+        response.total,
+        response.totalPages,
+        response.page
+      );
+      vacancyStore.setError(null);
+    }
+    vacancyStore.setLoading(false);
+  }
+
+  // Обработка изменения фильтра "не просмотренные"
+  async function handleUnvisitedChange(showUnvisited: boolean) {
+    vacancyStore.setShowUnvisited(showUnvisited);
+    vacancyStore.setPageSize(PAGINATION.DEFAULT_PAGE_SIZE);
+    vacancyStore.setLoading(true);
+    
+    const response = await vacancyService.fetchVacanciesClient({
+      page: 0,
+      limit: PAGINATION.DEFAULT_PAGE_SIZE,
+      skills: store.selectedSkills,
+      showUnvisited
     });
     
     if (response.error) {
@@ -572,7 +602,7 @@
 
 {/if}
 
-<Filters {availableSkills} selectedSkills={store.selectedSkills} totalVacancies={store.total} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} />
+<Filters {availableSkills} selectedSkills={store.selectedSkills} showUnvisited={store.showUnvisited} totalVacancies={store.total} on:change={e => handleSkillsChange(e.detail)} on:reset={handleReset} on:unvisitedChange={e => handleUnvisitedChange(e.detail)} />
 
 {#if store.loading && store.vacancies.length === 0}
   <LoadingIndicator text="Применение фильтров..." />

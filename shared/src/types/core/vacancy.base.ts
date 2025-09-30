@@ -9,4 +9,5 @@ export interface BaseVacancy {
   url: string; // Ссылка на оригинал вакансии
   publishedAt: string | Date; // Дата публикации (строка в ISO формате для DTO, Date для БД)
   source: string; // Источник вакансии (hh.ru, superjob, и т.д.)
+  visited?: boolean; // Отметка о посещении вакансии
 } 

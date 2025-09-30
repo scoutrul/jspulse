@@ -15,6 +15,7 @@ export interface VacancyState {
   loading: boolean;
   error: string | null;
   selectedSkills: string[];
+  showUnvisited: boolean; // Фильтр для показа только не просмотренных вакансий
 }
 
 // Начальное состояние
@@ -26,7 +27,8 @@ const initialState: VacancyState = {
   limit: 10,
   loading: false,
   error: null,
-  selectedSkills: []
+  selectedSkills: [],
+  showUnvisited: false
 };
 
 // Ключ для localStorage
@@ -45,6 +47,7 @@ function saveStateToStorage(state: VacancyState) {
       page: state.page,
       limit: state.limit,
       selectedSkills: state.selectedSkills,
+      showUnvisited: state.showUnvisited,
       timestamp: Date.now()
     };
     localStorage.setItem(VACANCY_STATE_STORAGE_KEY, JSON.stringify(stateToSave));
@@ -84,14 +87,15 @@ function clearStoredState() {
 
   try {
     localStorage.removeItem(VACANCY_STATE_STORAGE_KEY);
-    
-    // ВАЖНО: также сбрасываем selectedSkills в самом store
+
+    // ВАЖНО: также сбрасываем selectedSkills и showUnvisited в самом store
     update(state => ({
       ...state,
       selectedSkills: [],
+      showUnvisited: false,
       page: 0 // Также сбрасываем на первую страницу
     }));
-    
+
     console.log('[STORE] Кеш очищен полностью, включая фильтры');
   } catch (error) {
     console.warn('Failed to clear vacancy state from localStorage:', error);
@@ -141,6 +145,14 @@ function setError(error: string | null) {
 function setSkills(skills: string[]) {
   update(state => {
     const newState = { ...state, selectedSkills: skills };
+    saveStateToStorage(newState);
+    return newState;
+  });
+}
+
+function setShowUnvisited(showUnvisited: boolean) {
+  update(state => {
+    const newState = { ...state, showUnvisited };
     saveStateToStorage(newState);
     return newState;
   });
@@ -196,6 +208,7 @@ export const vacancyStore = {
   setLoading,
   setError,
   setSkills,
+  setShowUnvisited,
   setPageSize,
   reset,
   restoreState,

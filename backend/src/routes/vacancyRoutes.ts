@@ -102,4 +102,23 @@ router.get('/:id', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * PATCH /api/vacancies/:id/visit - отметка вакансии как посещенной
+ */
+router.patch('/:id/visit', async (req: Request, res: Response) => {
+  try {
+    const vacancyController = createVacancyController(req);
+    await vacancyController.markAsVisited(req, res);
+  } catch (error) {
+    console.error('Error in mark as visited route:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: 'Internal server error'
+      }
+    });
+  }
+});
+
 export default router;

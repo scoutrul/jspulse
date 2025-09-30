@@ -59,6 +59,18 @@ export class VacancyDomainService {
   }
 
   /**
+   * Фильтрация вакансий по статусу посещения
+   * Показывает только не просмотренные вакансии, если showUnvisited = true
+   */
+  filterByVisitedStatus(vacancies: Vacancy[], showUnvisited: boolean): Vacancy[] {
+    if (!showUnvisited) {
+      return vacancies; // Если фильтр не активен, возвращаем все вакансии
+    }
+
+    return vacancies.filter(vacancy => !vacancy.visited);
+  }
+
+  /**
    * Фильтрация по дате публикации
    */
   filterByDateRange(

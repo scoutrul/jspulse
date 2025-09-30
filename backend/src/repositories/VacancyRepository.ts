@@ -743,7 +743,8 @@ export class VacancyRepository implements IVacancyRepository {
       workFormat: doc.workFormat,
       hashtags: doc.hashtags || [],
       confidence: doc.confidence,
-      parsedAt: doc.parsedAt
+      parsedAt: doc.parsedAt,
+      visited: doc.visited
     };
   }
 

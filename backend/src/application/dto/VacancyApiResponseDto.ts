@@ -26,7 +26,8 @@ export class VacancyApiResponseDto {
     public readonly isRemote: boolean,
     public readonly isOffice: boolean,
     public readonly url?: string, // Добавляем URL для совместимости
-    public readonly htmlDescription?: string
+    public readonly htmlDescription?: string,
+    public readonly visited?: boolean // Поле для отслеживания посещений
   ) { }
 
   /**
@@ -54,7 +55,8 @@ export class VacancyApiResponseDto {
       vacancy.isRemote(),
       vacancy.isOffice(),
       vacancy.url || `https://hh.ru/vacancy/${vacancy.id}`, // Генерируем URL если нет
-      vacancy.htmlDescription
+      vacancy.htmlDescription,
+      vacancy.visited
     );
   }
 
@@ -82,7 +84,8 @@ export class VacancyApiResponseDto {
       isRemote: this.isRemote,
       isOffice: this.isOffice,
       url: this.url,
-      htmlDescription: this.htmlDescription
+      htmlDescription: this.htmlDescription,
+      visited: this.visited
     };
   }
 

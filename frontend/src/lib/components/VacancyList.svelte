@@ -5,6 +5,7 @@
   import MagnifyingGlass from 'svelte-heros-v2/MagnifyingGlass.svelte';
   import { createEventDispatcher } from 'svelte';
   import { theme } from '$lib/stores/themeStore';
+  import { visitTracker } from '$lib/utils/visitTracker.js';
 
   export let vacancies: VacancyWithHtml[] = [];
   export let loadingFilter: boolean = false;
@@ -62,6 +63,7 @@
               showDeleteButton={true}
               isDeleting={deletingVacancyId === getVacancyId(vacancy)}
               theme={$theme}
+              visited={vacancy.visited || visitTracker.isVisited(getVacancyId(vacancy))}
               on:skillClick={handleSkillClick}
               on:deleted={handleVacancyDeleted}
             />

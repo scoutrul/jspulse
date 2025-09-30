@@ -69,6 +69,9 @@ export interface IVacancyDocument extends IVacancy {
   confidence?: number;
   parsedAt?: Date;
 
+  // Поле для отслеживания посещений
+  visited?: boolean;
+
   // Сохраняем исходные данные для отладки и возможных миграций
   rawData?: any;
 }
@@ -112,6 +115,9 @@ const vacancySchema = new mongoose.Schema(
     hashtags: [{ type: String }],
     confidence: { type: Number },
     parsedAt: { type: Date },
+
+    // Поле для отслеживания посещений
+    visited: { type: Boolean, default: false },
 
     rawData: { type: mongoose.Schema.Types.Mixed },
   },

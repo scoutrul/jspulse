@@ -1,6 +1,7 @@
 <script lang="ts">
-  
+  import { onMount, onDestroy } from 'svelte';
   import SalaryRange from '../ui/SalaryRange.svelte';
+  import { visitTracker } from '$lib/utils/visitTracker.js';
   
   export let title: string;
   export let company: string;
@@ -14,9 +15,63 @@
   export let theme: 'light' | 'dark' = 'light';
   export let url: string | undefined = undefined;
   export let source: string | undefined = undefined;
+  export let visited: boolean = false;
   
   $: formattedDate = publishedAt ? new Date(publishedAt).toLocaleDateString('ru-RU') : '';
   $: hasSalary = salaryFrom != null || salaryTo != null;
+  
+  // Реактивно обновляем visited статус из visitTracker
+  $: if (vacancyId) {
+    visited = visitTracker.isVisited(vacancyId);
+  }
+
+  // Слушаем события обновления visitTracker
+  
+  let updateTrigger = 0;
+  
+  onMount(() => {
+    const handleUpdate = () => {
+      updateTrigger++;
+    };
+    
+    window.addEventListener('visitTrackerUpdated', handleUpdate);
+    
+    return () => {
+      window.removeEventListener('visitTrackerUpdated', handleUpdate);
+    };
+  });
+  
+  // Реактивно обновляем visited при изменении updateTrigger
+  $: if (vacancyId && updateTrigger >= 0) {
+    visited = visitTracker.isVisited(vacancyId);
+  }
+  
+  // Обработчики кликов
+  function handleTitleClick() {
+    if (vacancyId) {
+      visitTracker.handleVacancyClick(vacancyId);
+    }
+  }
+  
+  async function handleSourceClick(event: MouseEvent) {
+    console.log('handleSourceClick called', { vacancyId, url });
+    if (vacancyId) {
+      // Предотвращаем немедленный переход
+      event.preventDefault();
+      
+      console.log('Marking vacancy as visited:', vacancyId);
+      // Отмечаем как посещенную
+      await visitTracker.handleSourceClick(vacancyId);
+      
+      // Открываем ссылку после небольшой задержки
+      setTimeout(() => {
+        if (url) {
+          console.log('Opening URL:', url);
+          window.open(url, '_blank', 'noopener,noreferrer');
+        }
+      }, 100);
+    }
+  }
 </script>
 
 <header class="vacancy-header flex flex-col gap-2" class:dark-theme={theme === 'dark'} class:light-theme={theme === 'light'}>
@@ -24,7 +79,7 @@
     <div class="title-wrap">
       {#if showDetailLink && vacancyId}
         <h1 class="vacancy-title">
-          <a href="/v/{vacancyId}" class="title-link">{title}</a>
+          <a href="/v/{vacancyId}" class="title-link" class:visited={visited} on:click={handleTitleClick}>{title}</a>
         </h1>
       {:else}
         <h1 class="vacancy-title">{title}</h1>
@@ -56,7 +111,7 @@
       {/if}
       {#if url}
         <span class="dot-sep">•</span>
-        <a class="source-link" href={url} target="_blank" rel="noopener noreferrer" title={`Открыть на ${source || 'источнике'}`}>
+        <a class="source-link" class:visited={visited} href="#" title={`Открыть на ${source || 'источнике'}`} on:click={handleSourceClick}>
           <span class="source-text">{source || 'Источник'}</span>
           <span class="source-icon" aria-hidden="true">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -163,6 +218,38 @@
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+  }
+
+  /* Стили для посещенных ссылок */
+  .title-link.visited {
+    /* По умолчанию темная тема - серый цвет для посещенных */
+    @apply text-slate-400;
+    background: none;
+    -webkit-text-fill-color: theme('colors.slate.400');
+  }
+
+  /* Светлая тема для посещенных ссылок */
+  :global(:not(.dark)) .title-link.visited {
+    @apply text-neutral-500;
+    -webkit-text-fill-color: theme('colors.neutral.500');
+  }
+
+  /* Глобальная темная тема для посещенных ссылок */
+  :global(.dark) .title-link.visited {
+    @apply text-slate-400;
+    -webkit-text-fill-color: theme('colors.slate.400');
+  }
+
+  /* Локальная темная тема для посещенных ссылок */
+  .vacancy-header.dark-theme .title-link.visited {
+    @apply text-slate-400;
+    -webkit-text-fill-color: theme('colors.slate.400');
+  }
+
+  /* Локальная светлая тема для посещенных ссылок (переопределение глобальной темной) */
+  :global(.dark) .vacancy-header.light-theme .title-link.visited {
+    @apply text-neutral-500;
+    -webkit-text-fill-color: theme('colors.neutral.500');
   }
 
   /* Светлая тема для ссылки заголовка */
@@ -318,6 +405,32 @@
   }
   :global(.dark) .source-link {
     @apply text-purple-300 hover:text-purple-200;
+  }
+
+  /* Стили для посещенных ссылок источника */
+  .source-link.visited {
+    /* По умолчанию темная тема - серый цвет для посещенных */
+    @apply text-slate-500 hover:text-slate-400;
+  }
+
+  /* Светлая тема для посещенных ссылок источника */
+  :global(:not(.dark)) .source-link.visited {
+    @apply text-neutral-500 hover:text-neutral-600;
+  }
+
+  /* Глобальная темная тема для посещенных ссылок источника */
+  :global(.dark) .source-link.visited {
+    @apply text-slate-500 hover:text-slate-400;
+  }
+
+  /* Локальная темная тема для посещенных ссылок источника */
+  .vacancy-header.dark-theme .source-link.visited {
+    @apply text-slate-500 hover:text-slate-400;
+  }
+
+  /* Локальная светлая тема для посещенных ссылок источника (переопределение глобальной темной) */
+  :global(.dark) .vacancy-header.light-theme .source-link.visited {
+    @apply text-neutral-500 hover:text-neutral-600;
   }
   .source-text { @apply truncate max-w-[12rem]; }
   .source-icon { @apply inline-flex items-center justify-center; }

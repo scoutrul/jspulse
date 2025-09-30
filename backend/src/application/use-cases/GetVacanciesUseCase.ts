@@ -25,6 +25,7 @@ export interface GetVacanciesRequest {
   sortBy?: 'publishedAt' | 'salary' | 'title' | 'company';
   sortDirection?: 'asc' | 'desc';
   includeArchived?: boolean;
+  showUnvisited?: boolean; // Фильтр для показа только не просмотренных вакансий
 }
 
 /**
@@ -77,6 +78,9 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
 
       // Сначала применяем фильтрацию по стоп-словам бэкенда
       filteredVacancies = this.vacancyDomainService.filterByBackendStopWords(filteredVacancies);
+
+      // Фильтрация по статусу посещения
+      filteredVacancies = this.vacancyDomainService.filterByVisitedStatus(filteredVacancies, request.showUnvisited || false);
 
       if (request.skills && request.skills.length > 0) {
         filteredVacancies = this.vacancyDomainService.filterBySkills(filteredVacancies, request.skills);
@@ -152,7 +156,8 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
         dto.experience,
         dto.employment,
         dto.url,
-        dto.htmlDescription
+        dto.htmlDescription,
+        dto.visited
       );
     }).filter(Boolean) as Vacancy[]; // Убираем null значения
   }

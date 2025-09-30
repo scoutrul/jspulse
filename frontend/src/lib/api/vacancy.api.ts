@@ -17,6 +17,7 @@ export interface VacanciesOptions {
   page?: number;
   skills?: string[];
   includeArchived?: boolean;
+  showUnvisited?: boolean; // Фильтр для показа только не просмотренных вакансий
 }
 
 /**
@@ -78,6 +79,11 @@ export class VacancyApi {
       // Добавляем параметр архивности (по умолчанию false)
       if (options.includeArchived) {
         queryParams.append('includeArchived', options.includeArchived.toString());
+      }
+
+      // Добавляем параметр фильтра "не просмотренные"
+      if (options.showUnvisited) {
+        queryParams.append('showUnvisited', options.showUnvisited.toString());
       }
 
       // Конструируем URL с параметрами пагинации и фильтрации
@@ -243,6 +249,33 @@ export class VacancyApi {
       return { success: false, error: 'Неожиданный формат ответа' };
     } catch (error) {
       logger.error(this.CONTEXT, `Ошибка при удалении вакансии ${id}`, error);
+      return { success: false, error: 'Ошибка сети или сервера' };
+    }
+  }
+
+  /**
+   * Отметка вакансии как посещенной
+   */
+  async markAsVisited(id: string): Promise<{ success: boolean; error?: string }> {
+    try {
+      logger.debug(this.CONTEXT, `Отметка вакансии ${id} как посещенной`);
+
+      const response = await this.httpClient.patch(`/api/vacancies/${id}/visit`);
+
+      if (response && typeof response === 'object' && 'success' in response) {
+        const typedResponse = response as { success: boolean; error?: string };
+        if (typedResponse.success) {
+          logger.debug(this.CONTEXT, `Вакансия ${id} отмечена как посещенная`);
+          return { success: true };
+        } else {
+          logger.error(this.CONTEXT, `Ошибка отметки вакансии ${id}:`, typedResponse.error);
+          return { success: false, error: typedResponse.error || 'Ошибка отметки' };
+        }
+      }
+
+      return { success: false, error: 'Неожиданный формат ответа' };
+    } catch (error) {
+      logger.error(this.CONTEXT, `Ошибка при отметке вакансии ${id} как посещенной`, error);
       return { success: false, error: 'Ошибка сети или сервера' };
     }
   }

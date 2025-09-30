@@ -7,16 +7,18 @@
   export let availableSkills: string[] = [];
   export let selectedSkills: string[] = [];
   export let totalVacancies: number = 0;
+  export let showUnvisited: boolean = false;
   
   // Состояние коллапса - автоматически открывается при активных фильтрах
   let isExpanded: boolean = false;
   
   // Реактивный watcher: держим панель открытой, если есть активные фильтры
-  $: isExpanded = selectedSkills.length > 0;
+  $: isExpanded = selectedSkills.length > 0 || showUnvisited;
   
   const dispatch = createEventDispatcher<{
     change: string[];
     reset: void;
+    unvisitedChange: boolean;
   }>();
 
   function handleChange(skill: string) {
@@ -30,9 +32,13 @@
     dispatch('reset');
   }
   
+  function handleUnvisitedChange() {
+    dispatch('unvisitedChange', !showUnvisited);
+  }
+  
   function toggleExpanded() {
     // Позволяем ручное управление только если нет активных фильтров
-    if (selectedSkills.length === 0) {
+    if (selectedSkills.length === 0 && !showUnvisited) {
       isExpanded = !isExpanded;
     }
   }
@@ -43,9 +49,9 @@
     <button class="filters-toggle" on:click={toggleExpanded} aria-expanded={isExpanded}>
       <h2>
         <AdjustmentsHorizontal size="20" />
-        Фильтр по навыкам ({availableSkills?.length ?? 0})
-        {#if selectedSkills.length > 0}
-          <span class="selected-count">({selectedSkills.length})</span>
+        Фильтры ({availableSkills?.length ?? 0})
+        {#if selectedSkills.length > 0 || showUnvisited}
+          <span class="selected-count">({selectedSkills.length + (showUnvisited ? 1 : 0)})</span>
         {/if}
       </h2>
       <span class="toggle-icon">
@@ -65,8 +71,18 @@
   
   {#if isExpanded}
     <div class="filters-content" transition:slide={{ duration: 300 }}>
+      <!-- Статичный фильтр "не просмотренные" -->
+      <div class="static-filters mb-4">
+        <label class="static-filter-item">
+          <input type="checkbox" checked={showUnvisited} on:change={handleUnvisitedChange} />
+          <span class="filter-icon">{showUnvisited ? '👁️' : '🙈'}</span>
+          <span class="filter-text">Не просмотренные</span>
+        </label>
+      </div>
+      
       {#if availableSkills && availableSkills.length > 0}
         <div class="skills-list mb-4">
+          <h3 class="skills-title">Навыки:</h3>
           {#each availableSkills as skill (skill)}
             <label>
               <input type="checkbox" checked={selectedSkills.includes(skill)} on:change={() => handleChange(skill)} />
@@ -82,7 +98,7 @@
           hideOnMobile={false} 
           on:click={handleReset}
         >
-          Сбросить фильтр
+          Сбросить фильтры
         </GradientButton>
       {:else}
         <p>Нет доступных навыков для фильтрации.</p>
@@ -144,6 +160,58 @@
 
   .filters-content {
     @apply pt-4;
+  }
+
+  /* Стили для статичных фильтров */
+  .static-filters {
+    @apply border-b border-neutral-200 pb-4 mb-4;
+  }
+
+  /* Темная тема для статичных фильтров */
+  :global(.dark) .static-filters {
+    @apply border-slate-600;
+  }
+
+  .static-filter-item {
+    @apply flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors duration-200;
+    @apply hover:bg-neutral-100;
+  }
+
+  /* Темная тема для элемента статичного фильтра */
+  :global(.dark) .static-filter-item {
+    @apply hover:bg-slate-700;
+  }
+
+  .static-filter-item input[type="checkbox"] {
+    @apply w-4 h-4 text-primary-600 bg-neutral-100 border-neutral-300 rounded;
+    @apply focus:ring-primary-500 focus:ring-2;
+  }
+
+  /* Темная тема для чекбокса */
+  :global(.dark) .static-filter-item input[type="checkbox"] {
+    @apply bg-slate-700 border-slate-600 text-purple-600;
+  }
+
+  .filter-icon {
+    @apply text-lg;
+  }
+
+  .filter-text {
+    @apply text-sm font-medium text-neutral-700;
+  }
+
+  /* Темная тема для текста фильтра */
+  :global(.dark) .filter-text {
+    @apply text-slate-200;
+  }
+
+  .skills-title {
+    @apply text-sm font-semibold text-neutral-600 mb-2;
+  }
+
+  /* Темная тема для заголовка навыков */
+  :global(.dark) .skills-title {
+    @apply text-slate-300;
   }
 
   .results-legend {

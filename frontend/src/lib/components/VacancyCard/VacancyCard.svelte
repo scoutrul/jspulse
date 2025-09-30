@@ -18,6 +18,7 @@
   export let theme: 'light' | 'dark' = DEFAULT_THEME; // Тема карточки (теперь используется только для переопределения глобальной темы)
   export let showDeleteButton: boolean = false; // Показывать ли кнопку удаления
   export let isDeleting: boolean = false; // Состояние удаления для анимации
+  export let visited: boolean = false; // Отметка о посещении вакансии
   
   const dispatch = createEventDispatcher<{
     skillClick: string;
@@ -80,6 +81,7 @@
       url={vacancy.url}
       source={vacancy.source}
       {theme}
+      {visited}
     />
     
     <!-- Content Section -->

@@ -91,7 +91,8 @@ export class VacancyService {
       const result = await vacancyApi.fetchVacancies({
         page: params.page,
         limit: params.limit,
-        skills: params.skills
+        skills: params.skills,
+        showUnvisited: params.showUnvisited
       });
 
       // Приведение типов необходимо, поскольку API может возвращать
@@ -138,7 +139,8 @@ export class VacancyService {
       const result = await vacancyApi.fetchVacancies({
         page: params.page,
         limit: params.limit,
-        skills: params.skills || []
+        skills: params.skills || [],
+        showUnvisited: params.showUnvisited
       });
 
       return {
