@@ -47,6 +47,10 @@ export const VacancyDTOSchema = BaseVacancySchema.extend({
   htmlDescription: z.string().optional().nullable(),
   fullHtmlDescription: z.string().optional(),   // Полное HTML для frontend
 
+  // Новые поля для унификации источников
+  logoUrl: z.string().url().optional(),        // URL логотипа компании/вакансии
+  isRemote: z.boolean().optional(),            // Признак удаленной работы
+
   // Telegram-специфичные поля
   sourceId: z.string().optional(),               // Уникальный ID источника
   sourceChannel: z.string().optional(),          // Telegram канал
@@ -99,6 +103,10 @@ export type VacancyDTO = Omit<z.infer<typeof BaseVacancySchema>, 'publishedAt'> 
   address?: string | null;
   htmlDescription?: string | null;
   fullHtmlDescription?: string;    // Полное HTML для frontend
+
+  // Новые поля для унификации источников
+  logoUrl?: string;               // URL логотипа компании/вакансии
+  isRemote?: boolean;             // Признак удаленной работы
 
   // Telegram-специфичные поля
   sourceId?: string;               // Уникальный ID источника

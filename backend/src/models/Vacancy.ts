@@ -20,6 +20,10 @@ interface IVacancy {
   employment?: string;
   address?: string;
 
+  // Новые унифицированные поля
+  logoUrl?: string;
+  isRemote?: boolean;
+
   // Telegram-специфичные поля
   sourceId?: string;
   sourceChannel?: string;
@@ -58,6 +62,10 @@ export interface IVacancyDocument extends IVacancy {
   experience?: string;
   employment?: string;
   address?: string;
+
+  // Новые унифицированные поля
+  logoUrl?: string;
+  isRemote?: boolean;
 
   // Telegram-специфичные поля
   sourceId?: string;
@@ -105,6 +113,10 @@ const vacancySchema = new mongoose.Schema(
     experience: { type: String },
     employment: { type: String },
     address: { type: String },
+
+    // Новые унифицированные поля
+    logoUrl: { type: String },
+    isRemote: { type: Boolean },
 
     // Telegram-специфичные поля
     sourceId: { type: String, unique: true, sparse: true },

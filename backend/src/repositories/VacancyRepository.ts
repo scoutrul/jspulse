@@ -712,13 +712,21 @@ export class VacancyRepository implements IVacancyRepository {
           ? doc.fullDescription.processed
           : undefined;
 
+    // Безопасное значение для location (валидация на клиенте требует непустую строку)
+    const computedLocation: string = (() => {
+      const raw = (doc.location || "").toString().trim();
+      if (raw.length > 0) return raw;
+      if (doc.isRemote === true) return 'Remote';
+      return '—';
+    })();
+
     return {
       id: doc._id.toString(),
       _id: doc._id.toString(),
       externalId: doc.externalId,
       title: doc.title,
       company: doc.company,
-      location: doc.location,
+      location: computedLocation,
       url: doc.url,
       publishedAt: doc.publishedAt,
       source: doc.source,
@@ -746,8 +754,12 @@ export class VacancyRepository implements IVacancyRepository {
       hashtags: doc.hashtags || [],
       confidence: doc.confidence,
       parsedAt: doc.parsedAt,
-      visited: doc.visited
-    };
+      visited: doc.visited,
+
+      // Новые унифицированные поля для источников
+      logoUrl: doc.logoUrl,
+      isRemote: doc.isRemote,
+    } as any;
   }
 
   /**

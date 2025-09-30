@@ -639,7 +639,7 @@
   selectedSkills={store.selectedSkills}
   showUnvisited={store.showUnvisited}
   totalVacancies={store.total}
-  availableSources={["hh.ru","geekjob.ru","telegram"]}
+  availableSources={["hh.ru","geekjob.ru","telegram","habr"]}
   selectedSources={store.sources || []}
   on:change={e => handleSkillsChange(e.detail)}
   on:reset={handleReset}

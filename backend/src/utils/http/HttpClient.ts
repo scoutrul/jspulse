@@ -133,6 +133,17 @@ export class HttpClient {
   }
 
   /**
+   * Публичный метод для получения полного URL (нужно адаптерам)
+   */
+  public resolveUrl(url: string, params?: Record<string, string | number>): string {
+    const full = this.buildFullUrl(url);
+    if (!params) return full;
+    const sp = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) sp.append(k, String(v));
+    return `${full}?${sp.toString()}`;
+  }
+
+  /**
    * Генерирует ключ для кэша
    */
   private generateCacheKey(
@@ -272,6 +283,16 @@ export class HttpClient {
    */
   async delete<T>(url: string, options?: HttpRequestOptions): Promise<T> {
     return this.request<T>("DELETE", url, this.mapOptions(options));
+  }
+
+  /**
+   * GET-запрос, возвращающий текст (HTML)
+   */
+  async getText(url: string, options?: HttpRequestOptions): Promise<string> {
+    const fullUrl = this.buildFullUrl(url);
+    const kyOptions = this.mapOptions(options);
+    const response = await ky(fullUrl, { method: 'GET', ...kyOptions });
+    return await response.text();
   }
 
   /**

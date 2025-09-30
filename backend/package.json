@@ -12,6 +12,7 @@
     "build": "rm -rf dist && mkdir -p dist/config dist/models dist/routes dist/scripts dist/utils dist/data && npx tsc --project tsconfig.build.json",
     "db:seed": "tsx src/data/seedDatabase.ts",
     "db:hh": "tsx src/scripts/fetchAndSaveFromHH.ts",
+    "db:habr": "tsx src/scripts/fetchAndSaveFromHabr.ts",
     "db:clear": "tsx src/scripts/clearDatabase.ts",
     "db": "pnpm run db:hh",
     "test": "jest",

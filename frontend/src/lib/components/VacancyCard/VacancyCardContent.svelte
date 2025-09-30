@@ -110,8 +110,13 @@
       // Для страницы деталей показываем полный контент
       return parsedFullDescription?.processed || processedHtml || description || '';
     } else {
-      // Для карточки в списке показываем ОГРАНИЧЕННЫЙ по количеству блоков HTML
-      const sourceHtml = parsedFullDescription?.processed || processedHtml || description || '';
+      // Для карточки в списке: в приоритете короткое описание
+      if (description && description.trim().length > 0) {
+        // Оборачиваем в параграф для единообразного рендера
+        return `<p>${description}</p>`;
+      }
+      // Если короткого описания нет — показываем ограниченный по блокам HTML
+      const sourceHtml = parsedFullDescription?.processed || processedHtml || '';
       const full = processDescription(sourceHtml, 'full');
       const firstBlocks = trimHtmlToFirstBlocks(full, 3);
       return truncateHtmlByChars(firstBlocks, 1200, '');

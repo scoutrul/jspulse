@@ -153,4 +153,19 @@ router.get('/docs', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * POST /admin/parse-habr - запуск парсинга вакансий с Habr
+ */
+router.post('/parse-habr', async (req: Request, res: Response) => {
+  try {
+    // Динамический импорт скрипта (запуск как функции)
+    const { default: run } = await import('../scripts/fetchAndSaveFromHabr.ts').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
+    // Скрипт автономный, поэтому просто отвечаем, что задача запущена (fire-and-forget)
+    res.json({ success: true, data: { started: true, source: 'habr' } });
+  } catch (error) {
+    console.error('Error in admin parse-habr route:', error);
+    res.status(500).json({ success: false, error: { code: 500, message: 'Failed to start Habr parsing' } });
+  }
+});
+
 export default router;

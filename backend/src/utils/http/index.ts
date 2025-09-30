@@ -6,4 +6,5 @@
 export * from "./HttpClient.js";
 
 // Адаптеры для внешних API оставляем
-export { HeadHunterClient } from "./adapters/HeadHunterClient.js"; 
+export { HeadHunterClient } from "./adapters/HeadHunterClient.js";
+export * from './adapters/HabrClient.js'; 
