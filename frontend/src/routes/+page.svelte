@@ -104,6 +104,36 @@
   // Reactive переменные для UI
   $: isMobile = browser && window.innerWidth < 768;
   
+  // Универсальное обновление списка по текущим фильтрам из store
+  async function refreshListWithCurrentFilters() {
+    vacancyStore.setLoading(true);
+    try {
+      const response = await vacancyService.fetchVacanciesClient({
+        page: 0,
+        limit: PAGINATION.DEFAULT_PAGE_SIZE,
+        skills: store.selectedSkills,
+        showUnvisited: store.showUnvisited,
+        sources: store.sources
+      });
+      if (!response.error) {
+        vacancyStore.setVacancies(
+          response.vacancies.map(convertVacancy),
+          response.total,
+          response.totalPages,
+          response.page
+        );
+        vacancyStore.setError(null);
+      } else {
+        vacancyStore.setVacancies([], 0, 0, 0);
+        vacancyStore.setError(response.error);
+      }
+    } catch (e) {
+      vacancyStore.setError('Ошибка загрузки данных');
+    } finally {
+      vacancyStore.setLoading(false);
+    }
+  }
+
   // Восстанавливаем позицию скролла после навигации
   afterNavigate(() => {
     if (browser) {
@@ -111,6 +141,10 @@
       setTimeout(() => {
         restoreScrollPosition();
       }, 0);
+
+      // Важно: при возврате на список принудительно применяем текущие фильтры из store
+      // чтобы выдача соответствовала активным фильтрам (например, источнику)
+      refreshListWithCurrentFilters();
     }
   });
   
@@ -125,7 +159,7 @@
         vacancyStore.setSkills(skills);
       }
       
-      // Загружаем данные только если их нет или при необходимости обновления
+      // Если данных нет — загрузим, иначе всё равно применим активные фильтры
       if (store.vacancies.length === 0) {
         vacancyStore.setLoading(true);
         
@@ -134,7 +168,9 @@
           const vacancyResponse = await vacancyService.fetchVacanciesClient({
             page: 0,
             limit: PAGINATION.DEFAULT_PAGE_SIZE,
-            skills: []
+            skills: [],
+            sources: store.sources,
+            showUnvisited: store.showUnvisited
           });
           
           if (vacancyResponse.error) {
@@ -180,18 +216,18 @@
           vacancyStore.setLoading(false);
         }
       } else {
-        // данные уже загружены с сервера, но статистику навыков загружаем всегда
+        // Данные есть — всё равно обновим список по текущим активным фильтрам
+        await refreshListWithCurrentFilters();
+        
+        // статистику навыков загружаем всегда
         try {
           const stats = await vacancyService.fetchSkillsStatsClient();
           if (stats && stats.length > 0) {
-            // Преобразуем данные в правильный формат
             const normalizedStats = stats.map(stat => ({
               name: stat.skill || (stat as any).name || (stat as any).skillName || 'unknown',
               count: stat.count || 0
             }));
             skillsStats = normalizedStats;
-            
-            // Принудительно обновляем реактивные переменные
             setTimeout(() => {
               skillsStats = [...skillsStats];
             }, 100);
