@@ -12,11 +12,19 @@
 export let availableSources: string[] = ['hh.ru', 'geekjob.ru', 'telegram'];
 export let selectedSources: string[] = [];
   
-  // Состояние коллапса - автоматически открывается при активных фильтрах
+  // Состояние коллапса — читаем из localStorage; по умолчанию скрыто (false)
   let isExpanded: boolean = false;
-  
-  // Реактивный watcher: держим панель открытой, если есть активные фильтры
-  $: isExpanded = selectedSkills.length > 0 || showUnvisited;
+  const LS_KEY = 'filtersExpanded';
+
+  // Инициализация из localStorage только в браузере
+  if (typeof window !== 'undefined') {
+    try {
+      const saved = window.localStorage.getItem(LS_KEY);
+      if (saved === 'true') {
+        isExpanded = true;
+      }
+    } catch {}
+  }
   
   const dispatch = createEventDispatcher<{
     change: string[];
@@ -41,9 +49,12 @@ export let selectedSources: string[] = [];
   }
   
   function toggleExpanded() {
-    // Позволяем ручное управление только если нет активных фильтров
-    if (selectedSkills.length === 0 && !showUnvisited) {
-      isExpanded = !isExpanded;
+    // Разрешаем ручное управление всегда
+    isExpanded = !isExpanded;
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.setItem(LS_KEY, isExpanded ? 'true' : 'false');
+      } catch {}
     }
   }
 
