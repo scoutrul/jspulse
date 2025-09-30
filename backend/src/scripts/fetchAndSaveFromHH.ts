@@ -66,13 +66,14 @@ async function getVacancyModel() {
 
 const SOURCE_HH = "hh.ru";
 const MAX_VACANCIES_PER_PAGE = 10; // HH API limit
-const MAX_PAGES_TO_FETCH = 20; // Увеличено с 5 до 20 для получения 200 вакансий
+const MAX_PAGES_TO_FETCH = 50; // Увеличено до 50 для получения 500 вакансий
+const START_PAGE = parseInt(process.env.START_PAGE || "0", 10); // Начальная страница (можно задать через START_PAGE=20)
 const SEARCH_TEXT = "JavaScript Developer OR Frontend Developer";
 const FETCH_FULL_DESCRIPTIONS = process.env.FETCH_FULL_DESCRIPTIONS !== "false"; // По умолчанию ВКЛЮЧЕНО, можно выключить через false
 
 async function fetchAndSaveHHVacancies() {
   console.log("🚀 Запускаю incremental импорт вакансий с HeadHunter...");
-  console.log(`📊 Настройки: ${MAX_PAGES_TO_FETCH} страниц × ${MAX_VACANCIES_PER_PAGE} = до ${MAX_PAGES_TO_FETCH * MAX_VACANCIES_PER_PAGE} вакансий`);
+  console.log(`📊 Настройки: страницы ${START_PAGE + 1}-${START_PAGE + MAX_PAGES_TO_FETCH} (${MAX_PAGES_TO_FETCH} страниц) × ${MAX_VACANCIES_PER_PAGE} = до ${MAX_PAGES_TO_FETCH * MAX_VACANCIES_PER_PAGE} вакансий`);
   console.log(`🔍 Получение полных описаний: ${FETCH_FULL_DESCRIPTIONS ? 'ВКЛЮЧЕНО' : 'ВЫКЛЮЧЕНО'}`);
 
   // Используем MongoDB внутри Docker сети
@@ -96,7 +97,7 @@ async function fetchAndSaveHHVacancies() {
     let totalUpdated = 0;
     let totalSkipped = 0;
 
-    for (let page = 0; page < MAX_PAGES_TO_FETCH; page++) {
+    for (let page = START_PAGE; page < START_PAGE + MAX_PAGES_TO_FETCH; page++) {
       const searchParams = {
         text: SEARCH_TEXT,
         area: "1", // Москва
@@ -106,7 +107,7 @@ async function fetchAndSaveHHVacancies() {
       };
 
       console.log(
-        `📄 Запрос страницы ${page + 1}/${MAX_PAGES_TO_FETCH} с ${HH_API_BASE_URL}...`
+        `📄 Запрос страницы ${page + 1}/${START_PAGE + MAX_PAGES_TO_FETCH} с ${HH_API_BASE_URL}...`
       );
 
       try {
