@@ -180,17 +180,35 @@
     dispatch('skillClick', skill);
   }
   
-  // Префетч страницы при наведении для оптимизации
+  // Префетч страницы при наведении для оптимизации с задержкой
+  let prefetchTimeout: NodeJS.Timeout | null = null;
+  
   async function handleDescriptionHover() {
     // Не делаем preload если вакансия удаляется
     if (!isDetailPage && hasDescription && vacancyId && !isDeleting) {
-      try {
-        await preloadData(`/v/${vacancyId}`);
-        console.debug('✅ Prefetched vacancy page:', vacancyId);
-      } catch (error) {
-        // Игнорируем ошибки префетча - это не критично
-        console.debug('❌ Prefetch failed for vacancy:', vacancyId, error);
+      // Очищаем предыдущий таймер если он есть
+      if (prefetchTimeout) {
+        clearTimeout(prefetchTimeout);
       }
+      
+      // Устанавливаем новый таймер на 500ms
+      prefetchTimeout = setTimeout(async () => {
+        try {
+          await preloadData(`/v/${vacancyId}`);
+          console.debug('✅ Prefetched vacancy page:', vacancyId);
+        } catch (error) {
+          // Игнорируем ошибки префетча - это не критично
+          console.debug('❌ Prefetch failed for vacancy:', vacancyId, error);
+        }
+      }, 700);
+    }
+  }
+  
+  function handleDescriptionLeave() {
+    // Отменяем prefetch если курсор ушел до истечения времени
+    if (prefetchTimeout) {
+      clearTimeout(prefetchTimeout);
+      prefetchTimeout = null;
     }
   }
 
@@ -305,6 +323,7 @@
         href={vacancyId ? `/v/${vacancyId}` : undefined}
         class="description-container clickable"
         on:mouseenter={handleDescriptionHover}
+        on:mouseleave={handleDescriptionLeave}
         aria-label="Нажмите для просмотра полного описания вакансии"
       >
         <div class="description-content">
