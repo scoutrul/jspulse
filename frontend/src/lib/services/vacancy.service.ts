@@ -93,7 +93,8 @@ export class VacancyService {
         limit: params.limit,
         skills: params.skills,
         showUnvisited: params.showUnvisited,
-        sources: params.sources
+        sources: params.sources,
+        shuffle: params.shuffle !== false // По умолчанию true, можно отключить явно
       });
 
       // Приведение типов необходимо, поскольку API может возвращать

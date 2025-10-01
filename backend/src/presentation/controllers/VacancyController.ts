@@ -21,7 +21,7 @@ export class VacancyController {
    */
   async getVacancies(req: Request, res: Response): Promise<void> {
     try {
-      const { page = 0, limit = 10, skills = '', location = '', experience = '', employment = '', source = '', sources = '', showUnvisited = false } = req.query;
+      const { page = 0, limit = 10, skills = '', location = '', experience = '', employment = '', source = '', sources = '', showUnvisited = false, shuffle = true } = req.query;
 
       // Поддержка как одиночного 'source', так и множественного 'sources' (comma-separated)
       const sourcesArray = (() => {
@@ -41,7 +41,8 @@ export class VacancyController {
         // Оставляем старое поле для обратной совместимости (не используется в use-case)
         source: String(source),
         sources: sourcesArray,
-        showUnvisited: showUnvisited === 'true'
+        showUnvisited: showUnvisited === 'true',
+        enableShuffling: shuffle === 'true' || shuffle === true
       };
 
       const result = await this.getVacanciesUseCase.execute(request);
@@ -88,7 +89,12 @@ export class VacancyController {
         success: false,
         error: {
           code: 500,
-          message: 'Internal server error'
+          message: 'Internal server error',
+          ...(process.env.NODE_ENV !== 'production' ? {
+            details: String(error instanceof Error ? error.message : error),
+            stack: error instanceof Error ? error.stack : undefined,
+            context: { id: req.params?.id }
+          } : {})
         }
       });
     }

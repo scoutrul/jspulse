@@ -29,10 +29,10 @@ export const load: PageServerLoad<HomePageData> = async ({ fetch: _fetch }) => {
     const sanitizeHtml = (html: string) => html;
 
 
-    // Загружаем вакансии с помощью нового сервиса
+    // Загружаем вакансии с помощью нового сервиса (с включенным перемешиванием)
     const { vacancies, total, page, limit, totalPages } = await fetchVacanciesServer(
       _fetch,
-      { limit: initialLimit, page: initialPage },
+      { limit: initialLimit, page: initialPage, shuffle: true },
       sanitizeHtml
     );
 

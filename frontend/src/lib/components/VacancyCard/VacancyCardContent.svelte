@@ -154,7 +154,8 @@
       // Для страницы деталей показываем полный контент
       const source = parsedFullDescription?.processed || processedHtml || description || '';
       const normalized = normalizeTelegraphHtml(source);
-      return normalized;
+      const withNewlines = typeof normalized === 'string' ? normalized.replace(/\n/g, '<br>') : normalized;
+      return withNewlines;
     } else {
       // Для карточки в списке: в приоритете короткое описание
       if (description && description.trim().length > 0) {

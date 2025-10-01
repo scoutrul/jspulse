@@ -1,6 +1,7 @@
 import { IUseCaseWithParams } from '../interfaces/IUseCase.js';
 import { IVacancyRepository } from '../../domain/repositories/IVacancyRepository.js';
 import { VacancyDomainService } from '../../domain/services/VacancyDomainService.js';
+import { VacancyShufflingService } from '../../domain/services/VacancyShufflingService.js';
 import { Vacancy } from '../../domain/entities/Vacancy.js';
 import { Skill } from '../../domain/entities/Skill.js';
 import { Salary } from '../../domain/value-objects/Salary.js';
@@ -26,6 +27,7 @@ export interface GetVacanciesRequest {
   sortDirection?: 'asc' | 'desc';
   includeArchived?: boolean;
   showUnvisited?: boolean; // Фильтр для показа только не просмотренных вакансий
+  enableShuffling?: boolean; // Включить перемешивание по источникам (по умолчанию true)
 }
 
 /**
@@ -50,10 +52,14 @@ export interface GetVacanciesResponse {
  * Координирует получение данных, применение бизнес-правил и пагинацию
  */
 export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesRequest, GetVacanciesResponse> {
+  private readonly shufflingService: VacancyShufflingService;
+
   constructor(
     private readonly vacancyRepository: IVacancyRepository,
     private readonly vacancyDomainService: VacancyDomainService
-  ) { }
+  ) {
+    this.shufflingService = new VacancyShufflingService(2); // Максимум 2 подряд из одного источника
+  }
 
   async execute(request: GetVacanciesRequest): Promise<GetVacanciesResponse> {
     try {
@@ -86,6 +92,10 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
         filteredVacancies = this.vacancyDomainService.filterBySkills(filteredVacancies, request.skills);
       }
 
+      if (request.sources && request.sources.length > 0) {
+        filteredVacancies = this.vacancyDomainService.filterBySource(filteredVacancies, request.sources);
+      }
+
       if (request.salaryRange) {
         filteredVacancies = this.vacancyDomainService.filterBySalaryRange(
           filteredVacancies,
@@ -102,6 +112,11 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
         sortBy,
         sortDirection
       );
+
+      // Применяем перемешивание по источникам (если включено)
+      if (request.enableShuffling !== false) {
+        filteredVacancies = this.shufflingService.shuffleVacanciesBySource(filteredVacancies);
+      }
 
       // Преобразуем domain entities в API DTO
       const apiVacancies = filteredVacancies.map(vacancy =>

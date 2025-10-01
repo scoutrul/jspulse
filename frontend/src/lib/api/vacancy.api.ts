@@ -19,6 +19,7 @@ export interface VacanciesOptions {
   includeArchived?: boolean;
   showUnvisited?: boolean; // Фильтр для показа только не просмотренных вакансий
   sources?: string[]; // Новое: фильтр по источникам
+  shuffle?: boolean; // Включить перемешивание по источникам (по умолчанию true)
 }
 
 /**
@@ -90,6 +91,11 @@ export class VacancyApi {
       // Фильтр по источникам (comma-separated)
       if (options.sources && options.sources.length > 0) {
         queryParams.append('sources', options.sources.join(','));
+      }
+
+      // Параметр перемешивания (по умолчанию true)
+      if (options.shuffle !== undefined) {
+        queryParams.append('shuffle', options.shuffle.toString());
       }
 
       // Конструируем URL с параметрами пагинации и фильтрации
@@ -200,7 +206,42 @@ export class VacancyApi {
       if (!validationResult.success) {
         logger.error(this.CONTEXT, `Ошибка валидации данных вакансии ${id}:`, validationResult.error);
         logger.error(this.CONTEXT, `Полученные данные:`, response);
-        return null;
+        // Fallback: сконструировать безопасный VacancyDTO, чтобы не рушить страницу
+        const raw: any = response || {};
+        const data: any = raw.data || raw;
+        const htmlDescription: string =
+          typeof data?.htmlDescription === 'string'
+            ? data.htmlDescription
+            : (data?.fullDescription?.raw || data?.fullDescription?.processed || data?.fullDescription?.textOnly || data?.description || '');
+
+        const fallbackVacancy: VacancyDTO = {
+          id: data?._id || data?.id || id,
+          title: data?.title || 'Без названия',
+          company: data?.company || 'Неизвестная компания',
+          skills: Array.isArray(data?.skills) ? data.skills : [],
+          salaryFrom: data?.salaryFrom ?? null,
+          salaryTo: data?.salaryTo ?? null,
+          salaryCurrency: data?.salaryCurrency || 'RUR',
+          publishedAt: new Date(data?.publishedAt || Date.now()),
+          source: data?.source || 'unknown',
+          location: (data?.location && String(data.location)) || '—',
+          description: data?.description || '',
+          experience: data?.experience || 'Не указано',
+          employment: data?.employment || 'Не указано',
+          isActive: typeof data?.isActive === 'boolean' ? data.isActive : true,
+          isHighSalary: typeof data?.isHighSalary === 'boolean' ? data.isHighSalary : false,
+          isRemote: typeof data?.isRemote === 'boolean' ? data.isRemote : (/удаленн|remote/i.test(String(data?.location || ''))),
+          isOffice: typeof data?.isOffice === 'boolean' ? data.isOffice : false,
+          url: data?.url,
+          htmlDescription,
+          visited: typeof data?.visited === 'boolean' ? data.visited : false,
+          hashtags: Array.isArray(data?.hashtags) ? data.hashtags : []
+        } as VacancyDTO;
+
+        return {
+          vacancy: fallbackVacancy,
+          isArchived: Boolean(raw?.meta?.isArchived) || false
+        };
       }
 
       // Получаем валидированные данные

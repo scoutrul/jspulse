@@ -1,7 +1,7 @@
 import mongoose from "../config/database.js";
 import * as cheerio from "cheerio";
 import dotenv from "dotenv";
-import ky from "ky";
+import { CareeredClient } from "../utils/http/adapters/CareeredClient.js";
 import { containsBackendStopWords } from "../config/backendStopWords.js";
 import { normalizeSkill } from "../utils/transformations.js";
 
@@ -62,8 +62,6 @@ async function getVacancyModel() {
 }
 
 const SOURCE = "careered";
-const BASE_URL = "https://careered.io";
-const TAGS_PARAM = "a7f11f28-d502-4b8f-8432-5a1862cc99fa";
 const MAX_PAGES = 5;
 
 function extractText($el: cheerio.Cheerio<any>): string {
@@ -136,75 +134,26 @@ function extractSkills(text: string): string[] {
   return Array.from(new Set(possible.filter((k) => lower.includes(k)).map(normalizeSkill)));
 }
 
-async function fetchJobDetail(jobUrl: string): Promise<{ title: string; company: string; description: string; fullDescription?: string } | null> {
-  try {
-    const html = await ky.get(jobUrl, {
-      headers: { 'user-agent': 'Mozilla/5.0 JSPulse' },
-      timeout: 30000
-    }).text();
-
-    const $ = cheerio.load(html);
-
-    const title = extractText($("h1, .job-title, [data-test*='title']").first());
-    const company = extractText($(".company, [data-test*='company']").first());
-
-    // Ищем описание в разных местах
-    let description = "";
-    const descSelectors = [
-      ".job-description",
-      ".description",
-      ".content",
-      "main p",
-      "[data-test*='description']"
-    ];
-
-    for (const selector of descSelectors) {
-      const desc = extractText($(selector).first());
-      if (desc && desc.length > 50) {
-        description = desc;
-        break;
-      }
-    }
-
-    // Полное описание (HTML)
-    const fullDescSelectors = [
-      ".job-description",
-      ".description",
-      ".content",
-      "main"
-    ];
-
-    let fullDescription = "";
-    for (const selector of fullDescSelectors) {
-      const html = $(selector).first().html();
-      if (html && html.length > 100) {
-        fullDescription = html;
-        break;
-      }
-    }
-
-    return {
-      title: title || "Без названия",
-      company: company || "Неизвестная компания",
-      description,
-      fullDescription
-    };
-  } catch (error) {
-    console.error(`Ошибка загрузки деталей ${jobUrl}:`, error);
-    return null;
-  }
-}
+// This function is now handled by CareeredClient
 
 async function fetchAndSaveFromCareered() {
   console.log("🚀 Запускаю импорт с Careered.io…");
   const mongoUrl = process.env.MONGO_URI || "mongodb://mongodb:27017/jspulse";
 
   let connection;
+  let careeredClient: CareeredClient | null = null;
+
   try {
     connection = await mongoose.connect(mongoUrl);
     console.log("✅ MongoDB подключен");
 
     const Vacancy = await getVacancyModel();
+
+    // Initialize CareeredClient with logging enabled
+    careeredClient = new CareeredClient({
+      logging: true,
+      mode: 'playwright' // Force Playwright mode for testing
+    });
 
     let totalReceived = 0;
     let totalNew = 0;
@@ -215,58 +164,22 @@ async function fetchAndSaveFromCareered() {
 
     // Собираем ссылки на вакансии со всех страниц
     for (let page = 1; page <= MAX_PAGES; page++) {
-      // Попробуем разные варианты URL
-      const listUrl = page === 1 ? `${BASE_URL}/?tags=${TAGS_PARAM}` : `${BASE_URL}/?tags=${TAGS_PARAM}&page=${page}`;
-      console.log(`📄 Страница списка ${page}/${MAX_PAGES}: ${listUrl}`);
+      console.log(`📄 Страница списка ${page}/${MAX_PAGES}`);
 
       try {
-        const html = await ky.get(listUrl, {
-          headers: { 'user-agent': 'Mozilla/5.0 JSPulse' },
-          timeout: 30000
-        }).text();
+        const listResult = await careeredClient.getListPage({ page });
 
-        const $ = cheerio.load(html);
+        console.log(`📄 HTML длина: ${listResult.html.length}`);
+        console.log(`🔗 Найдено ссылок: ${listResult.jobLinks.length}`);
 
-        // Отладочная информация
-        console.log(`📄 HTML длина: ${html.length}`);
-        console.log(`📄 Заголовок страницы: ${$('title').text()}`);
-
-        // Покажем первые 500 символов HTML для отладки
-        console.log(`📄 HTML начало: ${html.substring(0, 500)}`);
-
-        // Ищем карточки вакансий - пробуем разные селекторы
-        const jobCards = $(".overflow-hidden.rounded-lg.border.bg-white, .job-card, .vacancy-card, [data-test*='job'], .job, .vacancy, main > div > div > div");
-
-        console.log(`🔍 Найдено элементов: ${jobCards.length}`);
-
-        if (jobCards.length === 0 && page > 1) {
+        if (listResult.jobLinks.length === 0 && page > 1) {
           console.log("🏁 Похоже, вакансии закончились. Останавливаюсь.");
           break;
         }
 
-        // Если не нашли карточки, попробуем найти ссылки напрямую
-        if (jobCards.length === 0) {
-          const jobLinks = $("a[href*='/jobs/']");
-          console.log(`🔗 Найдено прямых ссылок: ${jobLinks.length}`);
-          jobLinks.each((_, el) => {
-            const href = $(el).attr("href");
-            if (href) {
-              const abs = href.startsWith("http") ? href : `${BASE_URL}${href}`;
-              collectedLinks.push(abs);
-            }
-          });
-        } else {
-          jobCards.each((_, el) => {
-            const linkEl = $(el).find("a[href*='/jobs/']").first();
-            const href = linkEl.attr("href");
-            if (href) {
-              const abs = href.startsWith("http") ? href : `${BASE_URL}${href}`;
-              collectedLinks.push(abs);
-            }
-          });
-        }
+        collectedLinks.push(...listResult.jobLinks);
+        console.log(`🔗 Всего собрано ссылок: ${collectedLinks.length} (страница ${page})`);
 
-        console.log(`🔗 Собрано ссылок: ${collectedLinks.length} (страница ${page})`);
         await new Promise((r) => setTimeout(r, 500));
       } catch (error) {
         console.error(`Ошибка загрузки страницы ${page}:`, error);
@@ -276,24 +189,25 @@ async function fetchAndSaveFromCareered() {
 
     const uniqueLinks = Array.from(new Set(collectedLinks));
     console.log(`📊 Всего уникальных вакансий: ${uniqueLinks.length}`);
+    console.log(`🔗 Собранные ссылки:`, collectedLinks);
+    console.log(`🔗 Уникальные ссылки:`, uniqueLinks);
 
     // Парсим каждую вакансию
     for (const jobUrl of uniqueLinks) {
       try {
-        const jobDetail = await fetchJobDetail(jobUrl);
-        if (!jobDetail) {
+        const jobResult = await careeredClient.getVacancyPage(jobUrl);
+
+        if (!jobResult.jobDetail) {
           totalSkipped++;
+          console.log(`  ⚠️ Не удалось извлечь детали: ${jobUrl}`);
           continue;
         }
 
-        const { title, company, description, fullDescription } = jobDetail;
+        const { title, company, location, description, fullDescription, salary, isRemote, publishedAt } = jobResult.jobDetail;
 
         // Извлекаем ID из URL
         const sourceIdMatch = jobUrl.match(/\/jobs\/([^\/?#]+)/i);
         const sourceId = sourceIdMatch ? sourceIdMatch[1] : jobUrl;
-
-        // Определяем удаленную работу
-        const isRemote = /удаленн|remote/i.test(description) || /удаленн|remote/i.test(title);
 
         // Извлекаем навыки
         const skills = extractSkills(title + " " + description);
@@ -305,9 +219,9 @@ async function fetchAndSaveFromCareered() {
           externalId: `${SOURCE}:${sourceId}`,
           title,
           company,
-          location: "Remote", // По умолчанию, так как большинство удаленные
+          location: location || "Remote",
           url: jobUrl,
-          publishedAt: new Date(), // Будет обновлено из списка
+          publishedAt: publishedAt ? new Date(publishedAt) : new Date(),
           source: SOURCE,
           description: preview,
           fullDescription: fullDescription ? {
@@ -317,12 +231,19 @@ async function fetchAndSaveFromCareered() {
             textOnly: description,
           } : undefined,
           skills: skills.length ? skills : ['javascript'],
-          isRemote,
+          isRemote: isRemote || false,
           sourceId,
           sourceUrl: jobUrl,
           confidence: 0.9,
           parsedAt: new Date(),
         } as any;
+
+        // Добавляем информацию о зарплате если есть
+        if (salary) {
+          transformed.salaryFrom = salary.from;
+          transformed.salaryTo = salary.to;
+          transformed.salaryCurrency = salary.currency;
+        }
 
         // Фильтрация по стоп-словам бэкенда
         if (containsBackendStopWords((title + " " + preview).toLowerCase())) {
@@ -362,6 +283,10 @@ async function fetchAndSaveFromCareered() {
   } catch (error) {
     console.error("❌ Ошибка импорта Careered.io:", error);
   } finally {
+    // Clean up resources
+    if (careeredClient) {
+      await careeredClient.close();
+    }
     if (mongoose.connection.readyState === 1) {
       await mongoose.disconnect();
       console.log("🔌 Соединение с MongoDB закрыто");
