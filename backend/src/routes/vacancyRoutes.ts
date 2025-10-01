@@ -4,6 +4,7 @@ import { GetVacancyByIdUseCase } from '../application/use-cases/GetVacancyByIdUs
 import { GetVacanciesUseCase } from '../application/use-cases/GetVacanciesUseCase.js';
 import { GetSkillsUseCase } from '../application/use-cases/GetSkillsUseCase.js';
 import { GetSkillsStatsUseCase } from '../application/use-cases/GetSkillsStatsUseCase.js';
+import { GetSourcesUseCase } from '../application/use-cases/GetSourcesUseCase.js';
 
 const router: Router = Router();
 
@@ -17,12 +18,14 @@ const createVacancyController = (req: Request): VacancyController => {
   const getVacanciesUseCase = req.resolve<GetVacanciesUseCase>('GetVacanciesUseCase');
   const getSkillsUseCase = req.resolve<GetSkillsUseCase>('GetSkillsUseCase');
   const getSkillsStatsUseCase = req.resolve<GetSkillsStatsUseCase>('GetSkillsStatsUseCase');
+  const getSourcesUseCase = req.resolve<GetSourcesUseCase>('GetSourcesUseCase');
 
   return new VacancyController(
     getVacanciesUseCase,
     getVacancyByIdUseCase,
     getSkillsUseCase,
-    getSkillsStatsUseCase
+    getSkillsStatsUseCase,
+    getSourcesUseCase
   );
 };
 
@@ -73,6 +76,25 @@ router.get('/skills/stats', async (req: Request, res: Response) => {
     await vacancyController.getSkillsStats(req, res);
   } catch (error) {
     console.error('Error in skills stats route:', error);
+    res.status(500).json({
+      success: false,
+      error: {
+        code: 500,
+        message: 'Internal server error'
+      }
+    });
+  }
+});
+
+/**
+ * GET /api/vacancies/sources - получение списка источников по данным вакансий
+ */
+router.get('/sources', async (req: Request, res: Response) => {
+  try {
+    const vacancyController = createVacancyController(req);
+    await vacancyController.getSources(req, res);
+  } catch (error) {
+    console.error('Error in sources route:', error);
     res.status(500).json({
       success: false,
       error: {

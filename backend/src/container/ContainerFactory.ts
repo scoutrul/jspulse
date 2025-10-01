@@ -13,6 +13,7 @@ import { DeleteVacancyUseCase } from "../application/use-cases/DeleteVacancyUseC
 import { VacancyDomainService } from "../domain/services/VacancyDomainService.js";
 import { GetSkillsUseCase } from '../application/use-cases/GetSkillsUseCase.js';
 import { GetSkillsStatsUseCase } from '../application/use-cases/GetSkillsStatsUseCase.js';
+import { GetSourcesUseCase } from '../application/use-cases/GetSourcesUseCase.js';
 
 /**
  * Фабрика для создания и настройки DI Container с различными конфигурациями.
@@ -143,6 +144,14 @@ export class ContainerFactory implements IDIContainerFactory {
       (container: IDIContainer) => {
         const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
         return new GetSkillsStatsUseCase(vacancyRepository);
+      }
+    );
+
+    container.registerSingleton(
+      'GetSourcesUseCase',
+      (container: IDIContainer) => {
+        const vacancyRepository = container.resolve('IVacancyRepository') as IVacancyRepository;
+        return new GetSourcesUseCase(vacancyRepository);
       }
     );
 

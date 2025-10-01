@@ -129,14 +129,25 @@ export class GetVacanciesUseCase implements IUseCaseWithParams<GetVacanciesReque
       return VacancyApiResponseDto.createApiResponse(apiVacancies, {
         page,
         limit,
-        total: result.meta.total,
-        totalPages: result.meta.totalPages,
-        hasNextPage: result.meta.hasNextPage,
-        hasPrevPage: result.meta.hasPrevPage
+        total: result.meta.total ?? 0,
+        totalPages: result.meta.totalPages ?? 0,
+        hasNextPage: result.meta.hasNextPage ?? false,
+        hasPrevPage: result.meta.hasPrevPage ?? false
       });
     } catch (error) {
       console.error('Error in GetVacanciesUseCase:', error);
-      throw error;
+
+      // Возвращаем безопасный пустой ответ вместо ошибки, чтобы UI не ломался
+      const safePage = request.page || 0;
+      const safeLimit = request.limit || 10;
+      return VacancyApiResponseDto.createApiResponse([], {
+        page: safePage,
+        limit: safeLimit,
+        total: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: safePage > 0 && 0 > 0
+      });
     }
   }
 

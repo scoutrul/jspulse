@@ -169,22 +169,43 @@ router.post('/parse-habr', async (req: Request, res: Response) => {
 });
 
 /**
- * POST /admin/parse-telegram-ulbi - запуск парсинга Telegram канала @vacancy_it_ulbitv
+ * POST /admin/parse-hh - запуск парсинга вакансий с HeadHunter
  */
-router.post('/parse-telegram-ulbi', async (req: Request, res: Response) => {
+router.post('/parse-hh', async (req: Request, res: Response) => {
   try {
     // Fire-and-forget: не блокируем HTTP поток
     (async () => {
       try {
-        const { default: noop } = await import('../scripts/parseTelegramUlbi.js').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
+        const { default: noop } = await import('../scripts/fetchAndSaveFromHH.js').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
       } catch (e) {
-        console.error('Error starting parseTelegramUlbi task:', e);
+        console.error('Error starting HH parsing task:', e);
       }
     })();
 
-    res.json({ success: true, data: { started: true, source: 'telegram', channel: '@vacancy_it_ulbitv' } });
+    res.json({ success: true, data: { started: true, source: 'hh' } });
   } catch (error) {
-    console.error('Error in admin parse-telegram-ulbi route:', error);
+    console.error('Error in admin parse-hh route:', error);
+    res.status(500).json({ success: false, error: { code: 500, message: 'Failed to start HH parsing' } });
+  }
+});
+
+/**
+ * POST /admin/parse-telegram - запуск парсинга Telegram (обогащение/инкремент)
+ */
+router.post('/parse-telegram', async (req: Request, res: Response) => {
+  try {
+    // Fire-and-forget: не блокируем HTTP поток
+    (async () => {
+      try {
+        const { default: noop } = await import('../scripts/enrichTelegramTelegraph.js').then(() => ({ default: null as any })).catch(() => ({ default: null as any }));
+      } catch (e) {
+        console.error('Error starting Telegram parsing task:', e);
+      }
+    })();
+
+    res.json({ success: true, data: { started: true, source: 'telegram' } });
+  } catch (error) {
+    console.error('Error in admin parse-telegram route:', error);
     res.status(500).json({ success: false, error: { code: 500, message: 'Failed to start Telegram parsing' } });
   }
 });

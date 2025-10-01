@@ -3,6 +3,7 @@ import { GetVacanciesUseCase } from '../../application/use-cases/GetVacanciesUse
 import { GetVacancyByIdUseCase } from '../../application/use-cases/GetVacancyByIdUseCase.js';
 import { GetSkillsUseCase } from '../../application/use-cases/GetSkillsUseCase.js';
 import { GetSkillsStatsUseCase } from '../../application/use-cases/GetSkillsStatsUseCase.js';
+import { GetSourcesUseCase } from '../../application/use-cases/GetSourcesUseCase.js';
 
 /**
  * Controller для работы с вакансиями
@@ -13,7 +14,8 @@ export class VacancyController {
     private readonly getVacanciesUseCase: GetVacanciesUseCase,
     private readonly getVacancyByIdUseCase: GetVacancyByIdUseCase,
     private readonly getSkillsUseCase: GetSkillsUseCase,
-    private readonly getSkillsStatsUseCase: GetSkillsStatsUseCase
+    private readonly getSkillsStatsUseCase: GetSkillsStatsUseCase,
+    private readonly getSourcesUseCase: GetSourcesUseCase
   ) { }
 
   /**
@@ -122,6 +124,22 @@ export class VacancyController {
       res.json(result);
     } catch (error) {
       console.error('Error in VacancyController.getSkillsStats:', error);
+      res.status(500).json({
+        success: false,
+        error: {
+          code: 500,
+          message: 'Internal server error'
+        }
+      });
+    }
+  }
+
+  async getSources(req: Request, res: Response): Promise<void> {
+    try {
+      const result = await this.getSourcesUseCase.execute();
+      res.json(result);
+    } catch (error) {
+      console.error('Error in VacancyController.getSources:', error);
       res.status(500).json({
         success: false,
         error: {

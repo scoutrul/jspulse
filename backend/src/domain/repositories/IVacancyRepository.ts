@@ -23,6 +23,7 @@ export interface IVacancyRepository {
   // Агрегация и статистика
   count(criteria?: Partial<VacancyDTO>): Promise<number>;
   getUniqueSkills(): Promise<string[]>;
+  getUniqueSources(): Promise<string[]>;
   getStatistics(): Promise<{
     total: number;
     bySource: Record<string, number>;

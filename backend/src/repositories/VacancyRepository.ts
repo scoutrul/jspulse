@@ -459,6 +459,49 @@ export class VacancyRepository implements IVacancyRepository {
   }
 
   /**
+   * Получение уникальных источников вакансий.
+   * Строится по фактическим данным за активный период.
+   */
+  async getUniqueSources(): Promise<string[]> {
+    const cacheKey = 'sources:unique';
+
+    if (this.cacheService) {
+      const cached = await this.cacheService.get<string[]>(cacheKey);
+      if (cached) {
+        return cached;
+      }
+    }
+
+    const since = this.getArchiveDateThreshold();
+    const aggregation = await Vacancy.aggregate([
+      { $match: { publishedAt: { $gte: since } } },
+      { $project: { source: { $ifNull: ["$source", "unknown"] } } },
+      { $group: { _id: "$source" } },
+      { $sort: { _id: 1 } }
+    ]);
+
+    // Приводим к нижнему регистру и нормализуем известные источники
+    const rawSources = aggregation.map((item: any) => String(item._id || 'unknown').toLowerCase().trim());
+
+    const normalized = rawSources.map((s) => {
+      if (["hh", "hh.ru", "headhunter"].includes(s)) return "hh.ru";
+      if (["geekjob", "geekjob.ru"].includes(s)) return "geekjob.ru";
+      if (["tg", "telegram", "telegraph"].includes(s)) return "telegram";
+      if (["habr", "habr.com", "career.habr.com"].includes(s)) return "habr";
+      if (["careered", "careered.ru"].includes(s)) return "careered";
+      return s;
+    });
+
+    const unique = Array.from(new Set(normalized)).sort();
+
+    if (this.cacheService) {
+      await this.cacheService.set(cacheKey, unique, 1800);
+    }
+
+    return unique;
+  }
+
+  /**
    * Поиск вакансии по внешнему ID для предотвращения дубликатов.
    * Критично для корректной работы импорта данных.
    */

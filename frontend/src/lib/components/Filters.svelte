@@ -9,7 +9,7 @@
   export let totalVacancies: number = 0;
   export let showUnvisited: boolean = false;
 // Новые пропсы для фильтра по источникам
-export let availableSources: string[] = ['hh.ru', 'geekjob.ru', 'telegram', 'habr', 'careered'];
+export let availableSources: string[] = [];
 export let selectedSources: string[] = [];
   
   // Состояние коллапса — читаем из localStorage; по умолчанию скрыто (false)

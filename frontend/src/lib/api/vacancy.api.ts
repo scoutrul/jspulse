@@ -186,6 +186,25 @@ export class VacancyApi {
   }
 
   /**
+   * Получение списка уникальных источников
+   */
+  async fetchSources(): Promise<string[]> {
+    try {
+      logger.debug(this.CONTEXT, 'Запрос источников с сервера');
+      const response = await this.httpClient.get('/api/vacancies/sources');
+      const typed = response as { success?: boolean; data?: unknown };
+      if (!typed?.success || !Array.isArray(typed.data)) {
+        logger.error(this.CONTEXT, 'Некорректный формат данных источников', response);
+        return [];
+      }
+      return (typed.data as string[]).filter(Boolean);
+    } catch (error) {
+      logger.error(this.CONTEXT, 'Ошибка при загрузке источников', error);
+      return [];
+    }
+  }
+
+  /**
  * Получение одной вакансии по её ID
  * Возвращает вакансию независимо от того, архивная она или нет
  */

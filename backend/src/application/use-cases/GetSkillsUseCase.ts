@@ -34,7 +34,15 @@ export class GetSkillsUseCase implements IUseCaseWithoutParams<GetSkillsResponse
       };
     } catch (error) {
       console.error('Error in GetSkillsUseCase:', error);
-      throw new Error('Failed to retrieve skills');
+      // Возвращаем безопасный пустой ответ вместо ошибки, чтобы UI не ломался
+      return {
+        success: true,
+        data: [],
+        meta: {
+          total: 0,
+          uniqueCount: 0
+        }
+      };
     }
   }
 }

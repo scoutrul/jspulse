@@ -17,6 +17,7 @@
   import { page } from '$app/stores';
   import { browser } from '$app/environment';
   import { PAGINATION } from '$lib/config/pagination.constants';
+  import { vacancyApi } from "$lib/api/vacancy.api";
 
   // Константы для анимаций
   const ANIMATION = {
@@ -59,6 +60,7 @@
   }
 
   let availableSkills: string[] = data.availableSkills || [];
+  let availableSources: string[] = [];
   const rawStats = (data.skillsStats || []) as Array<{ name?: string; skill?: string; count?: number }>
   let skillsStats: Array<{ name: string; count: number }> = rawStats
     .map((stat) => ({
@@ -81,6 +83,14 @@
       localStorage.setItem('jspulse:showPopularTech', showPopularTech ? '1' : '0');
     }
   }
+
+  onMount(async () => {
+    // Загружаем доступные источники с сервера
+    try {
+      const sources = await vacancyApi.fetchSources();
+      availableSources = Array.isArray(sources) ? sources : [];
+    } catch {}
+  });
 
   // Если нет статистики с сервера, создаём fallback данные
   if (skillsStats.length === 0 && availableSkills.length > 0) {
@@ -120,15 +130,13 @@
           response.vacancies.map(convertVacancy),
           response.total,
           response.totalPages,
-          response.page
+          0
         );
-        vacancyStore.setError(null);
       } else {
-        vacancyStore.setVacancies([], 0, 0, 0);
         vacancyStore.setError(response.error);
       }
-    } catch (e) {
-      vacancyStore.setError('Ошибка загрузки данных');
+    } catch (error) {
+      vacancyStore.setError('Ошибка загрузки вакансий');
     } finally {
       vacancyStore.setLoading(false);
     }
@@ -675,7 +683,7 @@
   selectedSkills={store.selectedSkills}
   showUnvisited={store.showUnvisited}
   totalVacancies={store.total}
-  availableSources={["hh.ru","geekjob.ru","telegram","habr","careered"]}
+  {availableSources}
   selectedSources={store.sources || []}
   on:change={e => handleSkillsChange(e.detail)}
   on:reset={handleReset}

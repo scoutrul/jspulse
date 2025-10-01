@@ -104,7 +104,16 @@ export class GetSkillsStatsUseCase implements IUseCaseWithoutParams<GetSkillsSta
       };
     } catch (error) {
       console.error('Error in GetSkillsStatsUseCase:', error);
-      throw new Error('Failed to retrieve skills statistics');
+      // Возвращаем безопасный пустой ответ вместо ошибки, чтобы UI не ломался
+      return {
+        success: true,
+        data: [],
+        meta: {
+          totalSkills: 0,
+          totalVacancies: 0,
+          topSkills: []
+        }
+      };
     }
   }
 }
