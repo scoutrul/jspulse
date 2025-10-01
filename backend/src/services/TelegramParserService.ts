@@ -308,7 +308,13 @@ export class TelegramParserService {
       const savedVacancy = await this.vacancyRepository.create(vacancyData);
       console.log(`✅ Saved vacancy: ${savedVacancy.title} at ${savedVacancy.company}${telegraphUrl ? ' (with Telegraph content)' : ''}`);
       return true;
-    } catch (error) {
+    } catch (error: any) {
+      // Обработка дубликатов: не считаем ошибкой, а логируем как пропуск
+      const { isMongoDuplicateError, logDuplicateSkip } = await import('../utils/db/mongoDuplicate.js');
+      if (isMongoDuplicateError(error)) {
+        logDuplicateSkip({ entity: 'vacancy', externalId: sourceId, title: data.title, source: 'telegram' });
+        return false;
+      }
       console.error('❌ Error saving vacancy:', error);
       return false;
     }

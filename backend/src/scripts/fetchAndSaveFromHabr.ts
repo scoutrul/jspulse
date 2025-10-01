@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { HabrClient } from "../utils/http/adapters/HabrClient.js";
 import { containsBackendStopWords } from "../config/backendStopWords.js";
 import { normalizeSkill } from "../utils/transformations.js";
+import { EarlyExitStrategy } from "../utils/parsing/earlyExitStrategy.js";
 
 dotenv.config();
 
@@ -94,12 +95,10 @@ async function fetchAndSaveFromHabr() {
     const Vacancy = await getVacancyModel();
     const client = new HabrClient({ logging: false });
 
-    let totalReceived = 0;
     let totalNew = 0;
     let totalUpdated = 0;
     let totalSkipped = 0;
-
-    const collectedLinks: string[] = [];
+    let totalReceived = 0;
 
     for (let page = 1; page <= MAX_PAGES; page++) {
       const params = { ...BASE_PARAMS, page } as Record<string, string | number>;
@@ -114,22 +113,62 @@ async function fetchAndSaveFromHabr() {
         break;
       }
 
+      // Собираем ссылки на вакансии для текущей страницы
+      const pageLinks: string[] = [];
       cards.each((_, el) => {
         const linkEl = $(el).find("a[href*='/vacancies/']").first();
         const href = linkEl.attr("href");
         if (href) {
           const abs = href.startsWith("http") ? href : `https://career.habr.com${href}`;
-          collectedLinks.push(abs);
+          pageLinks.push(abs);
         }
       });
 
-      console.log(`🔗 Собрано ссылок: ${collectedLinks.length} (страница ${page})`);
+      console.log(`🔗 Найдено ссылок на странице ${page}: ${pageLinks.length}`);
+
+      // Используем стратегию раннего выхода для обработки ссылок на странице
+      const result = await EarlyExitStrategy.processPage(
+        pageLinks,
+        // Функция проверки существования вакансии
+        async (vacancyUrl) => {
+          const sourceIdMatch = vacancyUrl.match(/\/vacancies\/([^\/?#]+)/i);
+          const sourceId = sourceIdMatch ? sourceIdMatch[1] : vacancyUrl;
+          const existing = await Vacancy.findOne({
+            $or: [
+              { sourceUrl: vacancyUrl },
+              { externalId: `${SOURCE}:${sourceId}` }
+            ]
+          });
+          return !!existing;
+        },
+        // Функция обработки новой вакансии
+        async (vacancyUrl) => {
+          await processVacancy(vacancyUrl);
+        },
+        {
+          minNewItems: 1, // Минимум 1 новая вакансия для продолжения
+          maxExistingRatio: 1.0, // Максимум 100% существующих вакансий
+          verbose: true
+        }
+      );
+
+      totalNew += result.newCount;
+      totalUpdated += result.existingCount;
+      totalSkipped += result.totalCount - result.newCount - result.existingCount;
+
+      console.log(`📄 Страница ${page} итог: ✨${result.newCount} новых, 🔄${result.existingCount} обновлено, ❌${result.totalCount - result.newCount - result.existingCount} пропущено`);
+
+      // Если все вакансии на странице уже существуют, прекращаем парсинг
+      if (!result.shouldContinue) {
+        console.log(`🛑 Остановка парсинга: ${result.stopReason}`);
+        break;
+      }
+
       await new Promise((r) => setTimeout(r, 500));
     }
 
-    const uniqueLinks = Array.from(new Set(collectedLinks));
-
-    for (const vacancyUrl of uniqueLinks) {
+    // Функция обработки отдельной вакансии
+    async function processVacancy(vacancyUrl: string): Promise<void> {
       try {
         const { html } = await client.getVacancyPage(vacancyUrl);
         const $ = cheerio.load(html);
@@ -196,31 +235,19 @@ async function fetchAndSaveFromHabr() {
 
         // Фильтрация по стоп-словам бэкенда
         if (containsBackendStopWords((title + " " + preview).toLowerCase())) {
-          totalSkipped++;
           console.log(`  🚫 ПРОПУЩЕНА (стоп-слова): "${title}"`);
-          continue;
+          throw new Error('Вакансия содержит стоп-слова');
         }
 
-        const existing = await Vacancy.findOne({ sourceUrl: vacancyUrl });
-        if (!existing) {
-          await Vacancy.create(transformed);
-          totalNew++;
-          console.log(`  ✨ НОВАЯ: "${title}" (${vacancyUrl})`);
-        } else {
-          const res = await Vacancy.updateOne({ _id: existing._id }, { ...transformed, updatedAt: new Date() });
-          if (res.modifiedCount > 0) {
-            totalUpdated++;
-            console.log(`  🔄 ОБНОВЛЕНА: "${title}" (${vacancyUrl})`);
-          } else {
-            console.log(`  ⚪ БЕЗ ИЗМЕНЕНИЙ: "${title}" (${vacancyUrl})`);
-          }
-        }
-
+        // Создаем новую вакансию
+        await Vacancy.create(transformed);
+        console.log(`  ✨ НОВАЯ: "${title}" (${vacancyUrl})`);
         totalReceived++;
+
         await new Promise((r) => setTimeout(r, 300));
       } catch (err) {
-        totalSkipped++;
         console.error("❌ Ошибка парсинга вакансии:", vacancyUrl, err);
+        throw err;
       }
     }
 

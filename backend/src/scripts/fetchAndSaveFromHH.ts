@@ -3,6 +3,7 @@ import ky, { HTTPError } from "ky";
 import { transformHHVacancyToIVacancy, transformHHVacancyWithFullDescription } from "../utils/transformations.js";
 import { normalizeSkill } from "../utils/transformations.js";
 import { containsBackendStopWords } from "../config/backendStopWords.js";
+import { EarlyExitStrategy } from "../utils/parsing/earlyExitStrategy.js";
 import type { HHResponseRaw } from "@jspulse/shared";
 import dotenv from "dotenv";
 dotenv.config();
@@ -136,103 +137,111 @@ async function fetchAndSaveHHVacancies() {
           break;
         }
 
-        let pageNew = 0;
-        let pageUpdated = 0;
-        let pageSkipped = 0;
+        // Используем стратегию раннего выхода для обработки страницы
+        const result = await EarlyExitStrategy.processPage(
+          data.items,
+          // Функция проверки существования вакансии
+          async (hhVacancy) => {
+            const transformedData = transformHHVacancyToIVacancy(hhVacancy);
+            if (!transformedData) return true; // Считаем ошибку трансформации как существующую
 
-        for (const hhVacancy of data.items) {
-          let transformedData;
+            const existingVacancy = await Vacancy.findOne({
+              externalId: transformedData.externalId,
+              source: SOURCE_HH,
+            });
+            return !!existingVacancy;
+          },
+          // Функция обработки новой вакансии
+          async (hhVacancy) => {
+            let transformedData;
 
-          if (FETCH_FULL_DESCRIPTIONS) {
-            // Используем расширенную трансформацию с получением полного описания
-            transformedData = await transformHHVacancyWithFullDescription(hhVacancy, true);
-            // Добавляем небольшую задержку между запросами к деталям вакансий
-            await new Promise(resolve => setTimeout(resolve, 200));
-          } else {
-            // Используем базовую трансформацию
-            transformedData = transformHHVacancyToIVacancy(hhVacancy);
-          }
-
-          if (!transformedData) {
-            pageSkipped++;
-            continue;
-          }
-
-          // Проверяем стоп-слова для технологий бэкенда (кроме Node.js)
-          const vacancyText = `${transformedData.title} ${transformedData.description || ''}`.toLowerCase();
-          if (containsBackendStopWords(vacancyText)) {
-            pageSkipped++;
-            console.log(`  🚫 ПРОПУЩЕНА (стоп-слова): "${transformedData.title}"`);
-            continue;
-          }
-
-          // Проверяем, что есть skills для фильтрации
-          if (
-            !transformedData.skills ||
-            !Array.isArray(transformedData.skills) ||
-            transformedData.skills.length === 0
-          ) {
-            // Если навыков нет, добавляем хотя бы один базовый навык из заголовка вакансии
-            const titleWords = transformedData.title.toLowerCase().split(/\W+/);
-            const possibleSkills = [
-              "javascript", "js", "typescript", "ts",
-              "react", "reactjs", "react.js", "nextjs", "next.js",
-              "redux", "redux-toolkit", "redux toolkit",
-              "vue", "vuejs", "vue.js", "vuex", "pinia", "nuxt", "nuxtjs", "nuxt.js",
-              "angular", "rxjs",
-              "svelte", "sveltekit",
-              "webpack", "vite", "babel", "eslint", "prettier",
-              "jest", "vitest", "testing-library", "testing library", "cypress", "playwright", "storybook",
-              "tailwind", "tailwindcss", "scss", "sass", "styled-components", "styled components", "emotion",
-              "graphql", "apollo",
-              "three.js", "threejs", "d3", "chart.js", "chartjs", "webgl", "pwa", "service worker",
-              "html", "html5", "css", "css3",
-              "frontend", "backend"
-            ];
-            const detectedSkills = possibleSkills.filter(
-              (skill) =>
-                titleWords.includes(skill) ||
-                (transformedData.description &&
-                  transformedData.description.toLowerCase().includes(skill))
-            ).map(normalizeSkill);
-
-            transformedData.skills = detectedSkills.length > 0 ? detectedSkills : ["javascript"]; // Дефолтный навык, если ничего не найдено
-          }
-
-          const existingVacancy = await Vacancy.findOne({
-            externalId: transformedData.externalId,
-            source: SOURCE_HH,
-          });
-
-          if (!existingVacancy) {
-            await Vacancy.create(transformedData);
-            pageNew++;
-            console.log(`  ✨ НОВАЯ: "${transformedData.title}" (ID: ${transformedData.externalId})`);
-          } else {
-            // Обновляем существующую вакансию с улучшенным логированием
-            const updateResult = await Vacancy.updateOne(
-              { _id: existingVacancy._id },
-              {
-                ...transformedData,
-                updatedAt: new Date() // Добавляем timestamp обновления
+            try {
+              if (FETCH_FULL_DESCRIPTIONS) {
+                // Используем расширенную трансформацию с получением полного описания
+                transformedData = await transformHHVacancyWithFullDescription(hhVacancy, true);
+                // Добавляем небольшую задержку между запросами к деталям вакансий (джиттер)
+                const jitter = 200 + Math.floor(Math.random() * 400);
+                await new Promise(resolve => setTimeout(resolve, jitter));
+              } else {
+                // Используем базовую трансформацию
+                transformedData = transformHHVacancyToIVacancy(hhVacancy);
               }
-            );
-
-            if (updateResult.modifiedCount > 0) {
-              pageUpdated++;
-              console.log(`  🔄 ОБНОВЛЕНА: "${transformedData.title}" (ID: ${transformedData.externalId})`);
-            } else {
-              // Данные не изменились
-              console.log(`  ⚪ БЕЗ ИЗМЕНЕНИЙ: "${transformedData.title}" (ID: ${transformedData.externalId})`);
+            } catch (err: any) {
+              const msg = String(err?.message || err || '');
+              console.warn(`⏳ HH detail fetch failed, fallback to basic transform: ${msg}`);
+              // Fallback на базовую трансформацию без полного описания
+              transformedData = transformHHVacancyToIVacancy(hhVacancy);
+              // Бэк-офф перед следующими запросами (джиттер)
+              const backoff = 600 + Math.floor(Math.random() * 900);
+              await new Promise(r => setTimeout(r, backoff));
             }
+
+            if (!transformedData) {
+              throw new Error('Ошибка трансформации вакансии');
+            }
+
+            // Проверяем стоп-слова для технологий бэкенда (кроме Node.js)
+            const vacancyText = `${transformedData.title} ${transformedData.description || ''}`.toLowerCase();
+            if (containsBackendStopWords(vacancyText)) {
+              console.log(`  🚫 ПРОПУЩЕНА (стоп-слова): "${transformedData.title}"`);
+              throw new Error('Вакансия содержит стоп-слова');
+            }
+
+            // Проверяем, что есть skills для фильтрации
+            if (
+              !transformedData.skills ||
+              !Array.isArray(transformedData.skills) ||
+              transformedData.skills.length === 0
+            ) {
+              // Если навыков нет, добавляем хотя бы один базовый навык из заголовка вакансии
+              const titleWords = transformedData.title.toLowerCase().split(/\W+/);
+              const possibleSkills = [
+                "javascript", "js", "typescript", "ts",
+                "react", "reactjs", "react.js", "nextjs", "next.js",
+                "redux", "redux-toolkit", "redux toolkit",
+                "vue", "vuejs", "vue.js", "vuex", "pinia", "nuxt", "nuxtjs", "nuxt.js",
+                "angular", "rxjs",
+                "svelte", "sveltekit",
+                "webpack", "vite", "babel", "eslint", "prettier",
+                "jest", "vitest", "testing-library", "testing library", "cypress", "playwright", "storybook",
+                "tailwind", "tailwindcss", "scss", "sass", "styled-components", "styled components", "emotion",
+                "graphql", "apollo",
+                "three.js", "threejs", "d3", "chart.js", "chartjs", "webgl", "pwa", "service worker",
+                "html", "html5", "css", "css3",
+                "frontend", "backend"
+              ];
+              const detectedSkills = possibleSkills.filter(
+                (skill) =>
+                  titleWords.includes(skill) ||
+                  (transformedData.description &&
+                    transformedData.description.toLowerCase().includes(skill))
+              ).map(normalizeSkill);
+
+              transformedData.skills = detectedSkills.length > 0 ? detectedSkills : ["javascript"]; // Дефолтный навык, если ничего не найдено
+            }
+
+            // Создаем новую вакансию
+            await Vacancy.create(transformedData);
+            console.log(`  ✨ НОВАЯ: "${transformedData.title}" (ID: ${transformedData.externalId})`);
+          },
+          {
+            minNewItems: 1, // Минимум 1 новая вакансия для продолжения
+            maxExistingRatio: 1.0, // Максимум 100% существующих вакансий
+            verbose: true
           }
+        );
+
+        totalNew += result.newCount;
+        totalUpdated += result.existingCount; // Существующие считаем как обновленные
+        totalSkipped += result.totalCount - result.newCount - result.existingCount;
+
+        console.log(`📄 Страница ${page + 1} итог: ✨${result.newCount} новых, 🔄${result.existingCount} обновлено, ❌${result.totalCount - result.newCount - result.existingCount} пропущено`);
+
+        // Если все вакансии на странице уже существуют, прекращаем парсинг
+        if (!result.shouldContinue) {
+          console.log(`🛑 Остановка парсинга: ${result.stopReason}`);
+          break;
         }
-
-        totalNew += pageNew;
-        totalUpdated += pageUpdated;
-        totalSkipped += pageSkipped;
-
-        console.log(`📄 Страница ${page + 1} итог: ✨${pageNew} новых, 🔄${pageUpdated} обновлено, ⚪${receivedCount - pageNew - pageUpdated - pageSkipped} без изменений, ❌${pageSkipped} пропущено`);
 
         // Добавляем небольшую задержку между запросами для избежания rate limiting
         await new Promise(resolve => setTimeout(resolve, 500));

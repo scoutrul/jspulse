@@ -51,9 +51,15 @@ export class TelegramClient {
     try {
       console.log('📱 Connecting to Telegram...');
 
-      // Получаем session string
-      const sessionString = await this.sessionManager.getSessionString();
-      const session = new StringSession(sessionString || '');
+      // Получаем session string: сначала из менеджера (файл), затем из env/config
+      const fileSession = await this.sessionManager.getSessionString();
+      const sessionString = (fileSession && fileSession.trim().length > 0)
+        ? fileSession
+        : (this.config.sessionString || '');
+      if (!sessionString || sessionString.trim().length === 0) {
+        throw new Error('Session string is empty. Provide TELEGRAM_SESSION or TELEGRAM_SESSION_STRING');
+      }
+      const session = new StringSession(sessionString);
 
       // Создаем клиент
       this.client = new MTProtoClient(session, this.config.apiId, this.config.apiHash, {

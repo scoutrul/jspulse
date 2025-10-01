@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import { CareeredClient } from "../utils/http/adapters/CareeredClient.js";
 import { containsBackendStopWords } from "../config/backendStopWords.js";
 import { normalizeSkill } from "../utils/transformations.js";
+import { EarlyExitStrategy } from "../utils/parsing/earlyExitStrategy.js";
 
 dotenv.config();
 
@@ -160,8 +161,6 @@ async function fetchAndSaveFromCareered() {
     let totalUpdated = 0;
     let totalSkipped = 0;
 
-    const collectedLinks: string[] = [];
-
     // Собираем ссылки на вакансии со всех страниц
     for (let page = 1; page <= MAX_PAGES; page++) {
       console.log(`📄 Страница списка ${page}/${MAX_PAGES}`);
@@ -177,8 +176,43 @@ async function fetchAndSaveFromCareered() {
           break;
         }
 
-        collectedLinks.push(...listResult.jobLinks);
-        console.log(`🔗 Всего собрано ссылок: ${collectedLinks.length} (страница ${page})`);
+        // Используем стратегию раннего выхода для обработки ссылок на странице
+        const result = await EarlyExitStrategy.processPage(
+          listResult.jobLinks,
+          // Функция проверки существования вакансии
+          async (jobUrl) => {
+            const sourceIdMatch = jobUrl.match(/\/jobs\/([^\/?#]+)/i);
+            const sourceId = sourceIdMatch ? sourceIdMatch[1] : jobUrl;
+            const existing = await Vacancy.findOne({
+              $or: [
+                { sourceUrl: jobUrl },
+                { externalId: `${SOURCE}:${sourceId}` }
+              ]
+            });
+            return !!existing;
+          },
+          // Функция обработки новой вакансии
+          async (jobUrl) => {
+            await processVacancy(jobUrl);
+          },
+          {
+            minNewItems: 1, // Минимум 1 новая вакансия для продолжения
+            maxExistingRatio: 1.0, // Максимум 100% существующих вакансий
+            verbose: true
+          }
+        );
+
+        totalNew += result.newCount;
+        totalUpdated += result.existingCount;
+        totalSkipped += result.totalCount - result.newCount - result.existingCount;
+
+        console.log(`📄 Страница ${page} итог: ✨${result.newCount} новых, 🔄${result.existingCount} обновлено, ❌${result.totalCount - result.newCount - result.existingCount} пропущено`);
+
+        // Если все вакансии на странице уже существуют, прекращаем парсинг
+        if (!result.shouldContinue) {
+          console.log(`🛑 Остановка парсинга: ${result.stopReason}`);
+          break;
+        }
 
         await new Promise((r) => setTimeout(r, 500));
       } catch (error) {
@@ -187,20 +221,17 @@ async function fetchAndSaveFromCareered() {
       }
     }
 
-    const uniqueLinks = Array.from(new Set(collectedLinks));
-    console.log(`📊 Всего уникальных вакансий: ${uniqueLinks.length}`);
-    console.log(`🔗 Собранные ссылки:`, collectedLinks);
-    console.log(`🔗 Уникальные ссылки:`, uniqueLinks);
-
-    // Парсим каждую вакансию
-    for (const jobUrl of uniqueLinks) {
+    // Функция обработки отдельной вакансии
+    async function processVacancy(jobUrl: string): Promise<void> {
       try {
+        if (!careeredClient) {
+          throw new Error('CareeredClient не инициализирован');
+        }
         const jobResult = await careeredClient.getVacancyPage(jobUrl);
 
         if (!jobResult.jobDetail) {
-          totalSkipped++;
           console.log(`  ⚠️ Не удалось извлечь детали: ${jobUrl}`);
-          continue;
+          throw new Error('Не удалось извлечь детали вакансии');
         }
 
         const { title, company, location, description, fullDescription, salary, isRemote, publishedAt } = jobResult.jobDetail;
@@ -247,31 +278,19 @@ async function fetchAndSaveFromCareered() {
 
         // Фильтрация по стоп-словам бэкенда
         if (containsBackendStopWords((title + " " + preview).toLowerCase())) {
-          totalSkipped++;
           console.log(`  🚫 ПРОПУЩЕНА (стоп-слова): "${title}"`);
-          continue;
+          throw new Error('Вакансия содержит стоп-слова');
         }
 
-        const existing = await Vacancy.findOne({ sourceUrl: jobUrl });
-        if (!existing) {
-          await Vacancy.create(transformed);
-          totalNew++;
-          console.log(`  ✨ НОВАЯ: "${title}" (${jobUrl})`);
-        } else {
-          const res = await Vacancy.updateOne({ _id: existing._id }, { ...transformed, updatedAt: new Date() });
-          if (res.modifiedCount > 0) {
-            totalUpdated++;
-            console.log(`  🔄 ОБНОВЛЕНА: "${title}" (${jobUrl})`);
-          } else {
-            console.log(`  ⚪ БЕЗ ИЗМЕНЕНИЙ: "${title}" (${jobUrl})`);
-          }
-        }
-
+        // Создаем новую вакансию
+        await Vacancy.create(transformed);
+        console.log(`  ✨ НОВАЯ: "${title}" (${jobUrl})`);
         totalReceived++;
+
         await new Promise((r) => setTimeout(r, 300));
       } catch (err) {
-        totalSkipped++;
         console.error("❌ Ошибка парсинга вакансии:", jobUrl, err);
+        throw err;
       }
     }
 
