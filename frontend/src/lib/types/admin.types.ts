@@ -23,21 +23,9 @@ export interface SystemStats {
     unique: number;
     total: number;
   };
-  cache: {
-    hitRate: number;
-    size: number;
-    totalRequests: number;
-  };
   scheduler: {
     status: string;
     lastRun: string;
-  };
-  system: {
-    uptime: number;
-    memoryUsage: {
-      heapUsed: number;
-      heapTotal: number;
-    };
   };
 }
 
