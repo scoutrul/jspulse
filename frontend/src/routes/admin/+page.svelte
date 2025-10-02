@@ -1,14 +1,12 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 	import SystemStats from '$lib/components/admin/SystemStats.svelte';
-	import AdminActions from '$lib/components/admin/AdminActions.svelte';
+	import ParsingActions from '$lib/components/admin/ParsingActions.svelte';
 	import ToastNotifications from '$lib/components/admin/ToastNotifications.svelte';
 	import ConfirmDialog from '$lib/components/admin/ConfirmDialog.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
 	import type { SystemStats as SystemStatsType } from '$lib/types/admin.types';
-
-	// API базовый URL
-	const API_BASE = 'http://localhost:3001/api/admin';
+	import { apiClient } from '$lib/api/http.client';
 
 	// Состояние приложения
 	let loading = true;
@@ -28,8 +26,8 @@
 	// Загрузка системной статистики
 	async function loadSystemStats() {
 		try {
-			const response = await fetch(`${API_BASE}/stats`);
-			const result = await response.json();
+			const response = await apiClient.get('/api/admin/stats');
+			const result: any = await response.json();
 			
 			if (result.success) {
 				stats = result.data;
@@ -99,13 +97,9 @@
 				<SystemStats {stats} {loading} />
 			</div>
 
-			<!-- Правая колонка: Административные действия -->
+			<!-- Правая колонка: Парсинг источников -->
 			<div class="space-y-6">
-				<Heading level={2} size="2xl" weight="bold" variant="primary" icon="🔄" class="mb-4">
-					Административные действия
-				</Heading>
-				
-				<AdminActions 
+				<ParsingActions 
 					on:dataUpdated={handleDataUpdated}
 					on:confirmAction={handleConfirmAction}
 				/>

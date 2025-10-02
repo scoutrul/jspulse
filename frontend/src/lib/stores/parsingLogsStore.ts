@@ -21,6 +21,17 @@ export function addParsingLog(message: string, type: ParsingLog['type'] = 'info'
   return id;
 }
 
+// Set полная замена логов из backend
+export function setParsingLogs(nextLogs: Array<{ id: string; message: string; type: ParsingLog['type']; timestamp: string }>) {
+  const mapped: ParsingLog[] = nextLogs.map((l) => ({
+    id: l.id,
+    message: l.message,
+    type: l.type,
+    timestamp: new Date(l.timestamp).toLocaleTimeString('ru')
+  }));
+  parsingLogs.set(mapped);
+}
+
 // Функция для очистки логов
 export function clearParsingLogs() {
   parsingLogs.set([]);

@@ -59,9 +59,9 @@ const jobs = [
   { id: 'hh', name: 'HeadHunter Parser', schedule: '2-59/4 * * * *', run: () => runNode('node', ['backend/dist/scripts/fetchAndSaveFromHH.js']) },
 
   // Telegram parse channel first (test: every 4m)
-  // { id: 'telegram-parse', name: 'Telegram Channel Parser', schedule: '*/4 * * * *', run: () => runNode('node', ['backend/dist/scripts/parseTelegramUlbi.js']) },
+  { id: 'telegram-parse', name: 'Telegram Channel Parser', schedule: '*/4 * * * *', run: () => runNode('node', ['backend/dist/scripts/parseTelegramUlbi.js']) },
   // // Then enrich after 2m offset
-  // { id: 'telegram-enrich', name: 'Telegram Enrich/Incremental', schedule: '2-59/4 * * * *', run: () => runNode('node', ['backend/dist/scripts/enrichTelegramTelegraph.js']) }
+  { id: 'telegram-enrich', name: 'Telegram Enrich/Incremental', schedule: '2-59/4 * * * *', run: () => runNode('node', ['backend/dist/scripts/enrichTelegramTelegraph.js']) }
 ];
 
 // Register cron tasks
