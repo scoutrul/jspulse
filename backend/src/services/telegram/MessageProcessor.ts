@@ -29,7 +29,7 @@ export class MessageProcessor {
       companyPatterns: [TELEGRAM_CONFIG.PARSING.COMPANY_REGEX],
       locationPatterns: [TELEGRAM_CONFIG.PARSING.LOCATION_REGEX],
       skillsPatterns: [TELEGRAM_CONFIG.PARSING.SKILLS_REGEX],
-      enabled: TELEGRAM_CONFIG.PARSER_ENABLED,
+      enabled: true,
       retryAttempts: TELEGRAM_CONFIG.RETRY_ATTEMPTS,
       timeout: TELEGRAM_CONFIG.TIMEOUT
     };

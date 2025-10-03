@@ -140,11 +140,6 @@ export class TelegramParserService {
   }> {
     console.log('🚀 Starting Telegram parsing for all channels...');
 
-    if (!TELEGRAM_CONFIG.PARSER_ENABLED) {
-      console.log('⚠️ Telegram parser is disabled in configuration');
-      return { totalProcessed: 0, totalSaved: 0, channels: [] };
-    }
-
     const results = {
       totalProcessed: 0,
       totalSaved: 0,

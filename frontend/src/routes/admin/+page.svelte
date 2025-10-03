@@ -2,6 +2,7 @@
 	import { onMount } from 'svelte';
 	import SystemStats from '$lib/components/admin/SystemStats.svelte';
 	import ParsingActions from '$lib/components/admin/ParsingActions.svelte';
+	import CronControls from '$lib/components/admin/CronControls.svelte';
 	import ToastNotifications from '$lib/components/admin/ToastNotifications.svelte';
 	import ConfirmDialog from '$lib/components/admin/ConfirmDialog.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
@@ -97,8 +98,9 @@
 				<SystemStats {stats} {loading} />
 			</div>
 
-			<!-- Правая колонка: Парсинг источников -->
+			<!-- Правая колонка: Управление -->
 			<div class="space-y-6">
+				<CronControls />
 				<ParsingActions 
 					on:dataUpdated={handleDataUpdated}
 					on:confirmAction={handleConfirmAction}

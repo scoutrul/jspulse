@@ -32,7 +32,6 @@ export const TELEGRAM_CONFIG = {
   ],
 
   // Настройки парсера
-  PARSER_ENABLED: process.env.TELEGRAM_PARSER_ENABLED === 'true',
   PARSE_SCHEDULE: process.env.TELEGRAM_PARSE_SCHEDULE || '0 */6 * * *',
   MAX_MESSAGES: parseInt(process.env.TELEGRAM_MAX_MESSAGES || '100', 10),
   REQUEST_DELAY: parseInt(process.env.TELEGRAM_REQUEST_DELAY || '1000', 10),
@@ -83,7 +82,6 @@ export function logTelegramConfig(): void {
   console.log(`  - API Hash: ${TELEGRAM_CONFIG.API_HASH ? '***' : 'NOT SET'}`);
   console.log(`  - Session: ${TELEGRAM_CONFIG.SESSION_STRING ? 'SET' : 'NOT SET'}`);
   console.log(`  - Channels: ${TELEGRAM_CONFIG.CHANNELS.join(', ')}`);
-  console.log(`  - Parser Enabled: ${TELEGRAM_CONFIG.PARSER_ENABLED}`);
   console.log(`  - Schedule: ${TELEGRAM_CONFIG.PARSE_SCHEDULE}`);
   console.log(`  - Max Messages: ${TELEGRAM_CONFIG.MAX_MESSAGES}`);
   console.log(`  - Request Delay: ${TELEGRAM_CONFIG.REQUEST_DELAY}ms`);
@@ -94,7 +92,6 @@ export const {
   API_HASH: TELEGRAM_API_HASH,
   SESSION_STRING: TELEGRAM_SESSION_STRING,
   CHANNELS: TELEGRAM_CHANNELS,
-  PARSER_ENABLED: TELEGRAM_PARSER_ENABLED,
   PARSE_SCHEDULE: TELEGRAM_PARSE_SCHEDULE,
   MAX_MESSAGES: TELEGRAM_MAX_MESSAGES,
   REQUEST_DELAY: TELEGRAM_REQUEST_DELAY

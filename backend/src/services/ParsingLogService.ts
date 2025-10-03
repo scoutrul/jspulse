@@ -1,6 +1,6 @@
 import { EventEmitter } from 'events';
 
-export type ParsingSource = 'careered-api' | 'habr' | 'hh' | 'telegram-parse' | 'telegram-enrich';
+export type ParsingSource = 'careered-api' | 'habr' | 'hh' | 'telegram-parse' | 'telegram-enrich' | 'cron';
 
 export interface ParsingLogEntry {
   id: string;

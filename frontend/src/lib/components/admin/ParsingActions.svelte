@@ -21,6 +21,7 @@
 	let currentSource: string | null = null;
 	let logContainer: HTMLDivElement | null = null;
 	let autoScroll = true;
+	let completionNotified = false;
 
 	// Подписываемся на логи
 	$: logs = $parsingLogs;
@@ -47,22 +48,36 @@
 
 	// Определяем парсеры на основе jobs из cron-runner.js
 	const parsers = [
-		{ id: 'careered-api', name: 'Careered API Parser', icon: '🚀', variant: 'primary' as const, description: 'Парсинг вакансий с Careered.io', schedule: 'каждые 4 минуты' },
-		{ id: 'habr', name: 'Habr Parser', icon: '💼', variant: 'secondary' as const, description: 'Парсинг вакансий с Habr Career', schedule: 'каждые 4 минуты' },
-		{ id: 'hh', name: 'HeadHunter Parser', icon: '🔍', variant: 'primary' as const, description: 'Парсинг вакансий с HeadHunter', schedule: 'каждые 4 минуты' },
-		{ id: 'telegram-parse', name: 'Telegram Channel Parser', icon: '📱', variant: 'secondary' as const, description: 'Парсинг каналов Telegram', schedule: 'каждые 4 минуты' },
-		{ id: 'telegram-enrich', name: 'Telegram Enrich/Incremental', icon: '📈', variant: 'secondary' as const, description: 'Обогащение данных Telegram', schedule: 'каждые 4 минуты' }
+		{ id: 'careered-api', name: 'Careered API Parser', icon: '🚀', variant: 'primary' as const, description: 'Парсинг вакансий с Careered.io' },
+		{ id: 'habr', name: 'Habr Parser', icon: '💼', variant: 'secondary' as const, description: 'Парсинг вакансий с Habr Career' },
+		{ id: 'hh', name: 'HeadHunter Parser', icon: '🔍', variant: 'primary' as const, description: 'Парсинг вакансий с HeadHunter' },
+		{ id: 'telegram-parse', name: 'Telegram Channel Parser', icon: '📱', variant: 'secondary' as const, description: 'Парсинг каналов Telegram' },
+		{ id: 'telegram-enrich', name: 'Telegram Enrich/Incremental', icon: '📈', variant: 'secondary' as const, description: 'Обогащение данных Telegram' }
 	];
 
 	function startPolling(source: string) {
 		stopPolling();
 		currentSource = source;
+		completionNotified = false;
 		pollingTimer = setInterval(async () => {
 			try {
 				const resp = await fetch(`${API_BASE}/parsing-logs?source=${encodeURIComponent(source)}`);
 				const json = await resp.json();
 				if (json.success && Array.isArray(json.data)) {
 					setParsingLogs(json.data);
+					// Остановка при завершении парсера
+					const last = json.data[json.data.length - 1];
+					if (last && typeof last.message === 'string') {
+						const msg: string = last.message;
+						if (msg.includes('parser finished successfully') || msg.includes('parser exited with code')) {
+							stopPolling();
+							currentSource = null;
+							if (!completionNotified) {
+								completionNotified = true;
+								dispatch('dataUpdated');
+							}
+						}
+					}
 				}
 			} catch (e) {
 				// ignore polling errors
@@ -75,6 +90,10 @@
 			clearInterval(pollingTimer);
 			pollingTimer = null;
 		}
+		// Сбрасываем состояние парсинга для всех парсеров
+		Object.keys(parsingStates).forEach(key => {
+			parsingStates[key] = false;
+		});
 	}
 
 	onDestroy(() => {
@@ -111,10 +130,7 @@
 			addParsingLog(`❌ ${errorMsg}`, 'error');
 			parsingStates[parser.id] = false;
 		} finally {
-			// Завершение состояния оставим на закрытие процесса по логам
-			setTimeout(() => {
-				parsingStates[parser.id] = false;
-			}, 10000);
+			// Состояние будет сброшено при завершении парсинга через stopPolling
 		}
 	}
 
@@ -148,7 +164,7 @@
 				variant={parser.variant}
 				icon={parser.icon}
 				text={parser.name}
-				description={`${parser.description} (${parser.schedule})`}
+				description={`${parser.description}`}
 				disabled={parsingStates[parser.id]}
 			/>
 		{/each}
@@ -165,12 +181,9 @@
 					<button class="px-2 py-1 rounded border" on:click={() => (autoScroll = !autoScroll)}>
 						Автоскролл: {autoScroll ? 'Вкл' : 'Выкл'}
 					</button>
-					<button class="px-2 py-1 rounded border" on:click={scrollToBottom}>
-						Вниз
-					</button>
 				</div>
 			</div>
-			<div class="space-y-2 max-h-40 overflow-y-auto" bind:this={logContainer} on:scroll={handleLogsScroll}>
+			<div class="space-y-2 overflow-y-auto" bind:this={logContainer} on:scroll={handleLogsScroll}>
 				{#each logs as log (log.id)}
 					<div class="text-xs p-2 rounded font-mono {getLogClasses(log.type)}">
 						<span class="text-muted">{log.timestamp}</span>
