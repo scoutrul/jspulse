@@ -8,4 +8,4 @@ export const MONGO_URI =
     ? process.env.MONGO_URI_LOCALHOST || process.env.MONGO_URI
     : process.env.MONGO_URI;
 
-export const HH_API_BASE_URL = process.env.HH_API_BASE_URL;
+export const HH_API_BASE_URL = process.env.HH_API_BASE_URL || "https://api.hh.ru";

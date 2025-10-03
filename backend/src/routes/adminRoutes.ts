@@ -220,21 +220,126 @@ router.post('/parse-habr', async (req: Request, res: Response) => {
 });
 
 router.post('/parse-hh', async (req: Request, res: Response) => {
-  req.params.source = 'hh' as ParsingSource;
-  // @ts-ignore
-  return router.handle(req, res, () => { });
+  try {
+    const source = 'hh' as ParsingSource;
+    const resolved = resolveParserCommand(source);
+    if (!resolved) {
+      const msg = `Parser script not found for '${source}'. Ensure backend is built and file exists in backend/dist/scripts/fetchAndSaveFromHH.js.`;
+      parsingLogService.addLog(source, msg, 'error');
+      res.status(404).json({ success: false, error: { code: 404, message: msg } });
+      return;
+    }
+
+    const { cmd, args, label, scriptPath } = resolved;
+    parsingLogService.addLog(source, `Starting ${label} parser... (${scriptPath})`, 'info');
+
+    const child = spawn(cmd, args, { cwd: path.resolve(__dirnameResolved, '..', '..') });
+
+    child.stdout.on('data', (data: Buffer) => {
+      const texts = (data.toString().split(/\r?\n/)).filter(Boolean).map(s => s.trim()).slice(0, 5);
+      texts.forEach((t) => t && parsingLogService.addLog(source, t, 'info'));
+    });
+    child.stderr.on('data', (data: Buffer) => {
+      const texts = (data.toString().split(/\r?\n/)).filter(Boolean).map(s => s.replace(/\s*\(file:\/\/[^)]+\)/g, '').split(' at ')[0].trim()).slice(0, 5);
+      texts.forEach((t) => t && parsingLogService.addLog(source, t, 'error'));
+    });
+    child.on('error', (err) => {
+      parsingLogService.addLog(source, `Failed to start ${label} parser: ${err.message}`, 'error');
+    });
+    child.on('close', (code) => {
+      if (code === 0) {
+        parsingLogService.addLog(source, `${label} parser finished successfully`, 'success');
+      } else {
+        parsingLogService.addLog(source, `${label} parser exited with code ${code}`, 'error');
+      }
+    });
+
+    res.json({ success: true, data: { started: true, pid: child.pid, script: scriptPath } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 500, message: error?.message || 'Failed to start parser' } });
+  }
 });
 
 router.post('/parse-telegram', async (req: Request, res: Response) => {
-  req.params.source = 'telegram-parse' as ParsingSource;
-  // @ts-ignore
-  return router.handle(req, res, () => { });
+  try {
+    const source = 'telegram-parse' as ParsingSource;
+    const resolved = resolveParserCommand(source);
+    if (!resolved) {
+      const msg = `Parser script not found for '${source}'. Ensure backend is built and file exists in backend/dist/scripts/parseTelegramUlbi.js.`;
+      parsingLogService.addLog(source, msg, 'error');
+      res.status(404).json({ success: false, error: { code: 404, message: msg } });
+      return;
+    }
+
+    const { cmd, args, label, scriptPath } = resolved;
+    parsingLogService.addLog(source, `Starting ${label} parser... (${scriptPath})`, 'info');
+
+    const child = spawn(cmd, args, { cwd: path.resolve(__dirnameResolved, '..', '..') });
+
+    child.stdout.on('data', (data: Buffer) => {
+      const texts = (data.toString().split(/\r?\n/)).filter(Boolean).map(s => s.trim()).slice(0, 5);
+      texts.forEach((t) => t && parsingLogService.addLog(source, t, 'info'));
+    });
+    child.stderr.on('data', (data: Buffer) => {
+      const texts = (data.toString().split(/\r?\n/)).filter(Boolean).map(s => s.replace(/\s*\(file:\/\/[^)]+\)/g, '').split(' at ')[0].trim()).slice(0, 5);
+      texts.forEach((t) => t && parsingLogService.addLog(source, t, 'error'));
+    });
+    child.on('error', (err) => {
+      parsingLogService.addLog(source, `Failed to start ${label} parser: ${err.message}`, 'error');
+    });
+    child.on('close', (code) => {
+      if (code === 0) {
+        parsingLogService.addLog(source, `${label} parser finished successfully`, 'success');
+      } else {
+        parsingLogService.addLog(source, `${label} parser exited with code ${code}`, 'error');
+      }
+    });
+
+    res.json({ success: true, data: { started: true, pid: child.pid, script: scriptPath } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 500, message: error?.message || 'Failed to start parser' } });
+  }
 });
 
 router.post('/parse-careered', async (req: Request, res: Response) => {
-  req.params.source = 'careered-api' as ParsingSource;
-  // @ts-ignore
-  return router.handle(req, res, () => { });
+  try {
+    const source = 'careered-api' as ParsingSource;
+    const resolved = resolveParserCommand(source);
+    if (!resolved) {
+      const msg = `Parser script not found for '${source}'. Ensure backend is built and file exists in backend/dist/scripts/fetchAndSaveFromCareered.js.`;
+      parsingLogService.addLog(source, msg, 'error');
+      res.status(404).json({ success: false, error: { code: 404, message: msg } });
+      return;
+    }
+
+    const { cmd, args, label, scriptPath } = resolved;
+    parsingLogService.addLog(source, `Starting ${label} parser... (${scriptPath})`, 'info');
+
+    const child = spawn(cmd, args, { cwd: path.resolve(__dirnameResolved, '..', '..') });
+
+    child.stdout.on('data', (data: Buffer) => {
+      const texts = (data.toString().split(/\r?\n/)).filter(Boolean).map(s => s.trim()).slice(0, 5);
+      texts.forEach((t) => t && parsingLogService.addLog(source, t, 'info'));
+    });
+    child.stderr.on('data', (data: Buffer) => {
+      const texts = (data.toString().split(/\r?\n/)).filter(Boolean).map(s => s.replace(/\s*\(file:\/\/[^)]+\)/g, '').split(' at ')[0].trim()).slice(0, 5);
+      texts.forEach((t) => t && parsingLogService.addLog(source, t, 'error'));
+    });
+    child.on('error', (err) => {
+      parsingLogService.addLog(source, `Failed to start ${label} parser: ${err.message}`, 'error');
+    });
+    child.on('close', (code) => {
+      if (code === 0) {
+        parsingLogService.addLog(source, `${label} parser finished successfully`, 'success');
+      } else {
+        parsingLogService.addLog(source, `${label} parser exited with code ${code}`, 'error');
+      }
+    });
+
+    res.json({ success: true, data: { started: true, pid: child.pid, script: scriptPath } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 500, message: error?.message || 'Failed to start parser' } });
+  }
 });
 
 export default router;

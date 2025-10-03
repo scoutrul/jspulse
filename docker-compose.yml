@@ -35,6 +35,7 @@ services:
       - PORT=3001
       - MONGO_URI=mongodb://mongodb:27017/jspulse
       - NODE_ENV=production
+      - HH_API_BASE_URL=https://api.hh.ru
       # Scheduler Configuration
       - SCHEDULER_HH_PARSER_SCHEDULE=0 */8 * * *
       - SCHEDULER_HH_PARSER_ENABLED=true
@@ -80,6 +81,7 @@ services:
       - PORT=3001
       - MONGO_URI=mongodb://mongodb:27017/jspulse
       - NODE_ENV=development
+      - HH_API_BASE_URL=https://api.hh.ru
       - SCHEDULER_HH_PARSER_SCHEDULE=0 */8 * * *
       - SCHEDULER_HH_PARSER_ENABLED=true
       - SCHEDULER_CLEANUP_SCHEDULE=0 2 * * 0
