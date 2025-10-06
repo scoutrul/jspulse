@@ -19,8 +19,9 @@ let cronProcess: ChildProcess | null = null;
 let cronStartedAt: number | null = null;
 
 function resolveParserCommand(source: ParsingSource): { cmd: string; args: string[]; label: string; scriptPath: string } | null {
-  // Compiled runtime: this file is at backend/dist/routes
-  const distScriptsDir = path.resolve(__dirnameResolved, '..', 'scripts'); // backend/dist/scripts
+  // Поддержка как продакшн-сборки (dist), так и dev-режима (src с ts-node)
+  const distScriptsDir = path.resolve(__dirnameResolved, '..', 'scripts'); // backend/dist/scripts при сборке
+  const srcScriptsDir = path.resolve(__dirnameResolved, '..', '..', 'src', 'scripts'); // backend/src/scripts при dev
 
   const labelMap: Record<ParsingSource, string> = {
     'habr': 'Habr',
@@ -42,10 +43,23 @@ function resolveParserCommand(source: ParsingSource): { cmd: string; args: strin
 
   if (source === 'cron') return null;
 
-  const js = path.join(distScriptsDir, `${baseName[source]}.js`);
+  const jsDist = path.join(distScriptsDir, `${baseName[source]}.js`);
+  const tsSrc = path.join(srcScriptsDir, `${baseName[source]}.ts`);
 
-  if (fs.existsSync(js)) {
-    return { cmd: 'node', args: [js], label: labelMap[source], scriptPath: js };
+  // 1) Продакшн: запускаем скомпилированный JS
+  if (fs.existsSync(jsDist)) {
+    return { cmd: 'node', args: [jsDist], label: labelMap[source], scriptPath: jsDist };
+  }
+
+  // 2) Dev: запускаем исходник TS через ts-node (должен быть доступен в dev-образе)
+  if (fs.existsSync(tsSrc)) {
+    // Для ESM-проекта используем ts-node ESM loader
+    return {
+      cmd: 'node',
+      args: ['--no-warnings', '--loader', 'ts-node/esm', tsSrc],
+      label: labelMap[source],
+      scriptPath: tsSrc
+    };
   }
 
   return null;
@@ -213,10 +227,45 @@ router.get('/parsing-logs', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/parse-habr', async (req: Request, res: Response) => {
-  req.params.source = 'habr' as ParsingSource;
-  // @ts-ignore
-  return router.handle(req, res, () => { });
+router.post('/parse-habr', async (_req: Request, res: Response) => {
+  try {
+    const source = 'habr' as ParsingSource;
+    const resolved = resolveParserCommand(source);
+    if (!resolved) {
+      const msg = `Parser script not found for '${source}'. Ensure backend is built and file exists in backend/dist/scripts/fetchAndSaveFromHabr.js.`;
+      parsingLogService.addLog(source, msg, 'error');
+      res.status(404).json({ success: false, error: { code: 404, message: msg } });
+      return;
+    }
+
+    const { cmd, args, label, scriptPath } = resolved;
+    parsingLogService.addLog(source, `Starting ${label} parser... (${scriptPath})`, 'info');
+
+    const child = spawn(cmd, args, { cwd: path.resolve(__dirnameResolved, '..', '..') });
+
+    child.stdout.on('data', (data: Buffer) => {
+      const texts = (data.toString().split(/\r?\n/)).filter(Boolean).map(s => s.trim()).slice(0, 5);
+      texts.forEach((t) => t && parsingLogService.addLog(source, t, 'info'));
+    });
+    child.stderr.on('data', (data: Buffer) => {
+      const texts = (data.toString().split(/\r?\n/)).filter(Boolean).map(s => s.replace(/\s*\(file:\/\/[^)]+\)/g, '').split(' at ')[0].trim()).slice(0, 5);
+      texts.forEach((t) => t && parsingLogService.addLog(source, t, 'error'));
+    });
+    child.on('error', (err) => {
+      parsingLogService.addLog(source, `Failed to start ${label} parser: ${err.message}`, 'error');
+    });
+    child.on('close', (code) => {
+      if (code === 0) {
+        parsingLogService.addLog(source, `${label} parser finished successfully`, 'success');
+      } else {
+        parsingLogService.addLog(source, `${label} parser exited with code ${code}`, 'error');
+      }
+    });
+
+    res.json({ success: true, data: { started: true, pid: child.pid, script: scriptPath } });
+  } catch (error: any) {
+    res.status(500).json({ success: false, error: { code: 500, message: error?.message || 'Failed to start parser' } });
+  }
 });
 
 router.post('/parse-hh', async (req: Request, res: Response) => {
