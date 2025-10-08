@@ -6,8 +6,10 @@
 	import ToastNotifications from '$lib/components/admin/ToastNotifications.svelte';
 	import ConfirmDialog from '$lib/components/admin/ConfirmDialog.svelte';
 	import Heading from '$lib/components/ui/Heading.svelte';
+	import Login from '$lib/components/auth/Login.svelte';
 	import type { SystemStats as SystemStatsType } from '$lib/types/admin.types';
 	import { apiClient } from '$lib/api/http.client';
+	import { authStore } from '$lib/stores/authStore.js';
 
 	// Состояние приложения
 	let loading = true;
@@ -21,7 +23,12 @@
 
 	// Загрузка данных при монтировании компонента
 	onMount(async () => {
-		await loadSystemStats();
+		// Only load stats if user is admin
+		if ($authStore.isAdmin) {
+			await loadSystemStats();
+		} else {
+			loading = false;
+		}
 	});
 
 	// Загрузка системной статистики
@@ -76,39 +83,43 @@
 	<meta name="description" content="Административная панель JSPulse" />
 </svelte:head>
 
-<div class="container mx-auto px-4 py-8">
+{#if !$authStore.isAdmin}
+	<Login />
+{:else}
+	<div class="container mx-auto px-4 py-8">
 
-	{#if error}
-		<div class="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
-			❌ {error}
-		</div>
-	{/if}
-
-	{#if loading}
-		<div class="text-center py-12">
-			<div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
-			<p class="text-secondary">Загрузка данных дашборда...</p>
-		</div>
-	{:else}
-		<!-- Основной контент дашборда -->
-		<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-			
-			<!-- Левая колонка: Система JSPulse -->
-			<div class="space-y-6">
-				<SystemStats {stats} {loading} />
+		{#if error}
+			<div class="mb-6 p-4 bg-red-100 border border-red-300 text-red-700 rounded-lg">
+				❌ {error}
 			</div>
+		{/if}
 
-			<!-- Правая колонка: Управление -->
-			<div class="space-y-6">
-				<CronControls />
-				<ParsingActions 
-					on:dataUpdated={handleDataUpdated}
-					on:confirmAction={handleConfirmAction}
-				/>
+		{#if loading}
+			<div class="text-center py-12">
+				<div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-500 mx-auto mb-4"></div>
+				<p class="text-secondary">Загрузка данных дашборда...</p>
 			</div>
-		</div>
-	{/if}
-</div>
+		{:else}
+			<!-- Основной контент дашборда -->
+			<div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+				
+				<!-- Левая колонка: Система JSPulse -->
+				<div class="space-y-6">
+					<SystemStats {stats} {loading} />
+				</div>
+
+				<!-- Правая колонка: Управление -->
+				<div class="space-y-6">
+					<CronControls />
+					<ParsingActions 
+						on:dataUpdated={handleDataUpdated}
+						on:confirmAction={handleConfirmAction}
+					/>
+				</div>
+			</div>
+		{/if}
+	</div>
+{/if}
 
 <!-- Глобальные компоненты -->
 <ToastNotifications />

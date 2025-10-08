@@ -1,8 +1,14 @@
 <script lang="ts">
 	import Heading from '../ui/Heading.svelte';
 	import { createEventDispatcher } from 'svelte';
+	import { apiClient } from '../../api/http.client';
 	
-	const dispatch = createEventDispatcher();
+	const dispatch = createEventDispatcher<{
+		deleted: {
+			vacancyId: string;
+			title: string;
+		};
+	}>();
 	
 	export let vacancy: {
 		id: string;
@@ -60,11 +66,9 @@
 		isDeleting = true;
 		
 		try {
-			const response = await fetch(`http://localhost:3001/api/admin/vacancy/${vacancy.id}`, {
-				method: 'DELETE'
-			});
+			const response = await apiClient.delete(`/api/admin/vacancy/${vacancy.id}`);
 			
-			const result = await response.json();
+			const result = await response.json() as { success: boolean; error?: { message: string } };
 			
 			if (result.success) {
 				// Отправляем событие об успешном удалении

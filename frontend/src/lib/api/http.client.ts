@@ -1,4 +1,5 @@
 import ky, { HTTPError as KyHTTPError } from "ky";
+import { getCurrentIdToken } from '../stores/authStore.js';
 
 /**
  * Создает и настраивает экземпляр ky для выполнения HTTP-запросов к API бэкенда.
@@ -51,8 +52,16 @@ function createApiClient() {
     ...baseOptions,
     hooks: {
       beforeRequest: [
-        (request) => {
+        async (request) => {
           console.log(`Sending request: ${request.method} ${request.url}`);
+
+          // Add Authorization header for admin routes
+          if (request.url.includes('/api/admin/')) {
+            const token = await getCurrentIdToken();
+            if (token) {
+              request.headers.set('Authorization', `Bearer ${token}`);
+            }
+          }
         },
       ],
       afterResponse: [

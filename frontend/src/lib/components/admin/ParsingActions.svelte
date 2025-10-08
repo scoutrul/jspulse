@@ -4,9 +4,7 @@
 	import Heading from '../ui/Heading.svelte';
 	import { showNotification } from '../../stores/notificationStore';
 	import { parsingLogs, addParsingLog, clearParsingLogs, setParsingLogs } from '../../stores/parsingLogsStore';
-
-	// API базовый URL
-	const API_BASE = 'http://localhost:3001/api/admin';
+	import { apiClient } from '../../api/http.client';
 	const dispatch = createEventDispatcher<{
 		dataUpdated: void;
 		confirmAction: {
@@ -61,7 +59,7 @@
 		completionNotified = false;
 		pollingTimer = setInterval(async () => {
 			try {
-				const resp = await fetch(`${API_BASE}/parsing-logs?source=${encodeURIComponent(source)}`);
+				const resp = await apiClient.get(`/api/admin/parsing-logs?source=${encodeURIComponent(source)}`);
 				const json = await resp.json();
 				if (json.success && Array.isArray(json.data)) {
 					setParsingLogs(json.data);
@@ -111,7 +109,7 @@
 			addParsingLog(`📡 Подключение к ${parser.description}...`, 'info');
 
 			// Unified endpoint
-			const response = await fetch(`${API_BASE}/parse/${parser.id}`, { method: 'POST' });
+			const response = await apiClient.post(`/api/admin/parse/${parser.id}`);
 			const result = await response.json();
 			
 			if (result.success) {

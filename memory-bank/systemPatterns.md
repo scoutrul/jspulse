@@ -37,6 +37,28 @@
 - **Health Checks**: мониторинг состояния системы (/health, /cache/stats)
 - **Configuration Management**: централизованная настройка через ContainerFactory
 - **Request Scoping**: изоляция зависимостей на уровне HTTP запроса
+- **Authentication Middleware**: Firebase JWT токены для админских операций
+- **API Client Pattern**: централизованный HTTP клиент с автоматической аутентификацией
+
+## Система аутентификации
+
+### Frontend Authentication
+- **Firebase Client SDK**: Google OAuth через Firebase Auth
+- **AuthStore**: Svelte store для управления состоянием аутентификации
+- **Token Management**: Автоматическое получение и обновление ID токенов
+- **Admin Rights**: Проверка админских прав через переменную окружения `VITE_ADMIN_ALLOW_EMAILS`
+
+### Backend Authentication
+- **Firebase Admin SDK**: Валидация JWT токенов на сервере
+- **Middleware**: `firebaseAuthMiddleware` для защиты админских роутов
+- **Environment Variables**: `ADMIN_ALLOW_EMAILS` для контроля доступа
+- **Error Handling**: Стандартизированные ответы 401/403
+
+### API Client Pattern
+- **Centralized HTTP Client**: `apiClient` с автоматической аутентификацией
+- **Request Hooks**: Автоматическое добавление `Authorization` заголовка для `/api/admin/*`
+- **Token Refresh**: Автоматическое обновление токенов при необходимости
+- **Error Handling**: Централизованная обработка ошибок аутентификации
 
 ## Модули
 - backend (Express, TypeScript)

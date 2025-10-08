@@ -4,6 +4,7 @@
   import GradientButton from '../ui/GradientButton.svelte';
   import { createEventDispatcher } from 'svelte';
   import { vacancyService } from '$lib/services/vacancy.service';
+  import { authStore } from '$lib/stores/authStore.js';
   
   const dispatch = createEventDispatcher();
   
@@ -79,7 +80,7 @@
       </div>
       
       <!-- Кнопка удаления -->
-      {#if showDeleteButton && vacancyId}
+      {#if showDeleteButton && vacancyId && $authStore.isAdmin}
         <div class="delete-action">
           <GradientButton variant="outline" size="lg" disabled={isDeleting} on:click={handleDelete}>
             <span class="button-content">
@@ -117,7 +118,7 @@
       {/if}
     </div>
   </div>
-{:else if showDeleteButton && vacancyId}
+{:else if showDeleteButton && vacancyId && $authStore.isAdmin}
   <!-- Главная страница - показываем только кнопку удаления при hover -->
   <div class="vacancy-actions main-page-actions">
     <div class="actions-container">

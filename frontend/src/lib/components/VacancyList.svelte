@@ -63,7 +63,7 @@
               showDeleteButton={true}
               isDeleting={deletingVacancyId === getVacancyId(vacancy)}
               theme={$theme}
-              visited={vacancy.visited || visitTracker.isVisited(getVacancyId(vacancy))}
+              visited={visitTracker.isVisited(getVacancyId(vacancy))}
               on:skillClick={handleSkillClick}
               on:deleted={handleVacancyDeleted}
             />

@@ -94,8 +94,8 @@
       employment={vacancy.employment || undefined}
       skills={vacancy.skills || []}
       description={sanitizedDescription}
-      fullDescription={vacancy.fullDescription}
-      processedHtml={vacancy.htmlDescription}
+      fullDescription={vacancy.fullDescription || ''}
+      processedHtml={vacancy.htmlDescription || ''}
       vacancyId={getVacancyId(vacancy)}
       isRemote={vacancy.isRemote}
       {isDetailPage}

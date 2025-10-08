@@ -4,10 +4,8 @@
 	import Heading from '../ui/Heading.svelte';
 	import { showNotification } from '../../stores/notificationStore';
 	import { parsingLogs, addParsingLog, clearParsingLogs } from '../../stores/parsingLogsStore';
+	import { apiClient } from '../../api/http.client';
 	// Event dispatcher для обновления данных
-	
-	// API базовый URL (получаем из переменной окружения или используем дефолтный)
-	const API_BASE = 'http://localhost:3001/api/admin';
 	const dispatch = createEventDispatcher<{
 		dataUpdated: void;
 		confirmAction: {
@@ -35,7 +33,7 @@
 			addParsingLog('🚀 Инициализация парсинга HeadHunter...', 'info');
 			addParsingLog('📡 Подключение к API HH.ru...', 'info');
 			
-			const response = await fetch(`${API_BASE}/parse-hh`, { method: 'POST' });
+			const response = await apiClient.post('/api/admin/parse-hh');
 			const result = await response.json();
 			
 			if (result.success) {
@@ -97,7 +95,7 @@
 				try {
 					clearingInProgress = true;
 					
-					const response = await fetch(`${API_BASE}/clear-db`, { method: 'DELETE' });
+					const response = await apiClient.delete('/api/admin/clear-db');
 					const result = await response.json();
 					
 					if (result.success) {
@@ -133,7 +131,7 @@
 			addParsingLog('🌱 Инициализация заполнения БД тестовыми данными...', 'info');
 			addParsingLog('📦 Подготовка тестовых вакансий...', 'info');
 			
-			const response = await fetch(`${API_BASE}/seed-db`, { method: 'POST' });
+			const response = await apiClient.post('/api/admin/seed-db');
 			const result = await response.json();
 			
 			if (result.success) {

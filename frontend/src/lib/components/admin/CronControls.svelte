@@ -1,7 +1,6 @@
 <script lang="ts">
 	import Heading from '../ui/Heading.svelte';
-
-	const API_BASE = 'http://localhost:3001/api/admin';
+	import { apiClient } from '../../api/http.client';
 
 	let starting = false;
 	let stopping = false;
@@ -14,7 +13,7 @@
 	async function fetchStatus() {
 		try {
 			statusLoading = true;
-			const resp = await fetch(`${API_BASE}/cron/status`);
+			const resp = await apiClient.get('/api/admin/cron/status');
 			const json = await resp.json();
 			if (json.success) {
 				running = json.data.running;
@@ -37,7 +36,7 @@
 		if (starting) return;
 		starting = true;
 		try {
-			await fetch(`${API_BASE}/cron/start`, { method: 'POST' });
+			await apiClient.post('/api/admin/cron/start');
 			await fetchStatus();
 			// Если запущен — включаем периодический опрос
 			if (running && !statusTimer) {
@@ -52,7 +51,7 @@
 		if (stopping) return;
 		stopping = true;
 		try {
-			await fetch(`${API_BASE}/cron/stop`, { method: 'POST' });
+			await apiClient.post('/api/admin/cron/stop');
 			await fetchStatus();
 		} finally {
 			stopping = false;

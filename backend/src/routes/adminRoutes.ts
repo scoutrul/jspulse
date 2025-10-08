@@ -8,6 +8,8 @@ import { spawn, ChildProcess } from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 import { fileURLToPath } from 'url';
+import { firebaseAuthMiddleware } from '../middleware/auth/firebaseAuthMiddleware.js';
+import { requireAdmin } from '../middleware/auth/requireAdmin.js';
 
 const router: Router = Router();
 
@@ -71,6 +73,9 @@ const createAdminController = (req: Request): AdminController => {
   const deleteVacancyUseCase = req.resolve<DeleteVacancyUseCase>('DeleteVacancyUseCase');
   return new AdminController(getSystemStatsUseCase, clearCacheUseCase, deleteVacancyUseCase);
 };
+
+// Protect all following routes
+router.use(firebaseAuthMiddleware as any, requireAdmin as any);
 
 router.get('/stats', async (req: Request, res: Response) => {
   try {

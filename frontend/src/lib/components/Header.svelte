@@ -1,7 +1,24 @@
 <script lang="ts">
   import ThemeToggle from './ui/ThemeToggle.svelte';
+  import { authStore, signIn, signOutUser } from '$lib/stores/authStore.js';
   
   export const rootPath: string = '/';
+  
+  async function handleSignIn() {
+    try {
+      await signIn();
+    } catch (error) {
+      console.error('Sign in failed:', error);
+    }
+  }
+  
+  async function handleSignOut() {
+    try {
+      await signOutUser();
+    } catch (error) {
+      console.error('Sign out failed:', error);
+    }
+  }
 </script>
 
 <header class="header">
@@ -19,14 +36,34 @@
       
       <nav class="header-nav">
         <a href="/about" class="nav-link">О проекте</a>
-        <a href="/admin" class="nav-link admin-link">Админка</a>
+        {#if $authStore.isAdmin}
+          <a href="/admin" class="nav-link admin-link">Админка</a>
+        {/if}
       </nav>
       
       <div class="header-actions">
         <ThemeToggle />
+        
+        {#if $authStore.isAdmin}
+          <button 
+            class="nav-link sign-out-btn" 
+            on:click={handleSignOut}
+            title="Выйти"
+          >
+            Выйти
+          </button>
+        {:else if !$authStore.loading}
+          <button 
+            class="nav-link sign-in-btn" 
+            on:click={handleSignIn}
+            title="Войти как админ"
+          >
+            Войти
+          </button>
+        {/if}
       
-      <div class="beta-badge">
-        <span>Beta</span>
+        <div class="beta-badge">
+          <span>Beta</span>
         </div>
       </div>
     </div>
@@ -108,6 +145,28 @@
 
   :global(.dark) .admin-link:hover {
     box-shadow: 0 4px 8px rgba(59, 130, 246, 0.2), 0 0 8px rgba(59, 130, 246, 0.1);
+  }
+
+  /* Стили для кнопок входа/выхода */
+  .sign-in-btn, .sign-out-btn {
+    @apply cursor-pointer border-0;
+    @apply bg-transparent hover:bg-warning-50;
+    @apply hover:border-warning-200;
+  }
+
+  .sign-out-btn {
+    @apply text-red-600 hover:text-red-700;
+    @apply hover:bg-red-50 hover:border-red-200;
+  }
+
+  :global(.dark) .sign-in-btn {
+    @apply hover:bg-purple-900/20;
+    @apply hover:border-purple-400/30;
+  }
+
+  :global(.dark) .sign-out-btn {
+    @apply text-red-400 hover:text-red-300;
+    @apply hover:bg-red-900/20 hover:border-red-400/30;
   }
 
   .header-link {

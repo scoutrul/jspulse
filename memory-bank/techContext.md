@@ -5,6 +5,7 @@
 - **Frontend**: SvelteKit + TypeScript + Vite
 - **Backend**: Node.js + Express + TypeScript
 - **Database**: MongoDB + Mongoose ODM
+- **Authentication**: Firebase Auth (Google OAuth) + Firebase Admin SDK
 - **Package Manager**: pnpm + workspaces (монорепозиторий)
 
 ## Архитектурные технологии (Level 2)
@@ -12,6 +13,8 @@
 - **Dependency Injection**: собственный DI Container
 - **Caching**: In-memory кэш с TTL и LRU eviction
 - **Validation**: Zod для runtime валидации
+- **HTTP Client**: Централизованный apiClient с автоматической аутентификацией
+- **Authentication Middleware**: Firebase JWT валидация для админских роутов
 
 ## Инструменты разработки
 - **Контейнеризация**: Docker + Docker Compose
