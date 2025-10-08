@@ -163,7 +163,7 @@ class AdminService {
       });
 
       // Фильтруем по дате на стороне приложения - используем publishedAt вместо createdAt
-      const recentCount = allVacanciesResult.data.filter(vacancy =>
+      const recentCount = allVacanciesResult.data.filter((vacancy: VacancyDTO) =>
         vacancy.publishedAt && new Date(vacancy.publishedAt) >= yesterday
       ).length;
 
@@ -186,7 +186,7 @@ class AdminService {
         where: {}
       });
 
-      const withFullDescCount = result.data.filter(vacancy =>
+      const withFullDescCount = result.data.filter((vacancy: VacancyDTO) =>
         vacancy.fullDescription && vacancy.fullDescription.trim().length > 0
       ).length;
 
@@ -203,7 +203,7 @@ class AdminService {
   private async getTotalSkillsCount(): Promise<number> {
     try {
       const stats = await this.vacancyRepository.getStatistics();
-      return stats.bySkills.reduce((total, skillStat) => total + skillStat.count, 0);
+      return stats.bySkills.reduce((total: number, skillStat: { count: number }) => total + skillStat.count, 0);
     } catch (error) {
       console.error('Error getting total skills count:', error);
       return 0;
@@ -220,7 +220,7 @@ class AdminService {
 
       return stats.bySkills
         .slice(0, limit)
-        .map(skillStat => ({
+        .map((skillStat: { skill: string; count: number }) => ({
           skill: skillStat.skill,
           count: skillStat.count,
           percentage: totalVacancies > 0 ? Math.round((skillStat.count / totalVacancies) * 100) : 0
@@ -242,7 +242,7 @@ class AdminService {
         where: {}
       });
 
-      return result.data.map(vacancy => ({
+      return result.data.map((vacancy: VacancyDTO) => ({
         id: vacancy._id || 'unknown',
         title: vacancy.title,
         companyName: vacancy.company || 'Unknown Company',

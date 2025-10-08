@@ -89,7 +89,7 @@ export async function createApp(): Promise<{ app: express.Application; container
       success: true,
       data: {
         stats,
-        registeredTokens: rootContainer.getRegisteredTokens().map(token => String(token))
+        registeredTokens: rootContainer.getRegisteredTokens().map((token: unknown) => String(token))
       }
     });
   });
