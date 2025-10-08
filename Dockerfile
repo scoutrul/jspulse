@@ -60,10 +60,13 @@ COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 # Backend stage
 FROM node:20-alpine AS backend-stage
 
+# Install pnpm
+RUN npm install -g pnpm
+
 WORKDIR /app
 
-# Copy backend files from backend-files stage
-COPY --from=backend-files /app/ /app/
+# Copy all files from builder
+COPY --from=builder /app/ /app/
 
 # Set working directory to backend
 WORKDIR /app/backend
