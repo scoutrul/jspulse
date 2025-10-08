@@ -203,3 +203,14 @@ test-ui:
 	pnpm test:e2e:ui
 
 .PHONY: start stop logs status clean init up full dev d down prod restart win winbg windown winlogs winclean winstatus winrestart help test-e2e test-ui parse reparse seed 
+
+# 🏭 Полный production билд и запуск
+deploy:
+	@echo "🏗️ Production сборка и запуск JSPulse..."
+	docker-compose down -v --remove-orphans 2>/dev/null || true
+	docker system prune -f --volumes 2>/dev/null || true
+	docker compose --profile prod build
+	docker compose --profile prod up -d
+	@echo "✅ Production окружение успешно запущено!"
+	@echo "🌐 Frontend: http://localhost:3000"
+	@echo "🔧 Backend API: http://localhost:5000"
