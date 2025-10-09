@@ -233,8 +233,8 @@ async function fetchAndSaveFromHabr() {
           parsedAt: new Date(),
         } as any;
 
-        // Фильтрация по стоп-словам бэкенда
-        if (containsBackendStopWords((title + " " + preview).toLowerCase())) {
+        // Фильтрация по стоп-словам бэкенда: проверяем ТОЛЬКО заголовок
+        if (containsBackendStopWords(title.toLowerCase())) {
           console.log(`  🚫 ПРОПУЩЕНА (стоп-слова): "${title}"`);
           throw new Error('Вакансия содержит стоп-слова');
         }

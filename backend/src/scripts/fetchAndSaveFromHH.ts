@@ -180,9 +180,9 @@ async function fetchAndSaveHHVacancies() {
               throw new Error('Ошибка трансформации вакансии');
             }
 
-            // Проверяем стоп-слова для технологий бэкенда (кроме Node.js)
-            const vacancyText = `${transformedData.title} ${transformedData.description || ''}`.toLowerCase();
-            if (containsBackendStopWords(vacancyText)) {
+            // Проверяем стоп-слова для технологий бэкенда (кроме Node.js): только заголовок
+            const titleOnly = `${transformedData.title}`.toLowerCase();
+            if (containsBackendStopWords(titleOnly)) {
               console.log(`  🚫 ПРОПУЩЕНА (стоп-слова): "${transformedData.title}"`);
               throw new Error('Вакансия содержит стоп-слова');
             }
