@@ -153,7 +153,7 @@ async function fetchAndSaveFromCareered() {
     // Initialize CareeredClient with logging enabled
     careeredClient = new CareeredClient({
       logging: true,
-      mode: 'api' // Use API mode instead of Playwright
+      mode: 'auto' // Try API first, fallback to Playwright if no links
     });
 
     let totalReceived = 0;

@@ -60,7 +60,6 @@ export class PlaywrightClient {
     if (!this.browser) {
       this.browser = await chromium.launch({
         headless: this.options.headless,
-        executablePath: '/root/.cache/ms-playwright/chromium_headless_shell-1179/chrome-linux/headless_shell',
         args: [
           '--no-sandbox',
           '--disable-setuid-sandbox',

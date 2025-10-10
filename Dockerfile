@@ -58,9 +58,9 @@ COPY --from=builder /app/pnpm-lock.yaml ./pnpm-lock.yaml
 COPY --from=builder /app/pnpm-workspace.yaml ./pnpm-workspace.yaml
 
 # Backend stage
-FROM node:20-alpine AS backend-stage
+FROM mcr.microsoft.com/playwright:v1.45.0-jammy AS backend-stage
 
-# Install pnpm
+# Install pnpm (already present usually, but ensure)
 RUN npm install -g pnpm
 
 WORKDIR /app
@@ -73,6 +73,9 @@ WORKDIR /app/backend
 
 # Expose port
 EXPOSE 3001
+
+# Ensure Playwright browsers are installed (Chromium)
+RUN npx playwright install --with-deps chromium
 
 # Start backend
 CMD ["node", "dist/index.js"]

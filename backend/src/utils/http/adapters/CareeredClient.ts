@@ -44,7 +44,7 @@ export class CareeredClient {
   private mode: 'api' | 'playwright' | 'auto';
 
   constructor(options: CareeredClientOptions = {}) {
-    this.mode = options.mode || 'auto';
+    this.mode = (options.mode || (process.env.CAREERED_MODE as any) || 'auto');
 
     // Initialize HTTP client
     this.httpClient = createHttpClient({
@@ -76,6 +76,11 @@ export class CareeredClient {
       tags: 'a7f11f28-d502-4b8f-8432-5a1862cc99fa',
       page: String(page)
     });
+    if (this.playwrightClient && (this as any).httpClient && (this as any).httpClient.options?.logging) {
+      console.log(`[CareeredClient] mode=${this.mode} url=${url}`);
+    } else {
+      console.log(`[CareeredClient] mode=${this.mode} url=${url}`);
+    }
 
     if (this.mode === 'playwright') {
       return this.getListPageWithPlaywright(page);
@@ -126,6 +131,11 @@ export class CareeredClient {
 
     // Try to extract job links from HTML (in case it's not a pure SPA)
     const jobLinks = await this.extractJobLinksFromHTML(html);
+
+    // If no links found, throw to allow fallback in auto mode
+    if (jobLinks.length === 0) {
+      throw new Error('No job links found via API HTML parsing');
+    }
 
     return {
       html,
