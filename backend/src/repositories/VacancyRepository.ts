@@ -85,6 +85,7 @@ export class VacancyRepository implements IVacancyRepository {
    */
   async findMany(criteria: IVacancyFindCriteria): Promise<IFindResult<VacancyDTO>> {
     const { page = PAGINATION.VALIDATION.MIN_PAGE, limit = PAGINATION.DEFAULT_PAGE_SIZE, where = {}, orderBy, includeArchived = false } = criteria;
+    console.log('VacancyRepository.findMany: Called with criteria:', { page, limit, where, includeArchived });
 
     // Кэшируем запрос с учетом всех фильтров
     const cacheKey = this.buildListCacheKey('findMany', {
@@ -100,9 +101,12 @@ export class VacancyRepository implements IVacancyRepository {
       publishedBefore: (criteria as any).publishedBefore,
       searchText: (criteria as any).searchText
     });
+    console.log('VacancyRepository.findMany: Cache key:', cacheKey);
+
     if (this.cacheService) {
       const cached = await this.cacheService.get<IFindResult<VacancyDTO>>(cacheKey);
       if (cached) {
+        console.log('VacancyRepository.findMany: Returning cached result with', cached.data.length, 'vacancies');
         return cached;
       }
     }
@@ -160,6 +164,8 @@ export class VacancyRepository implements IVacancyRepository {
       await this.cacheService.set(cacheKey, result, 300);
     }
 
+    console.log('VacancyRepository.findMany: Returning fresh result with', result.data.length, 'vacancies');
+    console.log('VacancyRepository.findMany: First vacancy ID:', result.data[0]?.id);
     return result;
   }
 
@@ -488,7 +494,7 @@ export class VacancyRepository implements IVacancyRepository {
       if (["geekjob", "geekjob.ru"].includes(s)) return "geekjob.ru";
       if (["tg", "telegram", "telegraph"].includes(s)) return "telegram";
       if (["habr", "habr.com", "career.habr.com"].includes(s)) return "habr";
-      if (["careered", "careered.ru"].includes(s)) return "careered";
+      if (["careered", "careered.ru", "careered.io"].includes(s)) return "careered.io";
       return s;
     });
 

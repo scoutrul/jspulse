@@ -51,9 +51,25 @@
         console.error('Failed to delete vacancy:', result.error);
         alert('Ошибка удаления: ' + (result.error || 'Неизвестная ошибка'));
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting vacancy:', error);
-      alert('Ошибка сети при удалении вакансии');
+      
+      // Проверяем, является ли ошибка 404 (вакансия уже удалена)
+      if (error?.response?.status === 404 || error?.message?.includes('404')) {
+        console.log('Vacancy already deleted, removing from list');
+        // Отправляем событие об удалении даже если получили 404
+        dispatch('deleted', { 
+          vacancyId: vacancyId,
+          title: vacancyTitle 
+        });
+        
+        // Переходим к списку ТОЛЬКО с детальных страниц
+        if ($page.url.pathname !== '/') {
+          goto(backUrl);
+        }
+      } else {
+        alert('Ошибка сети при удалении вакансии');
+      }
     } finally {
       isDeleting = false;
     }

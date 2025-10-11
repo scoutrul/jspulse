@@ -147,38 +147,43 @@ export class PlaywrightClient {
         throw new Error('No job cards or links found on page');
       }
 
-      // Extract job information from cards - careered.io uses clickable divs, not links
-      let jobData: Array<{ title: string, url: string }> = [];
-
-      // Extract job data from the cards themselves
+      // Try to extract direct anchors anywhere on page first
+      let jobLinks: string[] = [];
       try {
-        jobData = await pageInstance.$$eval('.overflow-hidden.rounded-lg.border.bg-white', (cards: any[]) =>
-          cards.map((card: any) => {
-            const titleElement = card.querySelector('span[title]');
-            const title = titleElement ? titleElement.getAttribute('title') :
-              card.querySelector('span')?.textContent?.trim() || 'Unknown Job';
-
-            // Try to find a data attribute or other identifier for the job ID
-            const jobId = card.getAttribute('data-job-id') ||
-              card.getAttribute('data-id') ||
-              title.toLowerCase().replace(/[^a-z0-9]/g, '-');
-
-            // Construct a URL - we'll need to figure out the actual pattern
-            const url = `https://careered.io/jobs/${jobId}`;
-
-            return { title, url };
-          })
+        jobLinks = await pageInstance.$$eval('a[href*="/jobs/"]', (links: any[]) =>
+          Array.from(new Set(links.map((link: any) => link.href)))
         );
-      } catch (error) {
-        console.log('Error extracting job data from cards:', error);
-      }
+      } catch { }
 
-      // Convert to job links
-      const jobLinks = jobData.map(job => job.url);
+      // If still empty, try to click cards to get real router URLs
+      if (jobLinks.length === 0) {
+        const cards = await pageInstance.$$('.overflow-hidden.rounded-lg.border.bg-white');
+        for (let i = 0; i < Math.min(cards.length, 30); i++) {
+          try {
+            const card = cards[i];
+            await card.scrollIntoViewIfNeeded();
+            const [nav] = await Promise.all([
+              pageInstance.waitForNavigation({ timeout: 10000 }).catch(() => null),
+              card.click({ timeout: 5000 })
+            ]);
+            const currentUrl = pageInstance.url();
+            if (/\/jobs\//.test(currentUrl)) {
+              jobLinks.push(currentUrl);
+            }
+            // Go back to list page for next card
+            await pageInstance.goBack({ waitUntil: 'networkidle', timeout: 10000 }).catch(() => { });
+          } catch {
+            // ignore and continue
+          }
+        }
+        jobLinks = Array.from(new Set(jobLinks));
+      }
 
       if (this.options.logging) {
         console.log(`✅ Extracted ${jobLinks.length} job links from page ${page}`);
-        console.log(`🔍 Job data:`, jobData);
+        if (jobLinks.length > 0) {
+          console.log(jobLinks.slice(0, 10));
+        }
 
         // Debug: show job card structure
         const jobCardInfo = await pageInstance.evaluate(() => {
@@ -294,94 +299,81 @@ export class PlaywrightClient {
         timeout: this.options.timeout
       });
 
-      // Wait for content to load
-      await pageInstance.waitForSelector('h1, .job-title, [data-test*="title"]', {
-        timeout: 10000
+      // Wait for content to load with broader selectors
+      const selectors = ['h1', '.job-title', '[data-test*="title"]', 'main h1', 'main [class*="title"]'];
+      let found = false;
+      for (const sel of selectors) {
+        try { await pageInstance.waitForSelector(sel, { timeout: 8000 }); found = true; break; } catch { }
+      }
+      if (!found) {
+        // As fallback, wait a bit and continue to parse from document
+        await pageInstance.waitForTimeout(1500);
+      }
+
+      // Wait for page to be ready
+      await pageInstance.waitForLoadState('networkidle');
+
+      // Debug: Check what's on the page with simpler approach
+      const pageInfo = await pageInstance.evaluate(() => {
+        return {
+          title: (globalThis as any).document.title,
+          url: (globalThis as any).window.location.href,
+          bodyExists: !!(globalThis as any).document.body,
+          h1Count: (globalThis as any).document.querySelectorAll('h1').length
+        };
       });
 
-      // Extract job details
+      if (this.options.logging) {
+        console.log(`🔍 Page debug info:`, pageInfo);
+      }
+
+      // Extract job details using more specific selectors
       const jobDetail = await pageInstance.evaluate(() => {
-        const getText = (selector: string): string => {
-          const element = (globalThis as any).document.querySelector(selector);
-          return element ? element.textContent?.trim() || '' : '';
-        };
+        const doc = (globalThis as any).document;
+        const title = doc.querySelector('h1')?.textContent?.trim() || doc.title || 'Без названия';
+        const company = 'Неизвестная компания';
+        const location = 'Remote';
 
-        const getHtml = (selector: string): string => {
-          const element = (globalThis as any).document.querySelector(selector);
-          return element ? element.innerHTML || '' : '';
-        };
+        // Try to find job description with more specific selectors
+        let description = '';
+        let fullDescription = '';
 
-        // Try multiple selectors for each field
-        const title = getText('h1, .job-title, [data-test*="title"]') || 'Без названия';
-        const company = getText('.company, [data-test*="company"]') || 'Неизвестная компания';
+        // Look for common job description selectors
+        const descriptionSelectors = [
+          '[data-testid*="description"]',
+          '[data-testid*="content"]',
+          '.job-description',
+          '.description',
+          '.content',
+          '.job-content',
+          '[class*="description"]',
+          '[class*="content"]',
+          'main [class*="job"]',
+          'main [class*="vacancy"]',
+          'main p',
+          'main div'
+        ];
 
-        // Location - try multiple approaches
-        let location = getText('.location, [data-test*="location"]');
-        if (!location) {
-          // Look for location in other elements
-          const locationElements = (globalThis as any).document.querySelectorAll('*');
-          for (const el of locationElements) {
-            const text = el.textContent || '';
-            if (text.includes('Remote') || text.includes('Удаленно') || text.includes('удаленн')) {
-              location = 'Remote';
+        for (const selector of descriptionSelectors) {
+          const element = doc.querySelector(selector);
+          if (element) {
+            const text = element.textContent?.trim() || '';
+            const html = element.innerHTML || '';
+
+            // Check if this looks like a job description (has reasonable length and content)
+            if (text.length > 100 && text.length < 10000) {
+              description = text;
+              fullDescription = html;
               break;
             }
           }
         }
-        if (!location) location = 'Неизвестное местоположение';
 
-        // Description - try multiple selectors
-        const descriptionSelectors = [
-          '.job-description',
-          '.description',
-          '.content',
-          'main p',
-          '[data-test*="description"]'
-        ];
-
-        let description = '';
-        for (const selector of descriptionSelectors) {
-          description = getText(selector);
-          if (description && description.length > 50) break;
-        }
-
-        // Full description (HTML)
-        const fullDescriptionSelectors = [
-          '.job-description',
-          '.description',
-          '.content',
-          'main'
-        ];
-
-        let fullDescription = '';
-        for (const selector of fullDescriptionSelectors) {
-          fullDescription = getHtml(selector);
-          if (fullDescription && fullDescription.length > 100) break;
-        }
-
-        // Salary parsing
-        let salary = '';
-        const salaryElements = (globalThis as any).document.querySelectorAll('*');
-        for (const el of salaryElements) {
-          const text = el.textContent || '';
-          if (text.includes('$') || text.includes('₽') || text.includes('€') || text.includes('руб')) {
-            salary = text;
-            break;
-          }
-        }
-
-        // Parse salary if found
-        let parsedSalary: { from?: number; to?: number; currency?: string } | undefined;
-        if (salary) {
-          // Simple salary parsing - can be enhanced
-          const salaryMatch = salary.match(/(\d{1,3}(?:,\d{3})*)\s*—\s*(\d{1,3}(?:,\d{3})*)\s*([$₽€])/i);
-          if (salaryMatch) {
-            parsedSalary = {
-              from: parseInt(salaryMatch[1].replace(/,/g, "")),
-              to: parseInt(salaryMatch[2].replace(/,/g, "")),
-              currency: salaryMatch[3] === '$' ? 'USD' : salaryMatch[3] === '₽' ? 'RUB' : 'EUR'
-            };
-          }
+        // Fallback to main element if no specific description found
+        if (!description) {
+          const mainEl = doc.querySelector('main') || doc.body;
+          description = mainEl?.textContent?.trim().substring(0, 2000) || '';
+          fullDescription = mainEl?.innerHTML || '';
         }
 
         return {
@@ -390,11 +382,17 @@ export class PlaywrightClient {
           location,
           description,
           fullDescription,
-          salary: parsedSalary,
-          isRemote: /удаленн|remote/i.test(description) || /удаленн|remote/i.test(location),
+          isRemote: true,
           publishedAt: new Date().toISOString()
         };
       });
+
+      if (!jobDetail) {
+        if (this.options.logging) {
+          console.log(`❌ No job detail extracted from ${jobUrl}`);
+        }
+        return null;
+      }
 
       if (this.options.logging) {
         console.log(`✅ Extracted job detail: ${jobDetail.title}`);
@@ -479,5 +477,13 @@ export class PlaywrightClient {
    */
   isRunning(): boolean {
     return this.browser !== null && this.context !== null;
+  }
+
+  /**
+   * Creates a new page (for internal use by other clients)
+   */
+  async createPage(): Promise<any> {
+    await this.ensureBrowser();
+    return this.context!.newPage();
   }
 }

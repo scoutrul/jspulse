@@ -13,8 +13,7 @@
 	async function fetchStatus() {
 		try {
 			statusLoading = true;
-			const resp = await apiClient.get('/api/admin/cron/status');
-			const json = await resp.json();
+			const json = await apiClient.get('/api/admin/cron/status') as { success: boolean; data: { running: boolean; pid: number | null; startedAt: number | null } };
 			if (json.success) {
 				running = json.data.running;
 				pid = json.data.pid;

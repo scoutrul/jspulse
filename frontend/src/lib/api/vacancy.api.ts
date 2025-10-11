@@ -1,6 +1,5 @@
 import { transformVacancies, extractSkillsFromVacancies } from "$lib/utils/vacancyTransformations.js";
-import { createHttpClient } from "$lib/utils/http/index.js";
-import type { HttpClient } from "$lib/utils/http/HttpClient";
+import { apiClient } from "$lib/api/http.client";
 import { logger } from "$lib/utils/logger.js";
 
 import {
@@ -46,16 +45,13 @@ export interface SingleVacancyResponse {
  * Класс для работы с API вакансий
  */
 export class VacancyApi {
-  private httpClient: HttpClient;
   private readonly CONTEXT = 'VacancyApi';
 
   /**
    * Создание экземпляра API вакансий
    */
   constructor(options?: { fetch?: typeof globalThis.fetch }) {
-    this.httpClient = createHttpClient({
-      fetch: options?.fetch
-    });
+    // apiClient уже настроен с авторизацией
   }
 
   /**
@@ -103,7 +99,7 @@ export class VacancyApi {
       const url = baseApiUrl + (queryParams.toString() ? `?${queryParams.toString()}` : '');
 
       // Делаем запрос к API 
-      const response = await this.httpClient.get(url);
+      const response = await apiClient.get(url);
 
       // Валидируем данные через схему
       const validationResult = VacancyListResponseSchema.safeParse(response);
@@ -141,7 +137,7 @@ export class VacancyApi {
     try {
       logger.debug(this.CONTEXT, 'Запрос доступных навыков с сервера');
 
-      const response = await this.httpClient.get('/api/vacancies/skills');
+      const response = await apiClient.get('/api/vacancies/skills');
 
       // Проверяем типизированный ответ
       const typedResponse = response as { success?: boolean; data?: unknown };
@@ -164,7 +160,7 @@ export class VacancyApi {
     try {
       logger.debug(this.CONTEXT, 'Запрос статистики навыков с сервера');
 
-      const response = await this.httpClient.get('/api/vacancies/skills/stats');
+      const response = await apiClient.get('/api/vacancies/skills/stats');
 
       // Проверяем типизированный ответ
       const typedResponse = response as { success?: boolean; data?: unknown };
@@ -191,7 +187,7 @@ export class VacancyApi {
   async fetchSources(): Promise<string[]> {
     try {
       logger.debug(this.CONTEXT, 'Запрос источников с сервера');
-      const response = await this.httpClient.get('/api/vacancies/sources');
+      const response = await apiClient.get('/api/vacancies/sources');
       const typed = response as { success?: boolean; data?: unknown };
       if (!typed?.success || !Array.isArray(typed.data)) {
         logger.error(this.CONTEXT, 'Некорректный формат данных источников', response);
@@ -215,7 +211,7 @@ export class VacancyApi {
       logger.debug(this.CONTEXT, `Запрос вакансии по ID: ${id}, URL: ${url}`);
 
       // Делаем запрос к API
-      const response = await this.httpClient.get(url);
+      const response = await apiClient.get(url);
 
       logger.debug(this.CONTEXT, `Получен ответ для вакансии ${id}:`, response);
 
@@ -298,7 +294,7 @@ export class VacancyApi {
     try {
       logger.debug(this.CONTEXT, `Удаление вакансии по ID: ${id}`);
 
-      const response = await this.httpClient.delete(`/api/admin/vacancy/${id}`);
+      const response = await apiClient.delete(`/api/admin/vacancy/${id}`);
 
       // Проверяем успешность удаления
       if (response && typeof response === 'object' && 'success' in response) {
@@ -313,8 +309,18 @@ export class VacancyApi {
       }
 
       return { success: false, error: 'Неожиданный формат ответа' };
-    } catch (error) {
+    } catch (error: any) {
       logger.error(this.CONTEXT, `Ошибка при удалении вакансии ${id}`, error);
+
+      // Проверяем, является ли ошибка 404 (вакансия уже удалена)
+      if (error?.response?.status === 404 || error?.message?.includes('404')) {
+        logger.debug(this.CONTEXT, `Вакансия ${id} уже удалена (404)`);
+        return {
+          success: true, // Считаем успешным, так как цель достигнута
+          title: 'Вакансия уже удалена'
+        };
+      }
+
       return { success: false, error: 'Ошибка сети или сервера' };
     }
   }
@@ -326,7 +332,7 @@ export class VacancyApi {
     try {
       logger.debug(this.CONTEXT, `Отметка вакансии ${id} как посещенной`);
 
-      const response = await this.httpClient.patch(`/api/vacancies/${id}/visit`);
+      const response = await apiClient.patch(`/api/vacancies/${id}/visit`);
 
       if (response && typeof response === 'object' && 'success' in response) {
         const typedResponse = response as { success: boolean; error?: string };

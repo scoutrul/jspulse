@@ -66,9 +66,7 @@
 		isDeleting = true;
 		
 		try {
-			const response = await apiClient.delete(`/api/admin/vacancy/${vacancy.id}`);
-			
-			const result = await response.json() as { success: boolean; error?: { message: string } };
+			const result = await apiClient.delete(`/api/admin/vacancy/${vacancy.id}`) as { success: boolean; error?: { message: string } };
 			
 			if (result.success) {
 				// Отправляем событие об успешном удалении
@@ -80,9 +78,20 @@
 				console.error('Failed to delete vacancy:', result.error);
 				alert('Ошибка удаления: ' + (result.error?.message || 'Неизвестная ошибка'));
 			}
-		} catch (error) {
+		} catch (error: any) {
 			console.error('Error deleting vacancy:', error);
-			alert('Ошибка сети при удалении вакансии');
+			
+			// Проверяем, является ли ошибка 404 (вакансия уже удалена)
+			if (error?.response?.status === 404 || error?.message?.includes('404')) {
+				console.log('Vacancy already deleted, removing from list');
+				// Отправляем событие об удалении даже если получили 404
+				dispatch('deleted', { 
+					vacancyId: vacancy.id,
+					title: vacancy.title 
+				});
+			} else {
+				alert('Ошибка сети при удалении вакансии');
+			}
 		} finally {
 			isDeleting = false;
 		}

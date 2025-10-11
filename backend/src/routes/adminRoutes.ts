@@ -39,7 +39,7 @@ function resolveParserCommand(source: ParsingSource): { cmd: string; args: strin
     'hh': 'fetchAndSaveFromHH',
     'telegram-parse': 'parseTelegramUlbi',
     'telegram-enrich': 'enrichTelegramTelegraph',
-    'careered-api': 'fetchAndSaveFromCareered',
+    'careered-api': 'fetchAndSaveFromCareeredAPI',
     'cron': ''
   } as const;
 
@@ -181,7 +181,7 @@ router.post('/parse/:source', async (req: Request, res: Response) => {
         'hh': 'fetchAndSaveFromHH',
         'telegram-parse': 'parseTelegramUlbi',
         'telegram-enrich': 'enrichTelegramTelegraph',
-        'careered-api': 'fetchAndSaveFromCareered',
+        'careered-api': 'fetchAndSaveFromCareeredAPI',
         'cron': ''
       } as const;
 
@@ -360,7 +360,7 @@ router.post('/parse-careered', async (req: Request, res: Response) => {
     const source = 'careered-api' as ParsingSource;
     const resolved = resolveParserCommand(source);
     if (!resolved) {
-      const msg = `Parser script not found for '${source}'. Ensure backend is built and file exists in backend/dist/scripts/fetchAndSaveFromCareered.js.`;
+      const msg = `Parser script not found for '${source}'. Ensure backend is built and file exists in backend/dist/scripts/fetchAndSaveFromCareeredAPI.js.`;
       parsingLogService.addLog(source, msg, 'error');
       res.status(404).json({ success: false, error: { code: 404, message: msg } });
       return;

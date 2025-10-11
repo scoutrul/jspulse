@@ -57,9 +57,16 @@ function createApiClient() {
 
           // Add Authorization header for admin routes
           if (request.url.includes('/api/admin/')) {
+            console.log('Admin route detected, getting token...');
             const token = await getCurrentIdToken();
+            console.log('Token received:', token ? 'YES' : 'NO');
+            console.log('Token preview:', token ? token.substring(0, 50) + '...' : 'null');
             if (token) {
               request.headers.set('Authorization', `Bearer ${token}`);
+              console.log('Authorization header set');
+              console.log('Request headers:', Object.fromEntries(request.headers.entries()));
+            } else {
+              console.error('No token available for admin request');
             }
           }
         },
@@ -84,11 +91,11 @@ function createApiClient() {
 
   // Обертка над клиентом для правильного построения URL
   return {
-    get: (path: string, options?: any) => client.get(buildUrl(path), options),
-    post: (path: string, options?: any) => client.post(buildUrl(path), options),
-    put: (path: string, options?: any) => client.put(buildUrl(path), options),
-    patch: (path: string, options?: any) => client.patch(buildUrl(path), options),
-    delete: (path: string, options?: any) => client.delete(buildUrl(path), options),
+    get: (path: string, options?: any) => client.get(buildUrl(path), options).json(),
+    post: (path: string, options?: any) => client.post(buildUrl(path), options).json(),
+    put: (path: string, options?: any) => client.put(buildUrl(path), options).json(),
+    patch: (path: string, options?: any) => client.patch(buildUrl(path), options).json(),
+    delete: (path: string, options?: any) => client.delete(buildUrl(path), options).json(),
     extend: (options?: any) => client.extend(options),
   };
 }

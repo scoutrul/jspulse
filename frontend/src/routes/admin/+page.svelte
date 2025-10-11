@@ -34,8 +34,7 @@
 	// Загрузка системной статистики
 	async function loadSystemStats() {
 		try {
-			const response = await apiClient.get('/api/admin/stats');
-			const result: any = await response.json();
+			const result: any = await apiClient.get('/api/admin/stats');
 			
 			if (result.success) {
 				stats = result.data;

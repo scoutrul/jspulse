@@ -2,6 +2,7 @@ import mongoose from "../config/database.js";
 import * as cheerio from "cheerio";
 import dotenv from "dotenv";
 import { CareeredClient } from "../utils/http/adapters/CareeredClient.js";
+import { PlaywrightClient } from "../utils/http/adapters/PlaywrightClient.js";
 import { containsBackendStopWords } from "../config/backendStopWords.js";
 import { normalizeSkill } from "../utils/transformations.js";
 import { EarlyExitStrategy } from "../utils/parsing/earlyExitStrategy.js";
@@ -143,6 +144,7 @@ async function fetchAndSaveFromCareered() {
 
   let connection;
   let careeredClient: CareeredClient | null = null;
+  let playwrightClient: PlaywrightClient | null = null;
 
   try {
     connection = await mongoose.connect(mongoUrl);
@@ -150,10 +152,10 @@ async function fetchAndSaveFromCareered() {
 
     const Vacancy = await getVacancyModel();
 
-    // Initialize CareeredClient with logging enabled
-    careeredClient = new CareeredClient({
+    // Initialize PlaywrightClient directly for HTML rendering
+    playwrightClient = new PlaywrightClient({
       logging: true,
-      mode: 'auto' // Try API first, fallback to Playwright if no links
+      headless: true
     });
 
     let totalReceived = 0;
@@ -166,19 +168,53 @@ async function fetchAndSaveFromCareered() {
       console.log(`📄 Страница списка ${page}/${MAX_PAGES}`);
 
       try {
-        const listResult = await careeredClient.getListPage({ page });
+        console.log("Deriving links from rendered HTML...");
+        const html = await playwrightClient!.renderPage(`https://careered.io/?tags=a7f11f28-d502-4b8f-8432-5a1862cc99fa&page=${page}`);
+        const $ = cheerio.load(html);
+        const extractedLinks: string[] = [];
 
-        console.log(`📄 HTML длина: ${listResult.html.length}`);
-        console.log(`🔗 Найдено ссылок: ${listResult.jobLinks.length}`);
+        $('a[href*="/jobs/"]').each((_, el) => {
+          const href = $(el).attr('href');
+          if (href && href.includes('/jobs/')) {
+            const fullUrl = href.startsWith('http') ? href : `https://careered.io${href}`;
+            extractedLinks.push(fullUrl);
+          }
+        });
 
-        if (listResult.jobLinks.length === 0 && page > 1) {
+        // Fallback: build slugs from card titles if no anchors
+        if (extractedLinks.length === 0) {
+          $('.overflow-hidden.rounded-lg.border.bg-white span[title], .overflow-hidden.rounded-lg.border.bg-white span').each((_, el) => {
+            const title = $(el).attr('title') || $(el).text();
+            if (title && title.trim().length > 0) {
+              const slug = title.toLowerCase()
+                .replace(/[^a-z0-9\s-]/g, '')
+                .replace(/\s+/g, '-')
+                .replace(/-+/g, '-')
+                .trim();
+              extractedLinks.push(`https://careered.io/jobs/${slug}`);
+            }
+          });
+        }
+
+        let jobLinks = Array.from(new Set(extractedLinks));
+        console.log(`Found links: ${jobLinks.length}`);
+
+        // Filter by stop-words using title-only heuristic (extract from URL slug)
+        jobLinks = jobLinks.filter(url => {
+          const part = (url.split('/jobs/')[1] || url).replace(/[-_]/g, ' ');
+          const titleLower = decodeURIComponent(part).toLowerCase();
+          return !containsBackendStopWords(titleLower);
+        });
+        console.log(`Links after stop-words filter: ${jobLinks.length}`);
+
+        if (jobLinks.length === 0 && page > 1) {
           console.log("🏁 Похоже, вакансии закончились. Останавливаюсь.");
           break;
         }
 
         // Используем стратегию раннего выхода для обработки ссылок на странице
         const result = await EarlyExitStrategy.processPage(
-          listResult.jobLinks,
+          jobLinks,
           // Функция проверки существования вакансии
           async (jobUrl) => {
             const sourceIdMatch = jobUrl.match(/\/jobs\/([^\/?#]+)/i);
@@ -224,17 +260,17 @@ async function fetchAndSaveFromCareered() {
     // Функция обработки отдельной вакансии
     async function processVacancy(jobUrl: string): Promise<void> {
       try {
-        if (!careeredClient) {
-          throw new Error('CareeredClient не инициализирован');
+        if (!playwrightClient) {
+          throw new Error('PlaywrightClient не инициализирован');
         }
-        const jobResult = await careeredClient.getVacancyPage(jobUrl);
+        const jobDetail = await playwrightClient.getJobDetail(jobUrl);
 
-        if (!jobResult.jobDetail) {
+        if (!jobDetail) {
           console.log(`  ⚠️ Не удалось извлечь детали: ${jobUrl}`);
           throw new Error('Не удалось извлечь детали вакансии');
         }
 
-        const { title, company, location, description, fullDescription, salary, isRemote, publishedAt } = jobResult.jobDetail;
+        const { title, company, location, description, fullDescription, isRemote, publishedAt } = jobDetail;
 
         // Извлекаем ID из URL
         const sourceIdMatch = jobUrl.match(/\/jobs\/([^\/?#]+)/i);
@@ -269,12 +305,7 @@ async function fetchAndSaveFromCareered() {
           parsedAt: new Date(),
         } as any;
 
-        // Добавляем информацию о зарплате если есть
-        if (salary) {
-          transformed.salaryFrom = salary.from;
-          transformed.salaryTo = salary.to;
-          transformed.salaryCurrency = salary.currency;
-        }
+        // Salary parsing is not implemented in PlaywrightClient yet
 
         // Фильтрация по стоп-словам бэкенда: проверяем ТОЛЬКО заголовок
         if (containsBackendStopWords(title.toLowerCase())) {
@@ -303,8 +334,8 @@ async function fetchAndSaveFromCareered() {
     console.error("❌ Ошибка импорта Careered.io:", error);
   } finally {
     // Clean up resources
-    if (careeredClient) {
-      await careeredClient.close();
+    if (playwrightClient) {
+      await playwrightClient.close();
     }
     if (mongoose.connection.readyState === 1) {
       await mongoose.disconnect();

@@ -33,8 +33,7 @@
 			addParsingLog('🚀 Инициализация парсинга HeadHunter...', 'info');
 			addParsingLog('📡 Подключение к API HH.ru...', 'info');
 			
-			const response = await apiClient.post('/api/admin/parse-hh');
-			const result = await response.json();
+			const result = await apiClient.post('/api/admin/parse-hh') as any;
 			
 			if (result.success) {
 				const message = `Парсинг запущен!`;
@@ -95,8 +94,7 @@
 				try {
 					clearingInProgress = true;
 					
-					const response = await apiClient.delete('/api/admin/clear-db');
-					const result = await response.json();
+					const result = await apiClient.delete('/api/admin/clear-db') as any;
 					
 					if (result.success) {
 						const message = 'База данных очищена';
@@ -131,8 +129,7 @@
 			addParsingLog('🌱 Инициализация заполнения БД тестовыми данными...', 'info');
 			addParsingLog('📦 Подготовка тестовых вакансий...', 'info');
 			
-			const response = await apiClient.post('/api/admin/seed-db');
-			const result = await response.json();
+			const result = await apiClient.post('/api/admin/seed-db') as any;
 			
 			if (result.success) {
 				const message = `База данных заполнена!`;

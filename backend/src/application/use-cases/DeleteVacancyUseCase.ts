@@ -29,14 +29,19 @@ export class DeleteVacancyUseCase implements IUseCaseWithParams<DeleteVacancyReq
   async execute(request: DeleteVacancyRequest): Promise<DeleteVacancyResponse> {
     try {
       const { id } = request;
+      console.log('DeleteVacancyUseCase: Attempting to delete vacancy with ID:', id);
 
       if (!id) {
         throw new Error('Vacancy ID is required');
       }
 
       // Проверяем, существует ли вакансия
+      console.log('DeleteVacancyUseCase: Checking if vacancy exists...');
       const existingVacancy = await this.vacancyRepository.findById(id);
+      console.log('DeleteVacancyUseCase: Existing vacancy found:', existingVacancy ? 'YES' : 'NO');
+
       if (!existingVacancy) {
+        console.log('DeleteVacancyUseCase: Vacancy not found, returning 404');
         return {
           success: false,
           deleted: false,
@@ -45,7 +50,9 @@ export class DeleteVacancyUseCase implements IUseCaseWithParams<DeleteVacancyReq
       }
 
       // Удаляем вакансию
+      console.log('DeleteVacancyUseCase: Deleting vacancy...');
       const deleted = await this.vacancyRepository.deleteById(id);
+      console.log('DeleteVacancyUseCase: Deletion result:', deleted);
 
       return {
         success: true,

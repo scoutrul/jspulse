@@ -59,17 +59,25 @@ export async function signOutUser() {
 
 // Get current user's ID token
 export async function getCurrentIdToken(forceRefresh = false): Promise<string | null> {
-  const { subscribe } = authStore;
   let currentUser: User | null = null;
 
-  subscribe(state => {
+  // Получаем текущего пользователя из store
+  authStore.subscribe(state => {
     currentUser = state.user;
   })();
 
-  if (!currentUser) return null;
+  console.log('getCurrentIdToken: currentUser =', currentUser ? 'exists' : 'null');
+  console.log('getCurrentIdToken: isAdmin =', currentUser ? checkIsAdmin(currentUser) : false);
+
+  if (!currentUser) {
+    console.log('getCurrentIdToken: No current user');
+    return null;
+  }
 
   try {
-    return await getIdToken(currentUser, forceRefresh);
+    const token = await getIdToken(currentUser, forceRefresh);
+    console.log('getCurrentIdToken: Token obtained successfully');
+    return token;
   } catch (error) {
     console.error('Error getting ID token:', error);
     return null;

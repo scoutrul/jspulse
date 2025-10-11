@@ -59,8 +59,7 @@
 		completionNotified = false;
 		pollingTimer = setInterval(async () => {
 			try {
-				const resp = await apiClient.get(`/api/admin/parsing-logs?source=${encodeURIComponent(source)}`);
-				const json = await resp.json();
+				const json = await apiClient.get(`/api/admin/parsing-logs?source=${encodeURIComponent(source)}`) as any;
 				if (json.success && Array.isArray(json.data)) {
 					setParsingLogs(json.data);
 					// Остановка при завершении парсера
@@ -109,8 +108,7 @@
 			addParsingLog(`📡 Подключение к ${parser.description}...`, 'info');
 
 			// Unified endpoint
-			const response = await apiClient.post(`/api/admin/parse/${parser.id}`);
-			const result = await response.json();
+			const result = await apiClient.post(`/api/admin/parse/${parser.id}`) as any;
 			
 			if (result.success) {
 				showNotification('success', `Парсинг ${parser.name} запущен!`, `Источник: ${parser.description}`);

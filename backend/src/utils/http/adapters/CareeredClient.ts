@@ -27,6 +27,34 @@ export interface CareeredVacancyPageResult {
   };
 }
 
+export interface CareeredApiJob {
+  id: string;
+  kind: string;
+  tag: {
+    id: string;
+    name: string;
+  };
+  content: string;
+  features: Array<{
+    key: string;
+    value: string;
+  }>;
+  links: Array<{
+    key: string;
+    value: string;
+  }>;
+  mode: string;
+  posted_at: number;
+}
+
+export interface CareeredApiResponse {
+  entries: CareeredApiJob[];
+  recommended_entry: any;
+  offset: number;
+  limit: number;
+  total: number;
+}
+
 export interface CareeredClientOptions {
   userAgent?: string;
   logging?: boolean;
@@ -42,8 +70,10 @@ export class CareeredClient {
   private httpClient: HttpClient;
   private playwrightClient: PlaywrightClient;
   private mode: 'api' | 'playwright' | 'auto';
+  private options: CareeredClientOptions;
 
   constructor(options: CareeredClientOptions = {}) {
+    this.options = options;
     this.mode = (options.mode || (process.env.CAREERED_MODE as any) || 'auto');
 
     // Initialize HTTP client
@@ -331,5 +361,187 @@ export class CareeredClient {
    */
   setMode(mode: 'api' | 'playwright' | 'auto'): void {
     this.mode = mode;
+  }
+
+  /**
+   * Gets job listings from Careered API using Playwright
+   */
+  async getJobListingsFromAPI(offset: number = 0, limit: number = 20): Promise<CareeredApiResponse> {
+    const url = `https://careered.io/jobs?tags=a7f11f28-d502-4b8f-8432-5a1862cc99fa&offset=${offset}`;
+
+    if (this.options.logging) {
+      console.log(`[CareeredClient] API request via Playwright: ${url}`);
+    }
+
+    try {
+      // Use Playwright to get the page and intercept API calls
+      const page = await this.playwrightClient.createPage();
+
+      try {
+        // Intercept network requests to find API calls
+        const apiResponses: CareeredApiResponse[] = [];
+        page.on('response', async (response: any) => {
+          const responseUrl = response.url();
+          if (responseUrl.includes('/jobs?') && response.status() === 200) {
+            try {
+              const json = await response.json();
+              apiResponses.push(json);
+            } catch (e) {
+              // Not JSON
+            }
+          }
+        });
+
+        await page.goto(url, { waitUntil: 'networkidle' });
+
+        // Wait for API response
+        await page.waitForTimeout(3000);
+
+        if (apiResponses.length === 0) {
+          throw new Error('Could not intercept API response');
+        }
+
+        const data = apiResponses[0];
+
+        if (this.options.logging) {
+          console.log(`[CareeredClient] API response: ${data.entries.length} jobs, total: ${data.total}`);
+        }
+
+        return data;
+      } finally {
+        await page.close();
+      }
+    } catch (error) {
+      if (this.options.logging) {
+        console.error(`[CareeredClient] API request failed:`, error);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Converts API job data to job detail format
+   */
+  private convertApiJobToJobDetail(apiJob: CareeredApiJob): CareeredVacancyPageResult['jobDetail'] {
+    const features = apiJob.features.reduce((acc, feature) => {
+      acc[feature.key] = feature.value;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const links = apiJob.links.reduce((acc, link) => {
+      acc[link.key] = link.value;
+      return acc;
+    }, {} as Record<string, string>);
+
+    const title = features.name || 'Без названия';
+    const company = features.company || 'Неизвестная компания';
+    const location = features.location || 'Remote';
+    const description = features.summary || '';
+    const fullDescription = features.summary || '';
+
+    // Parse salary
+    let salary: { from?: number; to?: number; currency?: string } | undefined;
+    if (features.salary_from && features.salary_to && features.salary_currency) {
+      salary = {
+        from: parseInt(features.salary_from) || undefined,
+        to: parseInt(features.salary_to) || undefined,
+        currency: features.salary_currency
+      };
+    }
+
+    // Parse published date
+    const publishedAt = apiJob.posted_at ? new Date(apiJob.posted_at * 1000).toISOString() : new Date().toISOString();
+
+    return {
+      title,
+      company,
+      location,
+      description,
+      fullDescription,
+      salary,
+      isRemote: location.toLowerCase().includes('remote') || location.toLowerCase().includes('удаленн'),
+      publishedAt
+    };
+  }
+
+  /**
+   * Gets job detail from API job data
+   */
+  async getJobDetailFromAPI(jobId: string): Promise<CareeredVacancyPageResult> {
+    const url = `https://careered.io/jobs/${jobId}`;
+
+    if (this.options.logging) {
+      console.log(`[CareeredClient] Getting job detail for ID: ${jobId}`);
+    }
+
+    // For now, we'll need to get the job from the API list
+    // In the future, there might be a direct job detail endpoint
+    try {
+      // Get job from API (we'll need to search through pages)
+      let found = false;
+      let offset = 0;
+      let apiJob: CareeredApiJob | null = null;
+
+      while (!found && offset < 1000) { // Limit search to prevent infinite loop
+        const response = await this.getJobListingsFromAPI(offset, 20);
+
+        apiJob = response.entries.find(job => job.id === jobId) || null;
+        if (apiJob) {
+          found = true;
+          break;
+        }
+
+        if (response.entries.length === 0) {
+          break; // No more jobs
+        }
+
+        offset += 20;
+      }
+
+      if (!apiJob) {
+        throw new Error(`Job with ID ${jobId} not found`);
+      }
+
+      const jobDetail = this.convertApiJobToJobDetail(apiJob);
+      const html = await this.httpClient.getText(url);
+
+      return {
+        html,
+        url,
+        jobDetail
+      };
+    } catch (error) {
+      if (this.options.logging) {
+        console.error(`[CareeredClient] Error getting job detail for ${jobId}:`, error);
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Gets full job description from the job page using Playwright
+   */
+  async getFullJobDescription(jobId: string): Promise<string> {
+    const url = `https://careered.io/jobs/${jobId}`;
+
+    if (this.options.logging) {
+      console.log(`[CareeredClient] Getting full description for job: ${jobId}`);
+    }
+
+    try {
+      const jobDetail = await this.playwrightClient.getJobDetail(url);
+
+      if (!jobDetail) {
+        throw new Error(`Could not extract job detail from ${url}`);
+      }
+
+      // Return the full description (HTML) or fallback to text description
+      return jobDetail.fullDescription || jobDetail.description || '';
+    } catch (error) {
+      if (this.options.logging) {
+        console.error(`[CareeredClient] Error getting full description for ${jobId}:`, error);
+      }
+      throw error;
+    }
   }
 }

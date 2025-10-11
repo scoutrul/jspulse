@@ -100,8 +100,10 @@ export class AdminController {
   async deleteVacancy(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
+      console.log('AdminController.deleteVacancy: Received request to delete vacancy:', id);
 
       if (!id) {
+        console.log('AdminController.deleteVacancy: No ID provided');
         res.status(400).json({
           success: false,
           error: {
@@ -113,9 +115,12 @@ export class AdminController {
       }
 
       // Делегируем бизнес-логику в Use Case
+      console.log('AdminController.deleteVacancy: Calling DeleteVacancyUseCase...');
       const result = await this.deleteVacancyUseCase.execute({ id });
+      console.log('AdminController.deleteVacancy: Use case result:', result);
 
       if (!result.deleted) {
+        console.log('AdminController.deleteVacancy: Vacancy not found, returning 404');
         res.status(404).json({
           success: false,
           error: {
@@ -127,6 +132,7 @@ export class AdminController {
       }
 
       // Отправляем ответ об успешном удалении
+      console.log('AdminController.deleteVacancy: Vacancy deleted successfully');
       res.json({
         success: true,
         data: {
